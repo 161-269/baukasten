@@ -1,0 +1,93 @@
+Block attributes come before the block, on a line by themselves.
+```
+{#id}
+A paragraph
+.
+<p id="id">A paragraph</p>
+```
+
+```
+{.class}
+A paragraph
+.
+<p class="class">A paragraph</p>
+```
+
+```
+{.class #id}
+A paragraph
+.
+<p class="class" id="id">A paragraph</p>
+```
+
+```
+{.class=}
+A paragraph
+.
+<p>{.class=}
+A paragraph</p>
+```
+
+```
+{.one .two .three}
+A paragraph
+.
+<p class="one two three">A paragraph</p>
+```
+
+
+```
+{.one.two.three}
+A paragraph
+.
+<p>{.one.two.three}
+A paragraph</p>
+```
+
+```
+{#one #two #three}
+A paragraph
+.
+<p id="three">A paragraph</p>
+```
+
+
+```
+{#one#two#three}
+A paragraph
+.
+<p>{#one#two#three}
+A paragraph</p>
+```
+
+```
+{key=value}
+A paragraph
+.
+<p key="value">A paragraph</p>
+```
+
+```
+{style="color: red;"}
+A paragraph
+.
+<p style="color: red;">A paragraph</p>
+```
+
+
+If the attribute block can't be parsed as attributes, it will be
+parsed as a regular paragraph:
+
+```
+{#id .class
+.
+<p>{#id .class</p>
+```
+
+```
+{a="aa"}
+{b="bb"}
+Hi
+.
+<p a="aa" b="bb">Hi</p>
+```

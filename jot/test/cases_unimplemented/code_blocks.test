@@ -1,0 +1,22 @@
+````
+  ``` python
+  if true:
+    x = 3
+  ```
+.
+<pre><code class="language-python">if true:
+  x = 3
+</code></pre>
+````
+
+````
+``` not a code block ```
+.
+<p><code> not a code block </code></p>
+````
+
+````
+``` not a code block
+.
+<p><code> not a code block</code></p>
+````

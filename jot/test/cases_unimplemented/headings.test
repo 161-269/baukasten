@@ -1,0 +1,62 @@
+Auto-identifiers:
+
+```
+{#Foo-bar}
+Paragraph
+
+# Foo bar
+
+## Foo  bar
+
+{#baz}
+# Foo bar
+.
+<p id="Foo-bar">Paragraph</p>
+<section id="Foo-bar-1">
+<h1>Foo bar</h1>
+<section id="Foo-bar-2">
+<h2>Foo  bar</h2>
+</section>
+</section>
+<section id="baz">
+<h1>Foo bar</h1>
+</section>
+```
+
+Implicit header references:
+
+```
+See [Introduction][].
+
+# Introduction
+.
+<p>See <a href="#Introduction">Introduction</a>.</p>
+<section id="Introduction">
+<h1>Introduction</h1>
+</section>
+```
+
+```
+See [Introduction][].
+
+{#foo}
+# Introduction
+.
+<p>See <a href="#foo">Introduction</a>.</p>
+<section id="foo">
+<h1>Introduction</h1>
+</section>
+```
+
+```
+See [Introduction][].
+
+# Introduction
+
+[Introduction]: #bar
+.
+<p>See <a href="#bar">Introduction</a>.</p>
+<section id="Introduction">
+<h1>Introduction</h1>
+</section>
+```

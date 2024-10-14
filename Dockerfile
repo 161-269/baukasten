@@ -25,6 +25,7 @@ FROM ghcr.io/gleam-lang/gleam:v1.5.1-erlang-alpine AS widgets-builder
 WORKDIR /build
 
 COPY widgets /build/widgets
+COPY jot /build/jot
 
 RUN rm -rf /build/widgets/build \
   && rm -rf /build/widgets/priv \
@@ -46,6 +47,7 @@ FROM ghcr.io/gleam-lang/gleam:v1.5.1-erlang-alpine AS editor-builder
 WORKDIR /build
 
 COPY editor /build/editor
+COPY jot /build/jot
 
 RUN rm -rf /build/editor/build \
   && rm -rf /build/editor/priv \
@@ -71,6 +73,7 @@ RUN apk add --no-cache build-base sqlite-dev
 WORKDIR /build
 
 COPY backend /build/backend
+COPY jot /build/jot
 
 # Clean up previous build artifacts from the backend
 RUN rm -rf /build/backend/build \
