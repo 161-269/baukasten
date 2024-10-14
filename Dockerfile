@@ -60,9 +60,11 @@ RUN cd /build/editor \
 ################################################################################
 
 
-
 # This container is used to build the full stack application
 FROM ghcr.io/gleam-lang/gleam:v1.5.1-erlang-alpine AS builder
+
+# Add dependencies required to build SQLite
+RUN apk add --no-cache build-base sqlite-dev
 
 WORKDIR /build
 
