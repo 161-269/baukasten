@@ -1,0 +1,80 @@
+name: test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      # Setup
+      - name: "Checkout code"
+        uses: actions/checkout@v4
+
+      - name: "Set up Erlang"
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: "27.1..0"
+          gleam-version: "1.5.1"
+          rebar3-version: "3"
+          
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+            node-version: 22.x
+            cache: "npm"
+
+
+      # Download dependencies
+      - name: "Download backend dependencies"
+        run: cd backend && gleam deps download
+
+      - name: "Download editor dependencies"
+        run: cd editor && gleam deps download
+
+      - name: "Download widgets dependencies"
+        run: cd widgets && gleam deps download
+
+      - name: "Install other dependencies"
+        run: ./scripts/install.sh
+
+
+      # Run tests
+      - name: "Run backend tests"
+        run: cd backend && gleam test
+
+      - name: "Run editor tests"
+        run: cd editor && gleam test
+
+      - name: "Run widgets tests"
+        run: cd widgets && gleam test
+
+
+      # Check formatting
+      - name: "Check backend formatting"
+        run: cd backend && gleam format --check src test
+
+      - name: "Check editor formatting"
+        run: cd editor && gleam format --check src test
+
+      - name: "Check widgets formatting"
+        run: cd widgets && gleam format --check src test
+
+      
+      # Build
+      - name: "Build project"
+        run: ./scripts/build.sh
+
+      
+      # Clean up Gleam
+      - name: "Clean up backend"
+        run: cd backend && gleam clean
+        
+      - name: "Clean up editor"
+        run: cd editor && gleam clean
+        
+      - name: "Clean up widgets"
+        run: cd widgets && gleam clean

@@ -1,0 +1,17 @@
+*.beam
+*.ez
+erl_crash.dump
+
+/node_modules
+
+/backend/build
+/editor/build
+/widgets/build
+
+/backend/priv/editor.min.css
+/backend/priv/editor.min.mjs
+/backend/priv/widgets.min.css
+/backend/priv/widgets.min.mjs
+
+/editor/priv
+/widgets/priv
