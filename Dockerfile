@@ -3,7 +3,7 @@
 # Thank you very much for your great tutorials!
 
 
-################################################################################
+###############################################################################
 
 
 # This container is used to download the node dependencies
@@ -16,7 +16,7 @@ COPY package.json package-lock.json /build/
 RUN npm install
 
 
-################################################################################
+###############################################################################
 
 
 # This container is used to build the widgets
@@ -26,17 +26,18 @@ WORKDIR /build
 
 COPY widgets /build/widgets
 
-COPY --from=node-dependencies /build/node_modules /build/node_modules
-
 RUN rm -rf /build/widgets/build \
   && rm -rf /build/widgets/priv \
   && mkdir -p /build/backend/priv
 
+COPY --from=node-dependencies /build/node_modules /build/node_modules
+
 RUN cd /build/widgets \
-  && gleam run -m lustre/dev build --outdir=/build/backend/priv --minify=true --detect-tailwind=true
+  && gleam run -m lustre/dev build --outdir=/build/backend/priv \
+  --minify=true --detect-tailwind=true
 
 
-################################################################################
+###############################################################################
 
 
 # This container is used to build the editor
@@ -44,20 +45,21 @@ FROM ghcr.io/gleam-lang/gleam:v1.5.1-erlang-alpine AS editor-builder
 
 WORKDIR /build
 
-COPY --from=widgets-builder /build/widgets /build/widgets
 COPY editor /build/editor
-
-COPY --from=node-dependencies /build/node_modules /build/node_modules
 
 RUN rm -rf /build/editor/build \
   && rm -rf /build/editor/priv \
   && mkdir -p /build/backend/priv
 
+COPY --from=node-dependencies /build/node_modules /build/node_modules
+COPY --from=widgets-builder /build/widgets /build/widgets
+
 RUN cd /build/editor \
-  && gleam run -m lustre/dev build --outdir=/build/backend/priv --minify=true --detect-tailwind=true
+  && gleam run -m lustre/dev build --outdir=/build/backend/priv \
+  --minify=true --detect-tailwind=true
 
 
-################################################################################
+###############################################################################
 
 
 # This container is used to build the full stack application
@@ -68,12 +70,7 @@ RUN apk add --no-cache build-base sqlite-dev
 
 WORKDIR /build
 
-COPY --from=widgets-builder /build/widgets /build/widgets
-COPY --from=editor-builder /build/editor /build/editor
 COPY backend /build/backend
-
-# Copy node_modules from the "node" stage to the working directory
-COPY --from=node-dependencies /build/node_modules /build/node_modules
 
 # Clean up previous build artifacts from the backend
 RUN rm -rf /build/backend/build \
@@ -81,6 +78,10 @@ RUN rm -rf /build/backend/build \
   && rm -f /build/backend/priv/editor.min.mjs \
   && rm -f /build/backend/priv/widgets.min.css \
   && rm -f /build/backend/priv/widgets.min.mjs
+
+COPY --from=node-dependencies /build/node_modules /build/node_modules
+COPY --from=widgets-builder /build/widgets /build/widgets
+COPY --from=editor-builder /build/editor /build/editor
 
 COPY --from=editor-builder \
   /build/backend/priv/editor.min.css \
@@ -97,7 +98,7 @@ RUN cd /build/backend \
   && mv build/erlang-shipment /app
 
 
-################################################################################
+###############################################################################
 
 
 # This container is used to run the full stack application
