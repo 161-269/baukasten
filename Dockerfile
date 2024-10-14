@@ -19,26 +19,6 @@ RUN npm install
 ################################################################################
 
 
-# This container is used to build the editor
-FROM ghcr.io/gleam-lang/gleam:v1.5.1-erlang-alpine AS editor-builder
-
-WORKDIR /build
-
-COPY editor /build/editor
-
-COPY --from=node-dependencies /build/node_modules /build/node_modules
-
-RUN rm -rf /build/editor/build \
-  && rm -rf /build/editor/priv \
-  && mkdir -p /build/backend/priv
-
-RUN cd /build/editor \
-  && gleam run -m lustre/dev build --outdir=/build/backend/priv
-
-
-################################################################################
-
-
 # This container is used to build the widgets
 FROM ghcr.io/gleam-lang/gleam:v1.5.1-erlang-alpine AS widgets-builder
 
@@ -53,10 +33,32 @@ RUN rm -rf /build/widgets/build \
   && mkdir -p /build/backend/priv
 
 RUN cd /build/widgets \
-  && gleam run -m lustre/dev build --outdir=/build/backend/priv
+  && gleam run -m lustre/dev build --outdir=/build/backend/priv --minify=true --detect-tailwind=true
 
 
 ################################################################################
+
+
+# This container is used to build the editor
+FROM ghcr.io/gleam-lang/gleam:v1.5.1-erlang-alpine AS editor-builder
+
+WORKDIR /build
+
+COPY --from=widgets-builder /build/widgets /build/widgets
+COPY editor /build/editor
+
+COPY --from=node-dependencies /build/node_modules /build/node_modules
+
+RUN rm -rf /build/editor/build \
+  && rm -rf /build/editor/priv \
+  && mkdir -p /build/backend/priv
+
+RUN cd /build/editor \
+  && gleam run -m lustre/dev build --outdir=/build/backend/priv --minify=true --detect-tailwind=true
+
+
+################################################################################
+
 
 
 # This container is used to build the full stack application
@@ -64,8 +66,8 @@ FROM ghcr.io/gleam-lang/gleam:v1.5.1-erlang-alpine AS builder
 
 WORKDIR /build
 
-COPY --from=editor-builder /build/editor /build/editor
 COPY --from=widgets-builder /build/widgets /build/widgets
+COPY --from=editor-builder /build/editor /build/editor
 COPY backend /build/backend
 
 # Copy node_modules from the "node" stage to the working directory
