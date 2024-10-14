@@ -29,7 +29,8 @@ COPY editor /build/editor
 COPY --from=node-dependencies /build/node_modules /build/node_modules
 
 RUN rm -rf /build/editor/build \
-  && rm -rf /build/editor/priv
+  && rm -rf /build/editor/priv \
+  && mkdir -p /build/backend/priv
 
 RUN cd /build/editor \
   && gleam run -m lustre/dev build --outdir=/build/backend/priv
@@ -48,7 +49,8 @@ COPY widgets /build/widgets
 COPY --from=node-dependencies /build/node_modules /build/node_modules
 
 RUN rm -rf /build/widgets/build \
-  && rm -rf /build/widgets/priv
+  && rm -rf /build/widgets/priv \
+  && mkdir -p /build/backend/priv
 
 RUN cd /build/widgets \
   && gleam run -m lustre/dev build --outdir=/build/backend/priv
