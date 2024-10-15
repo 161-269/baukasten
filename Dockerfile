@@ -25,6 +25,7 @@ FROM ghcr.io/gleam-lang/gleam:v1.5.1-erlang-alpine AS widgets-builder
 WORKDIR /build
 
 COPY widgets /build/widgets
+COPY tailwind.config.js /build/widgets/
 
 RUN rm -rf /build/widgets/build \
   && rm -rf /build/widgets/priv \
@@ -46,6 +47,7 @@ FROM ghcr.io/gleam-lang/gleam:v1.5.1-erlang-alpine AS editor-builder
 WORKDIR /build
 
 COPY editor /build/editor
+COPY tailwind.config.js /build/editor/
 
 RUN rm -rf /build/editor/build \
   && rm -rf /build/editor/priv \
