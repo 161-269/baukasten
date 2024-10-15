@@ -2,7 +2,7 @@ import gleam/dict.{type Dict}
 import gleam/dynamic.{type DecodeError, type Dynamic, DecodeError}
 import gleam/json.{type Json}
 import gleam/list
-import gleam/option.{None, Some}
+import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string_builder
 import helper/dynamic_helper
@@ -51,7 +51,11 @@ pub fn decoder() -> fn(Dynamic) -> Result(Article, List(DecodeError)) {
         "text" -> Ok(Text(content))
         "djot" -> Ok(Djot(content))
         article_type ->
-          Error([DecodeError("on of ['text', 'djot']", article_type, ["type"])])
+          Error([
+            DecodeError("on of ['text', 'djot']", "'" <> article_type <> "'", [
+              "type",
+            ]),
+          ])
       }
     },
     dynamic.field("type", dynamic.string),
@@ -117,14 +121,9 @@ fn render_djot_inline(
       jot.Emphasis(inlines) ->
         html.em([], list.map(inlines, render_djot_inline(refs)))
       jot.Image(inlines, destination) ->
-        html.a(
-          [attribute.href(djot_destination(destination, refs))],
-          list.map(inlines, render_djot_inline(refs)),
-        )
-      jot.Linebreak -> html.br([])
-      jot.Link(inlines, destination) ->
         html.img([
-          attribute.src(djot_destination(destination, refs)),
+          option.map(djot_destination(destination, refs), attribute.src)
+            |> option.unwrap(attribute.none()),
           attribute.alt(
             string_builder.to_string(djot_inline_text(
               inlines,
@@ -132,6 +131,16 @@ fn render_djot_inline(
             )),
           ),
         ])
+      jot.Linebreak -> html.br([])
+      jot.Link(inlines, destination) ->
+        html.a(
+          [
+            option.map(djot_destination(destination, refs), attribute.href)
+            |> option.unwrap(attribute.none()),
+          ],
+          list.map(inlines, render_djot_inline(refs)),
+        )
+
       jot.Strong(inlines) ->
         html.strong([], list.map(inlines, render_djot_inline(refs)))
       jot.Text(content) -> html.text(content)
@@ -142,10 +151,12 @@ fn render_djot_inline(
 fn djot_destination(
   destination: jot.Destination,
   refs: Dict(String, String),
-) -> String {
+) -> Option(String) {
   case destination {
-    jot.Url(url) -> url
-    jot.Reference(reference) -> dict.get(refs, reference) |> result.unwrap("")
+    jot.Url(url) -> Some(url)
+    jot.Reference(reference) -> {
+      dict.get(refs, reference) |> result.map(Some) |> result.unwrap(None)
+    }
   }
 }
 
