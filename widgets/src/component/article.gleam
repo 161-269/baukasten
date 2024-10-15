@@ -6,10 +6,10 @@ import gleam/option.{None, Some}
 import gleam/result
 import gleam/string_builder
 import helper/dynamic_helper
-import jot
 import lustre/attribute.{type Attribute}
 import lustre/element.{type Element}
 import lustre/element/html
+import not_my_code/jot
 
 // https://htmlpreview.github.io/?https://github.com/jgm/djot/blob/master/doc/syntax.html
 

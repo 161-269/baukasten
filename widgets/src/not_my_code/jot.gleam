@@ -1,3 +1,6 @@
+// CODE FROM: https://github.com/lpil/jot
+// I can not build the project if I import the jot library directly
+
 // TODO: collapse adjacent text nodes
 
 import gleam/dict.{type Dict}
