@@ -1,4 +1,6 @@
 import component/article
+import component/component_interface
+import component/navbar
 import gleam/dynamic.{type DecodeError, type Dynamic}
 import gleam/json.{type Json}
 import gleam/list
@@ -8,42 +10,67 @@ import lustre/attribute
 import lustre/element.{type Element}
 import lustre/element/html
 
-pub opaque type Component {
+pub opaque type Component(a) {
   Article(article.Article)
+  Navbar(navbar.Navbar(Component(a), a))
 }
 
-pub fn article(article: article.Article) -> Component {
+pub fn interface() -> component_interface.Component(Component(a), a) {
+  component_interface.Component(
+    encode: encode_component,
+    decoder: component_decoder(),
+    render: render_component,
+  )
+}
+
+pub fn article(article: article.Article) -> Component(a) {
   Article(article)
 }
 
-pub fn encode(components: List(Component)) -> Json {
+pub fn navbar(
+  start: List(Component(a)),
+  center: List(Component(a)),
+  end: List(Component(a)),
+) -> Component(a) {
+  Navbar(navbar.new(interface(), start, center, end))
+}
+
+pub fn encode(components: List(Component(a))) -> Json {
   json.array(components, encode_component)
 }
 
-pub fn encode_component(component: Component) -> Json {
+pub fn encode_component(component: Component(a)) -> Json {
   json.object([
     #("type", json.string(component_type_name(component))),
     #("data", case component {
       Article(article) -> article.encode(article)
+      Navbar(navbar) -> navbar.encode(navbar)
     }),
   ])
 }
 
-pub fn decoder() -> fn(Dynamic) -> Result(List(Component), List(DecodeError)) {
+pub fn decoder() -> fn(Dynamic) -> Result(List(Component(a)), List(DecodeError)) {
   dynamic.list(component_decoder())
 }
 
 pub fn component_decoder() -> fn(Dynamic) ->
-  Result(Component, List(DecodeError)) {
+  Result(Component(a), List(DecodeError)) {
   dynamic.decode2(
     fn(component_type, data) {
       case component_type {
         "article" ->
           data_decoder(data, article.decoder(), Article, component_type)
+        "navbar" ->
+          data_decoder(
+            data,
+            navbar.decoder(interface()),
+            Navbar,
+            component_type,
+          )
         component_type ->
           Error([
             dynamic.DecodeError(
-              "on of ['article']",
+              "on of ['article', 'navbar']",
               "'" <> component_type <> "'",
               ["type"],
             ),
@@ -56,11 +83,11 @@ pub fn component_decoder() -> fn(Dynamic) ->
   |> dynamic_helper.flatten
 }
 
-pub fn render(components: List(Component)) -> List(Element(a)) {
+pub fn render(components: List(Component(a))) -> List(Element(a)) {
   list.map(components, render_component)
 }
 
-pub fn render_component(component: Component) -> Element(a) {
+pub fn render_component(component: Component(a)) -> Element(a) {
   html.div(
     [
       attribute.class("component"),
@@ -69,13 +96,15 @@ pub fn render_component(component: Component) -> Element(a) {
     ],
     case component {
       Article(article) -> [article.render(article)]
+      Navbar(navbar) -> [navbar.render(navbar)]
     },
   )
 }
 
-fn component_type_name(component: Component) -> String {
+fn component_type_name(component: Component(a)) -> String {
   case component {
     Article(_) -> "article"
+    Navbar(_) -> "navbar"
   }
 }
 
@@ -85,16 +114,13 @@ fn data_decoder(
   map: fn(a) -> b,
   component_type: String,
 ) -> Result(b, List(DecodeError)) {
-  decoder(data)
+  dynamic_helper.prepend_error(
+    decoder,
+    dynamic.DecodeError(
+      "Could not decode component: '" <> component_type <> "'",
+      "error",
+      ["data"],
+    ),
+  )(data)
   |> result.map(map)
-  |> result.map_error(fn(error) {
-    [
-      dynamic.DecodeError(
-        "Could not decode component: '" <> component_type <> "'",
-        "error",
-        ["data"],
-      ),
-      ..error
-    ]
-  })
 }

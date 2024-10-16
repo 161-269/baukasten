@@ -36,3 +36,13 @@ pub fn flatten(
     |> result.flatten
   }
 }
+
+pub fn prepend_error(
+  decoder: fn(dynamic.Dynamic) -> Result(a, List(dynamic.DecodeError)),
+  error: dynamic.DecodeError,
+) -> fn(dynamic.Dynamic) -> Result(a, List(dynamic.DecodeError)) {
+  fn(value: dynamic.Dynamic) {
+    decoder(value)
+    |> result.map_error(fn(errors) { [error, ..errors] })
+  }
+}
