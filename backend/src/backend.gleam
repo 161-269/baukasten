@@ -11,7 +11,7 @@ pub fn main() {
     fn(_: Request(Connection)) -> Response(ResponseData) {
       response.Response(
         200,
-        [],
+        [#("content-type", "text/html; charset=utf-8")],
         mist.Bytes(bytes_builder.from_string("Hello from backend!")),
       )
     }
