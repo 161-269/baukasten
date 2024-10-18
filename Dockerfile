@@ -40,7 +40,7 @@ RUN set -ex; \
   wget -O "/app/tailwind-css-cli" "https://github.com/tailwindlabs/tailwindcss/releases/download/$TAILWIND_VERSION/$TAILWIND_FILENAME"; \
   chmod +x "/app/tailwind-css-cli"
 
-  
+
 ###############################################################################
 
 
@@ -145,7 +145,7 @@ RUN cd /build/backend \
 FROM ghcr.io/gleam-lang/gleam:v1.5.1-erlang-alpine AS runtime
 
 COPY --from=tailwind-css-cli /app/tailwind-css-cli /app/tailwind-css-cli
-COPY --from=node-dependencies /app/node_modules /app/node_modules
+COPY --from=node-dependencies /build/node_modules /app/node_modules
 
 COPY --from=builder /app /app
 
