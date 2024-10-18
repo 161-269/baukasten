@@ -3,6 +3,8 @@
 erl_crash.dump
 
 /node_modules
+/tailwind-css-cli
+/tailwind-css-cli.exe
 
 /backend/build
 /editor/build

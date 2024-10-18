@@ -1,3 +1,5 @@
+#!/bin/bash
+
 cp tailwind.config.js editor/
 cp tailwind.config.js widgets/
 

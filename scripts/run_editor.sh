@@ -1,3 +1,5 @@
+#!/bin/bash
+
 mkdir -p editor/priv/static/font
 cp backend/priv/fonts.css editor/priv/static/fonts.css
 cp -r backend/priv/font/* editor/priv/static/font/
