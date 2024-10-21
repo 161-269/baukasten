@@ -1,5 +1,5 @@
 import component/article
-import component/component_interface
+import component/component_interface.{type Node, InnerNode, LeafNode, Node}
 import component/navbar
 import gleam/dynamic.{type DecodeError, type Dynamic}
 import gleam/json.{type Json}
@@ -20,6 +20,7 @@ pub fn interface() -> component_interface.Component(Component(a), a) {
     encode: encode_component,
     decoder: component_decoder(),
     render: render_component,
+    render_tree: render_tree,
   )
 }
 
@@ -88,16 +89,43 @@ pub fn render(components: List(Component(a))) -> List(Element(a)) {
 }
 
 pub fn render_component(component: Component(a)) -> Element(a) {
+  render_template(component_type_name(component), case component {
+    Article(article) -> article.render(article)
+    Navbar(navbar) -> navbar.render(navbar)
+  })
+}
+
+pub fn render_tree(component: Component(a)) -> Node(Component(a), a) {
+  let inner_node = case component {
+    Article(article) -> article.render_tree(article)
+    Navbar(navbar) -> navbar.render_tree(navbar)
+  }
+
+  let children = case inner_node {
+    InnerNode(children, _) -> children
+    LeafNode(_) -> []
+  }
+
+  let element = case inner_node {
+    InnerNode(_, element) -> element
+    LeafNode(element) -> element
+  }
+
+  Node(
+    component: component,
+    children: children,
+    element: render_template(component_type_name(component), element),
+  )
+}
+
+fn render_template(name: String, child: Element(a)) -> Element(a) {
   html.div(
     [
       attribute.class("component"),
-      attribute.class("component-" <> component_type_name(component)),
-      attribute.attribute("data-component-type", component_type_name(component)),
+      attribute.class("component-" <> name),
+      attribute.attribute("data-component-type", name),
     ],
-    case component {
-      Article(article) -> [article.render(article)]
-      Navbar(navbar) -> [navbar.render(navbar)]
-    },
+    [child],
   )
 }
 

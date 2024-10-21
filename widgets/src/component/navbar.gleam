@@ -1,4 +1,6 @@
-import component/component_interface.{type Component}
+import component/component_interface.{
+  type Component, type InnerNode, type Node, InnerNode,
+}
 import gleam/dynamic.{type DecodeError, type Dynamic}
 import gleam/json.{type Json}
 import gleam/list
@@ -44,18 +46,38 @@ pub fn decoder(
 }
 
 pub fn render(navbar: Navbar(c, a)) -> Element(a) {
+  render_template(
+    list.map(navbar.start, navbar.component.render),
+    list.map(navbar.center, navbar.component.render),
+    list.map(navbar.end, navbar.component.render),
+  )
+}
+
+pub fn render_tree(navbar: Navbar(c, a)) -> InnerNode(c, a) {
+  let start = list.map(navbar.start, navbar.component.render_tree)
+  let center = list.map(navbar.center, navbar.component.render_tree)
+  let end = list.map(navbar.end, navbar.component.render_tree)
+
+  let select_element = fn(node: Node(c, a)) { node.element }
+
+  InnerNode(
+    children: list.concat([start, center, end]),
+    element: render_template(
+      list.map(start, select_element),
+      list.map(center, select_element),
+      list.map(end, select_element),
+    ),
+  )
+}
+
+fn render_template(
+  start: List(Element(a)),
+  center: List(Element(a)),
+  end: List(Element(a)),
+) -> Element(a) {
   html.div([attribute.class("navbar")], [
-    html.div(
-      [attribute.class("navbar-start")],
-      list.map(navbar.start, navbar.component.render),
-    ),
-    html.div(
-      [attribute.class("navbar-center")],
-      list.map(navbar.center, navbar.component.render),
-    ),
-    html.div(
-      [attribute.class("navbar-end")],
-      list.map(navbar.end, navbar.component.render),
-    ),
+    html.div([attribute.class("navbar-start")], start),
+    html.div([attribute.class("navbar-center")], center),
+    html.div([attribute.class("navbar-end")], end),
   ])
 }

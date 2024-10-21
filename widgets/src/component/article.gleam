@@ -1,3 +1,4 @@
+import component/component_interface.{type InnerNode, LeafNode}
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type DecodeError, type Dynamic, DecodeError}
 import gleam/json.{type Json}
@@ -71,6 +72,10 @@ pub fn render(article: Article) -> Element(a) {
   }
 
   html.article([attribute.class("prose lg:prose-xl")], content)
+}
+
+pub fn render_tree(article: Article) -> InnerNode(c, a) {
+  LeafNode(element: render(article))
 }
 
 fn render_djot(document: jot.Document) -> List(Element(a)) {
