@@ -1,4 +1,3 @@
-import component/component_interface.{type InnerNode, LeafNode}
 import gleam/dict.{type Dict}
 import gleam/dynamic.{type DecodeError, type Dynamic, DecodeError}
 import gleam/json.{type Json}
@@ -6,11 +5,12 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string_builder
-import helper/dynamic_helper
 import lustre/attribute.{type Attribute}
 import lustre/element.{type Element}
 import lustre/element/html
-import not_my_code/jot
+import widgets/component/component_interface.{type InnerNode, LeafNode}
+import widgets/helper/dynamic_helper
+import widgets/not_my_code/jot
 
 // https://htmlpreview.github.io/?https://github.com/jgm/djot/blob/master/doc/syntax.html
 

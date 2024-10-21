@@ -1,13 +1,13 @@
-import component
-import ffi_bridge
 import gleam/io
 import gleam/json
 import gleam/option.{None, Some}
-import helper/json_helper
 import lustre
 import lustre/attribute
 import lustre/effect
 import lustre/element/html
+import widgets/component
+import widgets/ffi_bridge
+import widgets/helper/json_helper
 
 pub fn main() {
   let in_dev_mode = ffi_bridge.in_web_dev_mode()

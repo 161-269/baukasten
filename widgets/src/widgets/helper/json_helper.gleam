@@ -2,7 +2,7 @@ import gleam/int
 import gleam/json
 import gleam/list
 import gleam/string
-import helper/dynamic_helper
+import widgets/helper/dynamic_helper
 
 pub fn stringify_decode_error(decode_error: json.DecodeError) -> String {
   case decode_error {

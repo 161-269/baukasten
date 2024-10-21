@@ -1,12 +1,12 @@
-import component/component_interface.{
-  type Component, type InnerNode, type Node, InnerNode,
-}
 import gleam/dynamic.{type DecodeError, type Dynamic}
 import gleam/json.{type Json}
 import gleam/list
 import lustre/attribute
 import lustre/element.{type Element}
 import lustre/element/html
+import widgets/component/component_interface.{
+  type Component, type InnerNode, type Node, InnerNode,
+}
 
 pub opaque type Navbar(c, a) {
   Navbar(

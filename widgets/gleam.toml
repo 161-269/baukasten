@@ -2,6 +2,8 @@ name = "widgets"
 version = "1.0.0"
 gleam = ">= 1.5.1"
 
+internal_modules = []
+
 # Fill out these fields if you intend to generate HTML documentation or publish
 # your project to the Hex package manager.
 #
