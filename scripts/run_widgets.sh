@@ -7,5 +7,5 @@ cp index.html widgets/
 cp tailwind.config.js widgets/
 
 cd widgets
-gleam run -m lustre/dev start --detect-tailwind=true --port=8161
+gleam run -m lustre/dev start --entry=widgets/dev_mode --detect-tailwind=true --port=8161
 cd ..

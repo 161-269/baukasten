@@ -1,3 +1,4 @@
+import ffi_bridge
 import gleam/io
 import gleam/json
 import gleam/option.{None, Some}
@@ -6,18 +7,9 @@ import lustre/attribute
 import lustre/effect
 import lustre/element/html
 import widgets/component
-import widgets/ffi_bridge
 import widgets/helper/json_helper
 
 pub fn main() {
-  let in_dev_mode = ffi_bridge.in_web_dev_mode()
-  case in_dev_mode {
-    True -> start_dev_mode()
-    False -> Nil
-  }
-}
-
-fn start_dev_mode() {
   let hydration_state = ffi_bridge.hydration_state("hydration-dev")
   case hydration_state {
     Ok(Some(json_string)) -> {

@@ -12,13 +12,6 @@ import { Some, None } from "../gleam_stdlib/gleam/option.mjs";
 const isBrowser = !!(globalThis.window && window.document);
 
 /**
- * @returns {boolean}
- */
-export function inWebDevMode() {
-    return isBrowser && !!document.getElementById("app-dev");
-}
-
-/**
  * @param {string} name 
  * @returns 
  */
