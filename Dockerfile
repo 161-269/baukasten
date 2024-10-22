@@ -51,7 +51,7 @@ WORKDIR /build
 
 COPY package.json package-lock.json /build/
 
-RUN npm install
+RUN npm ci
 
 
 ###############################################################################
