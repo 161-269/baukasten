@@ -1,5 +1,3 @@
-////
-
 import gleam/dynamic.{type DecodeError, type Dynamic}
 import gleam/json.{type Json}
 import gleam/list
@@ -14,13 +12,11 @@ import widgets/component/component_interface.{
 import widgets/component/navbar
 import widgets/helper/dynamic_helper
 
-///
-pub opaque type Component(a) {
+pub type Component(a) {
   Article(article.Article)
   Navbar(navbar.Navbar(Component(a), a))
 }
 
-///
 pub fn interface() -> component_interface.Component(Component(a), a) {
   component_interface.Component(
     encode: encode_component,
@@ -30,12 +26,10 @@ pub fn interface() -> component_interface.Component(Component(a), a) {
   )
 }
 
-///
 pub fn article(article: article.Article) -> Component(a) {
   Article(article)
 }
 
-///
 pub fn navbar(
   start: List(Component(a)),
   center: List(Component(a)),
@@ -92,7 +86,6 @@ pub fn component_decoder() -> fn(Dynamic) ->
   |> dynamic_helper.flatten
 }
 
-///
 pub fn render(components: List(Component(a))) -> List(Element(a)) {
   list.map(components, render_component)
 }
