@@ -15,7 +15,6 @@ pub fn main() {
     wisp_mist.handler(handle_request, secret_key_base)
     |> mist.new
     |> mist.port(8161)
-    |> mist.bind("0.0.0.0")
     |> mist.start_http
 
   process.sleep_forever()
