@@ -1,9 +1,11 @@
 import gleam/erlang/process
 import gleam/io
+import gleam/json
 import lustre/attribute
 import lustre/element
 import lustre/element/html
 import mist
+import widgets/component
 import wisp.{type Request, type Response}
 import wisp/wisp_mist
 
@@ -26,13 +28,16 @@ pub fn main() {
 fn handle_request(req: Request) -> Response {
   use req <- middleware(req)
 
-  let #(title, css, mjs, link_href, link_text) = case wisp.path_segments(req) {
+  let #(title, css, mjs, link_href, link_text, components) = case
+    wisp.path_segments(req)
+  {
     ["edit"] -> #(
       "Editor",
       "editor.min.css",
       "editor.min.mjs",
       "/",
       "Zurück zur Startseite",
+      [],
     )
     _ -> #(
       "Baukasten",
@@ -40,6 +45,7 @@ fn handle_request(req: Request) -> Response {
       "widgets.min.mjs",
       "/edit",
       "Zum Editor",
+      [],
     )
   }
 
@@ -70,6 +76,10 @@ fn handle_request(req: Request) -> Response {
             attribute.src("/static/" <> mjs),
           ],
           "",
+        ),
+        html.script(
+          [attribute.id("hydration"), attribute.type_("application/json")],
+          components |> component.encode |> json.to_string,
         ),
       ]),
       html.body([], [
