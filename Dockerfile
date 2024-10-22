@@ -65,10 +65,6 @@ WORKDIR /build
 COPY widgets /build/widgets
 COPY tailwind.config.js /build/widgets/
 
-RUN rm -rf /build/widgets/build \
-  && rm -rf /build/widgets/priv \
-  && mkdir -p /build/backend/priv
-
 COPY --from=node-dependencies /build/node_modules /build/node_modules
 
 RUN cd /build/widgets \
@@ -84,15 +80,11 @@ FROM ghcr.io/gleam-lang/gleam:v1.5.1-erlang-alpine AS editor-builder
 
 WORKDIR /build
 
+COPY widgets /build/widgets
 COPY editor /build/editor
 COPY tailwind.config.js /build/editor/
 
-RUN rm -rf /build/editor/build \
-  && rm -rf /build/editor/priv \
-  && mkdir -p /build/backend/priv
-
 COPY --from=node-dependencies /build/node_modules /build/node_modules
-COPY --from=widgets-builder /build/widgets /build/widgets
 
 RUN cd /build/editor \
   && gleam run -m lustre/dev build --outdir=/build/backend/priv \
@@ -110,18 +102,12 @@ RUN apk add --no-cache build-base sqlite-dev
 
 WORKDIR /build
 
+COPY widgets /build/widgets
+COPY editor /build/editor
 COPY backend /build/backend
 
-# Clean up previous build artifacts from the backend
-RUN rm -rf /build/backend/build \
-  && rm -f /build/backend/priv/editor.min.css \
-  && rm -f /build/backend/priv/editor.min.mjs \
-  && rm -f /build/backend/priv/widgets.min.css \
-  && rm -f /build/backend/priv/widgets.min.mjs
-
-COPY --from=node-dependencies /build/node_modules /build/node_modules
-COPY --from=widgets-builder /build/widgets /build/widgets
-COPY --from=editor-builder /build/editor /build/editor
+RUN cd /build/backend \
+  && gleam build
 
 COPY --from=editor-builder \
   /build/backend/priv/editor.min.css \
