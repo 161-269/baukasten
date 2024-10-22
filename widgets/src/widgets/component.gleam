@@ -21,6 +21,55 @@ pub type InnerComponent(a) {
   Navbar(navbar.Navbar(Component(a), a))
 }
 
+pub fn walk_map(
+  components: List(Component(a)),
+  with: fn(Component(a)) -> Component(a),
+) -> List(Component(a)) {
+  list.map(components, fn(component: Component(a)) {
+    let component = with(component)
+
+    case component.component {
+      Article(_) -> component
+      Navbar(value) ->
+        Component(
+          ..component,
+          component: Navbar(
+            navbar.Navbar(
+              ..value,
+              start: walk_map(value.start, with),
+              center: walk_map(value.center, with),
+              end: walk_map(value.end, with),
+            ),
+          ),
+        )
+    }
+  })
+}
+
+pub fn walk_fold(
+  components: List(Component(a)),
+  from: result,
+  with: fn(result, Component(a)) -> result,
+) -> result {
+  list.fold(components, from, fn(result, component: Component(a)) {
+    let result = with(result, component)
+
+    case component.component {
+      Article(_) -> result
+      Navbar(value) ->
+        walk_fold(value.start, result, with)
+        |> walk_fold(value.center, _, with)
+        |> walk_fold(value.end, _, with)
+    }
+  })
+}
+
+pub fn clear_attributes(components: List(Component(a))) -> List(Component(a)) {
+  walk_map(components, fn(component: Component(a)) {
+    Component(..component, attributes: [])
+  })
+}
+
 pub fn interface() -> component_interface.Component(Component(a), a) {
   component_interface.Component(
     encode: encode_component,
