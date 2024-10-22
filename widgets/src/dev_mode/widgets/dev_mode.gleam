@@ -83,7 +83,7 @@ pub fn main() {
               fn(_) { rendered },
             )
 
-          case lustre.start(app, "#app-dev", Nil) {
+          case lustre.start(app, "#app", Nil) {
             Ok(_) -> Nil
             Error(message) -> {
               io.println_error("Error starting app")
