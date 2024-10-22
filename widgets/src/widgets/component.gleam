@@ -2,7 +2,7 @@ import gleam/dynamic.{type DecodeError, type Dynamic}
 import gleam/json.{type Json}
 import gleam/list
 import gleam/result
-import lustre/attribute
+import lustre/attribute.{type Attribute}
 import lustre/element.{type Element}
 import lustre/element/html
 import widgets/component/article
@@ -13,6 +13,10 @@ import widgets/component/navbar
 import widgets/helper/dynamic_helper
 
 pub type Component(a) {
+  Component(component: InnerComponent(a), attributes: List(Attribute(a)))
+}
+
+pub type InnerComponent(a) {
   Article(article.Article)
   Navbar(navbar.Navbar(Component(a), a))
 }
@@ -27,7 +31,7 @@ pub fn interface() -> component_interface.Component(Component(a), a) {
 }
 
 pub fn article(article: article.Article) -> Component(a) {
-  Article(article)
+  Component(component: Article(article), attributes: [])
 }
 
 pub fn navbar(
@@ -35,7 +39,10 @@ pub fn navbar(
   center: List(Component(a)),
   end: List(Component(a)),
 ) -> Component(a) {
-  Navbar(navbar.new(interface(), start, center, end))
+  Component(
+    component: Navbar(navbar.new(interface(), start, center, end)),
+    attributes: [],
+  )
 }
 
 pub fn encode(components: List(Component(a))) -> Json {
@@ -45,7 +52,7 @@ pub fn encode(components: List(Component(a))) -> Json {
 pub fn encode_component(component: Component(a)) -> Json {
   json.object([
     #("type", json.string(component_type_name(component))),
-    #("data", case component {
+    #("data", case component.component {
       Article(article) -> article.encode(article)
       Navbar(navbar) -> navbar.encode(navbar)
     }),
@@ -84,6 +91,9 @@ pub fn component_decoder() -> fn(Dynamic) ->
     dynamic.field("data", dynamic.dynamic),
   )
   |> dynamic_helper.flatten
+  |> dynamic_helper.map(fn(component: InnerComponent(a)) {
+    Ok(Component(component: component, attributes: []))
+  })
 }
 
 pub fn render(components: List(Component(a))) -> List(Element(a)) {
@@ -91,14 +101,14 @@ pub fn render(components: List(Component(a))) -> List(Element(a)) {
 }
 
 pub fn render_component(component: Component(a)) -> Element(a) {
-  render_template(component_type_name(component), case component {
+  render_template(component, case component.component {
     Article(article) -> article.render(article)
     Navbar(navbar) -> navbar.render(navbar)
   })
 }
 
 pub fn render_tree(component: Component(a)) -> Node(Component(a), a) {
-  let inner_node = case component {
+  let inner_node = case component.component {
     Article(article) -> article.render_tree(article)
     Navbar(navbar) -> navbar.render_tree(navbar)
   }
@@ -116,23 +126,26 @@ pub fn render_tree(component: Component(a)) -> Node(Component(a), a) {
   Node(
     component: component,
     children: children,
-    element: render_template(component_type_name(component), element),
+    element: render_template(component, element),
   )
 }
 
-fn render_template(name: String, child: Element(a)) -> Element(a) {
+fn render_template(component: Component(a), child: Element(a)) -> Element(a) {
+  let name = component_type_name(component)
+
   html.div(
     [
       attribute.class("component"),
       attribute.class("component-" <> name),
       attribute.attribute("data-component-type", name),
+      ..component.attributes
     ],
     [child],
   )
 }
 
 fn component_type_name(component: Component(a)) -> String {
-  case component {
+  case component.component {
     Article(_) -> "article"
     Navbar(_) -> "navbar"
   }
