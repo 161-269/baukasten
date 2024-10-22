@@ -80,11 +80,12 @@ FROM ghcr.io/gleam-lang/gleam:v1.5.1-erlang-alpine AS editor-builder
 
 WORKDIR /build
 
-COPY widgets /build/widgets
 COPY editor /build/editor
 COPY tailwind.config.js /build/editor/
 
 COPY --from=node-dependencies /build/node_modules /build/node_modules
+COPY --from=widgets-builder /build/widgets /build/widgets
+COPY --from=widgets-builder /build/widgets/build /build/editor/build
 
 RUN cd /build/editor \
   && gleam run -m lustre/dev build --outdir=/build/backend/priv \
@@ -102,12 +103,11 @@ RUN apk add --no-cache build-base sqlite-dev
 
 WORKDIR /build
 
-COPY widgets /build/widgets
-COPY editor /build/editor
 COPY backend /build/backend
 
-RUN cd /build/backend \
-  && gleam build
+COPY --from=widgets-builder /build/widgets /build/widgets
+COPY --from=editor-builder /build/editor /build/editor
+COPY --from=editor-builder /build/editor/build /build/backend/build
 
 COPY --from=editor-builder \
   /build/backend/priv/editor.min.css \
