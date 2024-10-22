@@ -6,6 +6,7 @@ import lustre/element
 import lustre/element/html
 import mist
 import widgets/component
+import widgets/component/article
 import wisp.{type Request, type Response}
 import wisp/wisp_mist
 
@@ -28,24 +29,25 @@ pub fn main() {
 fn handle_request(req: Request) -> Response {
   use req <- middleware(req)
 
-  let #(title, css, mjs, link_href, link_text, components) = case
-    wisp.path_segments(req)
-  {
+  let components = [component.Article(article.djot("# Hello from backend!"))]
+
+  let #(title, css, mjs, link_href, link_text) = case wisp.path_segments(req) {
     ["edit"] -> #(
       "Editor",
-      "editor.min.css",
+      html.link([
+        attribute.rel("stylesheet"),
+        attribute.href("/static/editor.min.css"),
+      ]),
       "editor.min.mjs",
       "/",
       "Zurück zur Startseite",
-      [],
     )
     _ -> #(
       "Baukasten",
-      "widgets.min.css",
+      element.none(),
       "widgets.min.mjs",
       "/edit",
       "Zum Editor",
-      [],
     )
   }
 
@@ -67,8 +69,9 @@ fn handle_request(req: Request) -> Response {
         ]),
         html.link([
           attribute.rel("stylesheet"),
-          attribute.href("/static/" <> css),
+          attribute.href("/static/widgets.min.css"),
         ]),
+        css,
         html.script(
           [
             attribute.attribute("defer", "defer"),
@@ -84,7 +87,7 @@ fn handle_request(req: Request) -> Response {
       ]),
       html.body([], [
         html.a([attribute.href(link_href)], [html.text(link_text)]),
-        html.div([attribute.id("app")], []),
+        html.div([attribute.id("app")], component.render(components)),
       ]),
     ])
 

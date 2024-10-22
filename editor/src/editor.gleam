@@ -2,10 +2,8 @@ import gleam/io
 import gleam/json
 import gleam/option.{type Option, None, Some}
 import lustre
-import lustre/attribute
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
-import lustre/element/html
 import widgets/browser
 import widgets/component.{type Component}
 import widgets/component/article
@@ -40,7 +38,7 @@ fn update(state: State(a), _msg: Message) -> #(State(a), Effect(Message)) {
 }
 
 fn render(state: State(a)) -> Element(a) {
-  html.div([attribute.class("app")], component.render(state.components))
+  element.fragment(component.render(state.components))
 }
 
 fn get_hydration_state() -> Option(String) {
@@ -115,6 +113,7 @@ fn load_components() -> List(Component(a)) {
   case hydration {
     Some(json_string) ->
       case json.decode(json_string, component.decoder()) {
+        Ok([]) -> default_components()
         Ok(components) -> components
         Error(error) -> {
           io.println_error("Error decoding component json:")
