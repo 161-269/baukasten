@@ -1,13 +1,13 @@
 #!/bin/bash
 
-cp tailwind.config.js editor/
 cp tailwind.config.js widgets/
+cp tailwind.config.js editor/
 
-cd editor
+cd widgets
 gleam run -m lustre/dev build --outdir=../backend/priv --minify=true --detect-tailwind=true
 cd ..
 
-cd widgets
+cd editor
 gleam run -m lustre/dev build --outdir=../backend/priv --minify=true --detect-tailwind=true
 cd ..
 

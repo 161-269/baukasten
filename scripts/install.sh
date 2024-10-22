@@ -35,11 +35,11 @@ chmod +x "$OUTPUT_NAME"
 
 npm install
 
-cd editor
+cd widgets
 gleam deps download
 cd ..
 
-cd widgets
+cd editor
 gleam deps download
 cd ..
 
