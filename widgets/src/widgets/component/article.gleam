@@ -14,7 +14,7 @@ import widgets/not_my_code/jot
 
 // https://htmlpreview.github.io/?https://github.com/jgm/djot/blob/master/doc/syntax.html
 
-pub opaque type Article {
+pub type Article {
   Text(String)
   Djot(String)
 }

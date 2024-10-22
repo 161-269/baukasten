@@ -8,7 +8,7 @@ import widgets/component/component_interface.{
   type Component, type InnerNode, type Node, InnerNode,
 }
 
-pub opaque type Navbar(c, a) {
+pub type Navbar(c, a) {
   Navbar(
     component: Component(c, a),
     start: List(c),
