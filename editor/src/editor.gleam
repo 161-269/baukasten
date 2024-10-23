@@ -2,10 +2,11 @@ import gleam/io
 import gleam/json
 import gleam/option.{type Option, None, Some}
 import lustre
+import lustre/attribute.{type Attribute}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import widgets/browser
-import widgets/component.{type Component}
+import widgets/component.{type Component, Component}
 import widgets/component/article
 import widgets/helper/json_helper
 
@@ -14,7 +15,7 @@ pub fn main() {
 
   let app = lustre.application(init, update, render)
   case lustre.start(app, "#app", components) {
-    Ok(_) -> Nil
+    Ok(_) -> io.println("editor is running")
     Error(message) -> {
       io.println_error("Error starting app")
       io.debug(message)
@@ -23,21 +24,68 @@ pub fn main() {
   }
 }
 
-type State(a) {
-  State(components: List(Component(a)))
+type State {
+  State(components: List(Component(Message, ComponentData)))
 }
 
-type Message
+type ComponentData
 
-fn init(components: List(Component(a))) -> #(State(a), Effect(Message)) {
+type Message {
+  MouseOver(id: Int)
+  MouseLeafe(id: Int)
+}
+
+fn init(
+  components: List(Component(Message, ComponentData)),
+) -> #(State, Effect(Message)) {
+  let components =
+    component.walk_map(
+      components,
+      fn(component: Component(Message, ComponentData)) {
+        Component(..component, attributes: component_attributes(component))
+      },
+    )
+
   #(State(components: components), effect.none())
 }
 
-fn update(state: State(a), _msg: Message) -> #(State(a), Effect(Message)) {
-  #(state, effect.none())
+fn component_attributes(
+  component: Component(Message, ComponentData),
+) -> List(Attribute(Message)) {
+  [
+    attribute.on("mouseover", fn(_) { Ok(MouseOver(component.id)) }),
+    attribute.on("mouseleave", fn(_) { Ok(MouseLeafe(component.id)) }),
+    attribute.attribute("data-test", "hello"),
+  ]
 }
 
-fn render(state: State(a)) -> Element(a) {
+fn update(state: State, msg: Message) -> #(State, Effect(Message)) {
+  let components = case msg {
+    MouseOver(id) | MouseLeafe(id) ->
+      component.walk_map(
+        state.components,
+        fn(component: Component(Message, ComponentData)) {
+          case id == component.id {
+            True ->
+              Component(
+                ..component,
+                attributes: [
+                  case msg {
+                    MouseOver(_) -> attribute.class("bg-success")
+                    MouseLeafe(_) -> attribute.none()
+                  },
+                  ..component_attributes(component)
+                ],
+              )
+            False -> component
+          }
+        },
+      )
+  }
+  #(State(components: components), effect.none())
+}
+
+fn render(state: State) -> Element(Message) {
   element.fragment(component.render(state.components))
 }
 
@@ -60,7 +108,7 @@ fn get_hydration_state() -> Option(String) {
   }
 }
 
-fn default_components() -> List(Component(a)) {
+fn default_components() -> List(Component(Message, ComponentData)) {
   [
     component.navbar(
       [component.article(article.text("Start"))],
@@ -108,7 +156,7 @@ fn default_components() -> List(Component(a)) {
   ]
 }
 
-fn load_components() -> List(Component(a)) {
+fn load_components() -> List(Component(Message, ComponentData)) {
   let hydration = get_hydration_state()
   case hydration {
     Some(json_string) ->

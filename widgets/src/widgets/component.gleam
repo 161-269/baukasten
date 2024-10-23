@@ -1,6 +1,7 @@
 import gleam/dynamic.{type DecodeError, type Dynamic}
 import gleam/json.{type Json}
 import gleam/list
+import gleam/option.{type Option, None}
 import gleam/result
 import lustre/attribute.{type Attribute}
 import lustre/element.{type Element}
@@ -10,22 +11,28 @@ import widgets/component/component_interface.{
   type Node, InnerNode, LeafNode, Node,
 }
 import widgets/component/navbar
+import widgets/counter
 import widgets/helper/dynamic_helper
 
-pub type Component(a) {
-  Component(component: InnerComponent(a), attributes: List(Attribute(a)))
+pub type Component(a, data) {
+  Component(
+    component: InnerComponent(a, data),
+    attributes: List(Attribute(a)),
+    id: Int,
+    data: Option(data),
+  )
 }
 
-pub type InnerComponent(a) {
+pub type InnerComponent(a, data) {
   Article(article.Article)
-  Navbar(navbar.Navbar(Component(a), a))
+  Navbar(navbar.Navbar(Component(a, data), a))
 }
 
 pub fn walk_map(
-  components: List(Component(a)),
-  with: fn(Component(a)) -> Component(a),
-) -> List(Component(a)) {
-  list.map(components, fn(component: Component(a)) {
+  components: List(Component(a, d)),
+  with: fn(Component(a, d)) -> Component(a, d),
+) -> List(Component(a, d)) {
+  list.map(components, fn(component: Component(a, d)) {
     let component = with(component)
 
     case component.component {
@@ -47,11 +54,11 @@ pub fn walk_map(
 }
 
 pub fn walk_fold(
-  components: List(Component(a)),
+  components: List(Component(a, d)),
   from: result,
-  with: fn(result, Component(a)) -> result,
+  with: fn(result, Component(a, d)) -> result,
 ) -> result {
-  list.fold(components, from, fn(result, component: Component(a)) {
+  list.fold(components, from, fn(result, component: Component(a, d)) {
     let result = with(result, component)
 
     case component.component {
@@ -64,13 +71,15 @@ pub fn walk_fold(
   })
 }
 
-pub fn clear_attributes(components: List(Component(a))) -> List(Component(a)) {
-  walk_map(components, fn(component: Component(a)) {
+pub fn clear_attributes(
+  components: List(Component(a, d)),
+) -> List(Component(a, d)) {
+  walk_map(components, fn(component: Component(a, d)) {
     Component(..component, attributes: [])
   })
 }
 
-pub fn interface() -> component_interface.Component(Component(a), a) {
+pub fn interface() -> component_interface.Component(Component(a, d), a) {
   component_interface.Component(
     encode: encode_component,
     decoder: component_decoder(),
@@ -79,26 +88,33 @@ pub fn interface() -> component_interface.Component(Component(a), a) {
   )
 }
 
-pub fn article(article: article.Article) -> Component(a) {
-  Component(component: Article(article), attributes: [])
-}
-
-pub fn navbar(
-  start: List(Component(a)),
-  center: List(Component(a)),
-  end: List(Component(a)),
-) -> Component(a) {
+pub fn article(article: article.Article) -> Component(a, d) {
   Component(
-    component: Navbar(navbar.new(interface(), start, center, end)),
+    component: Article(article),
     attributes: [],
+    id: counter.unique_integer(),
+    data: None,
   )
 }
 
-pub fn encode(components: List(Component(a))) -> Json {
+pub fn navbar(
+  start: List(Component(a, d)),
+  center: List(Component(a, d)),
+  end: List(Component(a, d)),
+) -> Component(a, d) {
+  Component(
+    component: Navbar(navbar.new(interface(), start, center, end)),
+    attributes: [],
+    id: counter.unique_integer(),
+    data: None,
+  )
+}
+
+pub fn encode(components: List(Component(a, d))) -> Json {
   json.array(components, encode_component)
 }
 
-pub fn encode_component(component: Component(a)) -> Json {
+pub fn encode_component(component: Component(a, d)) -> Json {
   json.object([
     #("type", json.string(component_type_name(component))),
     #("data", case component.component {
@@ -108,12 +124,13 @@ pub fn encode_component(component: Component(a)) -> Json {
   ])
 }
 
-pub fn decoder() -> fn(Dynamic) -> Result(List(Component(a)), List(DecodeError)) {
+pub fn decoder() -> fn(Dynamic) ->
+  Result(List(Component(a, d)), List(DecodeError)) {
   dynamic.list(component_decoder())
 }
 
 pub fn component_decoder() -> fn(Dynamic) ->
-  Result(Component(a), List(DecodeError)) {
+  Result(Component(a, d), List(DecodeError)) {
   dynamic.decode2(
     fn(component_type, data) {
       case component_type {
@@ -140,23 +157,28 @@ pub fn component_decoder() -> fn(Dynamic) ->
     dynamic.field("data", dynamic.dynamic),
   )
   |> dynamic_helper.flatten
-  |> dynamic_helper.map(fn(component: InnerComponent(a)) {
-    Ok(Component(component: component, attributes: []))
+  |> dynamic_helper.map(fn(component: InnerComponent(a, d)) {
+    Ok(Component(
+      component: component,
+      attributes: [],
+      id: counter.unique_integer(),
+      data: None,
+    ))
   })
 }
 
-pub fn render(components: List(Component(a))) -> List(Element(a)) {
+pub fn render(components: List(Component(a, d))) -> List(Element(a)) {
   list.map(components, render_component)
 }
 
-pub fn render_component(component: Component(a)) -> Element(a) {
+pub fn render_component(component: Component(a, d)) -> Element(a) {
   render_template(component, case component.component {
     Article(article) -> article.render(article)
     Navbar(navbar) -> navbar.render(navbar)
   })
 }
 
-pub fn render_tree(component: Component(a)) -> Node(Component(a), a) {
+pub fn render_tree(component: Component(a, d)) -> Node(Component(a, d), a) {
   let inner_node = case component.component {
     Article(article) -> article.render_tree(article)
     Navbar(navbar) -> navbar.render_tree(navbar)
@@ -179,7 +201,7 @@ pub fn render_tree(component: Component(a)) -> Node(Component(a), a) {
   )
 }
 
-fn render_template(component: Component(a), child: Element(a)) -> Element(a) {
+fn render_template(component: Component(a, d), child: Element(a)) -> Element(a) {
   let name = component_type_name(component)
 
   html.div(
@@ -193,7 +215,7 @@ fn render_template(component: Component(a), child: Element(a)) -> Element(a) {
   )
 }
 
-fn component_type_name(component: Component(a)) -> String {
+fn component_type_name(component: Component(a, d)) -> String {
   case component.component {
     Article(_) -> "article"
     Navbar(_) -> "navbar"

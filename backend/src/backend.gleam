@@ -23,7 +23,7 @@ pub fn main() {
   process.sleep_forever()
 }
 
-fn content() -> fn(Request) -> List(Component(a)) {
+fn content() -> fn(Request) -> List(Component(a, d)) {
   let components = [component.article(article.djot("# Baukasten"))]
   fn(req: Request) {
     list.concat([
