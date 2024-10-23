@@ -66,7 +66,7 @@ pub fn decoder() -> fn(Dynamic) -> Result(Text, List(DecodeError)) {
   dynamic.decode2(
     Text,
     dynamic.field("content", dynamic.string),
-    dynamic.field("family", typography.decoder()),
+    dynamic.field("typography", typography.decoder()),
   )
 }
 
