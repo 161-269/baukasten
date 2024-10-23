@@ -206,7 +206,7 @@ pub fn text_decoration_decoder(
         DecodeError(
           "on of ['underline', 'overline', 'line-through', 'no-underline']",
           decoration,
-          ["font-decoration"],
+          ["text-decoration"],
         ),
       ])
   }

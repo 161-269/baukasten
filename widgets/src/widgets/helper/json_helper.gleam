@@ -1,6 +1,7 @@
 import gleam/int
-import gleam/json
+import gleam/json.{type Json}
 import gleam/list
+import gleam/option.{type Option, None, Some}
 import gleam/string
 import widgets/helper/dynamic_helper
 
@@ -15,5 +16,15 @@ pub fn stringify_decode_error(decode_error: json.DecodeError) -> String {
       |> string.join(", ")
     json.UnexpectedSequence(byte, position) ->
       "unexpected sequence " <> byte <> " at " <> int.to_string(position)
+  }
+}
+
+pub fn encode_nullable_mapped_string(
+  value: Option(a),
+  map: fn(a) -> String,
+) -> Json {
+  case value {
+    Some(value) -> json.string(map(value))
+    None -> json.null()
   }
 }
