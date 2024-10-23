@@ -11,6 +11,7 @@ import widgets/component/component_interface.{
   type Node, InnerNode, LeafNode, Node,
 }
 import widgets/component/navbar
+import widgets/component/paragraph
 import widgets/component/text
 import widgets/counter
 import widgets/helper/dynamic_helper
@@ -28,6 +29,7 @@ pub type InnerComponent(a, data) {
   Article(article.Article)
   Navbar(navbar.Navbar(Component(a, data), a))
   Text(text.Text)
+  Paragraph(paragraph.Paragraph(Component(a, data), a))
 }
 
 pub fn walk_map(
@@ -52,6 +54,13 @@ pub fn walk_map(
             ),
           ),
         )
+      Paragraph(value) ->
+        Component(
+          ..component,
+          component: Paragraph(
+            paragraph.Paragraph(..value, content: walk_map(value.content, with)),
+          ),
+        )
     }
   })
 }
@@ -71,6 +80,7 @@ pub fn walk_fold(
         walk_fold(value.start, result, with)
         |> walk_fold(value.center, _, with)
         |> walk_fold(value.end, _, with)
+      Paragraph(value) -> walk_fold(value.content, result, with)
     }
   })
 }
@@ -127,6 +137,26 @@ pub fn navbar(
   )
 }
 
+pub fn text(text: text.Text) -> Component(a, d) {
+  Component(
+    component: Text(text),
+    attributes: [],
+    id: counter.unique_integer(),
+    data: None,
+  )
+}
+
+pub fn paragraph(
+  paragraph: paragraph.Paragraph(Component(a, d), a),
+) -> Component(a, d) {
+  Component(
+    component: Paragraph(paragraph),
+    attributes: [],
+    id: counter.unique_integer(),
+    data: None,
+  )
+}
+
 pub fn encode(components: List(Component(a, d))) -> Json {
   json.array(components, encode_component)
 }
@@ -138,6 +168,7 @@ pub fn encode_component(component: Component(a, d)) -> Json {
       Article(article) -> article.encode(article)
       Navbar(navbar) -> navbar.encode(navbar)
       Text(text) -> text.encode(text)
+      Paragraph(paragraph) -> paragraph.encode(paragraph)
     }),
   ])
 }
@@ -161,10 +192,18 @@ pub fn component_decoder() -> fn(Dynamic) ->
             Navbar,
             component_type,
           )
+        "text" -> data_decoder(data, text.decoder(), Text, component_type)
+        "paragraph" ->
+          data_decoder(
+            data,
+            paragraph.decoder(interface()),
+            Paragraph,
+            component_type,
+          )
         component_type ->
           Error([
             dynamic.DecodeError(
-              "on of ['article', 'navbar']",
+              "on of ['article', 'navbar', 'text', 'paragraph']",
               "'" <> component_type <> "'",
               ["type"],
             ),
@@ -194,6 +233,7 @@ pub fn render_component(component: Component(a, d)) -> Element(a) {
     Article(article) -> article.render(article)
     Navbar(navbar) -> navbar.render(navbar)
     Text(text) -> text.render(text)
+    Paragraph(paragraph) -> paragraph.render(paragraph)
   })
 }
 
@@ -202,6 +242,7 @@ pub fn render_tree(component: Component(a, d)) -> Node(Component(a, d), a) {
     Article(article) -> article.render_tree(article)
     Navbar(navbar) -> navbar.render_tree(navbar)
     Text(text) -> text.render_tree(text)
+    Paragraph(paragraph) -> paragraph.render_tree(paragraph)
   }
 
   let children = case inner_node {
@@ -240,6 +281,7 @@ fn component_type_name(component: Component(a, d)) -> String {
     Article(_) -> "article"
     Navbar(_) -> "navbar"
     Text(_) -> "text"
+    Paragraph(_) -> "paragraph"
   }
 }
 
