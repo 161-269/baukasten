@@ -7,13 +7,20 @@ import { Ok, Error } from "./gleam.mjs";
 // ../build/dev/javascript/gleam_stdlib/gleam/option.mjs
 import { Some, None } from "../gleam_stdlib/gleam/option.mjs";
 
+if (!globalThis.baukastenPrivateData) {
+    globalThis.baukastenPrivateData = {};
+}
+
+if (typeof globalThis.baukastenPrivateData.widgetsCounter !== "number") {
+    globalThis.baukastenPrivateData.widgetsCounter = 0;
+}
 
 /** @type {boolean} */
 const isBrowser = !!(globalThis.window && window.document);
 
 /**
  * @param {string} name 
- * @returns 
+ * @returns
  */
 export function hydrationState(name) {
     if (!isBrowser) return new Ok(new None());
@@ -50,4 +57,12 @@ export function hydrationState(name) {
     }
 
     return new Ok(new Some(text));
+}
+
+
+/**
+ * @returns {number}
+ */
+export function counter() {
+    return globalThis.baukastenPrivateData.widgetsCounter++;
 }
