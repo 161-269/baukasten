@@ -11,6 +11,7 @@ import widgets/component/component_interface.{
   type Node, InnerNode, LeafNode, Node,
 }
 import widgets/component/navbar
+import widgets/component/text
 import widgets/counter
 import widgets/helper/dynamic_helper
 
@@ -26,6 +27,7 @@ pub type Component(a, data) {
 pub type InnerComponent(a, data) {
   Article(article.Article)
   Navbar(navbar.Navbar(Component(a, data), a))
+  Text(text.Text)
 }
 
 pub fn walk_map(
@@ -37,6 +39,7 @@ pub fn walk_map(
 
     case component.component {
       Article(_) -> component
+      Text(_) -> component
       Navbar(value) ->
         Component(
           ..component,
@@ -63,6 +66,7 @@ pub fn walk_fold(
 
     case component.component {
       Article(_) -> result
+      Text(_) -> result
       Navbar(value) ->
         walk_fold(value.start, result, with)
         |> walk_fold(value.center, _, with)
@@ -133,6 +137,7 @@ pub fn encode_component(component: Component(a, d)) -> Json {
     #("data", case component.component {
       Article(article) -> article.encode(article)
       Navbar(navbar) -> navbar.encode(navbar)
+      Text(text) -> text.encode(text)
     }),
   ])
 }
@@ -188,6 +193,7 @@ pub fn render_component(component: Component(a, d)) -> Element(a) {
   render_template(component, case component.component {
     Article(article) -> article.render(article)
     Navbar(navbar) -> navbar.render(navbar)
+    Text(text) -> text.render(text)
   })
 }
 
@@ -195,6 +201,7 @@ pub fn render_tree(component: Component(a, d)) -> Node(Component(a, d), a) {
   let inner_node = case component.component {
     Article(article) -> article.render_tree(article)
     Navbar(navbar) -> navbar.render_tree(navbar)
+    Text(text) -> text.render_tree(text)
   }
 
   let children = case inner_node {
@@ -232,6 +239,7 @@ fn component_type_name(component: Component(a, d)) -> String {
   case component.component {
     Article(_) -> "article"
     Navbar(_) -> "navbar"
+    Text(_) -> "text"
   }
 }
 
