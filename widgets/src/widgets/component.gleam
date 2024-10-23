@@ -71,6 +71,19 @@ pub fn walk_fold(
   })
 }
 
+pub fn update(
+  components: List(Component(a, d)),
+  id: Int,
+  map: fn(Component(a, d)) -> Component(a, d),
+) -> List(Component(a, d)) {
+  walk_map(components, fn(component: Component(a, d)) {
+    case component.id == id {
+      True -> map(component)
+      False -> component
+    }
+  })
+}
+
 pub fn clear_attributes(
   components: List(Component(a, d)),
 ) -> List(Component(a, d)) {

@@ -28,7 +28,16 @@ type State {
   State(components: List(Component(Message, ComponentData)))
 }
 
-type ComponentData
+type ComponentData {
+  ComponentData(hovered: Bool)
+}
+
+fn component_data(component: Component(Message, ComponentData)) -> ComponentData {
+  case component.data {
+    Some(data) -> data
+    None -> ComponentData(hovered: False)
+  }
+}
 
 type Message {
   MouseOver(id: Int)
@@ -42,7 +51,13 @@ fn init(
     component.walk_map(
       components,
       fn(component: Component(Message, ComponentData)) {
-        Component(..component, attributes: component_attributes(component))
+        Component(
+          ..component,
+          attributes: component_attributes(
+            component.id,
+            component_data(component),
+          ),
+        )
       },
     )
 
@@ -50,35 +65,40 @@ fn init(
 }
 
 fn component_attributes(
-  component: Component(Message, ComponentData),
+  id: Int,
+  data: ComponentData,
 ) -> List(Attribute(Message)) {
-  [
-    attribute.on("mouseover", fn(_) { Ok(MouseOver(component.id)) }),
-    attribute.on("mouseleave", fn(_) { Ok(MouseLeafe(component.id)) }),
-    attribute.attribute("data-test", "hello"),
+  let result = [
+    attribute.on("mouseover", fn(_) { Ok(MouseOver(id)) }),
+    attribute.on("mouseleave", fn(_) { Ok(MouseLeafe(id)) }),
   ]
+
+  let result = case data.hovered {
+    True -> [attribute.class("bg-success"), ..result]
+    False -> result
+  }
+
+  result
 }
 
 fn update(state: State, msg: Message) -> #(State, Effect(Message)) {
   let components = case msg {
     MouseOver(id) | MouseLeafe(id) ->
-      component.walk_map(
+      component.update(
         state.components,
+        id,
         fn(component: Component(Message, ComponentData)) {
-          case id == component.id {
-            True ->
-              Component(
-                ..component,
-                attributes: [
-                  case msg {
-                    MouseOver(_) -> attribute.class("bg-success")
-                    MouseLeafe(_) -> attribute.none()
-                  },
-                  ..component_attributes(component)
-                ],
-              )
-            False -> component
-          }
+          let data =
+            ComponentData(hovered: case msg {
+              MouseOver(_) -> True
+              MouseLeafe(_) -> False
+            })
+
+          Component(
+            ..component,
+            data: Some(data),
+            attributes: component_attributes(id, data),
+          )
         },
       )
   }
