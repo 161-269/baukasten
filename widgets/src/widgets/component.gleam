@@ -10,6 +10,7 @@ import widgets/component/article
 import widgets/component/component_interface.{
   type Node, InnerNode, LeafNode, Node,
 }
+import widgets/component/dialog
 import widgets/component/navbar
 import widgets/component/paragraph
 import widgets/component/text
@@ -30,6 +31,7 @@ pub type InnerComponent(a, data) {
   Navbar(navbar.Navbar(Component(a, data), a))
   Text(text.Text)
   Paragraph(paragraph.Paragraph(Component(a, data), a))
+  Dialog(dialog.Dialog(Component(a, data), a))
 }
 
 pub fn walk_map(
@@ -61,6 +63,13 @@ pub fn walk_map(
             paragraph.Paragraph(..value, content: walk_map(value.content, with)),
           ),
         )
+      Dialog(value) ->
+        Component(
+          ..component,
+          component: Dialog(
+            dialog.Dialog(..value, content: walk_map(value.content, with)),
+          ),
+        )
     }
   })
 }
@@ -81,6 +90,7 @@ pub fn walk_fold(
         |> walk_fold(value.center, _, with)
         |> walk_fold(value.end, _, with)
       Paragraph(value) -> walk_fold(value.content, result, with)
+      Dialog(value) -> walk_fold(value.content, result, with)
     }
   })
 }
@@ -169,6 +179,7 @@ pub fn encode_component(component: Component(a, d)) -> Json {
       Navbar(navbar) -> navbar.encode(navbar)
       Text(text) -> text.encode(text)
       Paragraph(paragraph) -> paragraph.encode(paragraph)
+      Dialog(dialog) -> dialog.encode(dialog)
     }),
   ])
 }
@@ -198,6 +209,13 @@ pub fn component_decoder() -> fn(Dynamic) ->
             data,
             paragraph.decoder(interface()),
             Paragraph,
+            component_type,
+          )
+        "dialog" ->
+          data_decoder(
+            data,
+            dialog.decoder(interface()),
+            Dialog,
             component_type,
           )
         component_type ->
@@ -234,6 +252,7 @@ pub fn render_component(component: Component(a, d)) -> Element(a) {
     Navbar(navbar) -> navbar.render(navbar)
     Text(text) -> text.render(text)
     Paragraph(paragraph) -> paragraph.render(paragraph)
+    Dialog(dialog) -> dialog.render(dialog)
   })
 }
 
@@ -243,6 +262,7 @@ pub fn render_tree(component: Component(a, d)) -> Node(Component(a, d), a) {
     Navbar(navbar) -> navbar.render_tree(navbar)
     Text(text) -> text.render_tree(text)
     Paragraph(paragraph) -> paragraph.render_tree(paragraph)
+    Dialog(dialog) -> dialog.render_tree(dialog)
   }
 
   let children = case inner_node {
@@ -282,6 +302,7 @@ fn component_type_name(component: Component(a, d)) -> String {
     Navbar(_) -> "navbar"
     Text(_) -> "text"
     Paragraph(_) -> "paragraph"
+    Dialog(_) -> "dialog"
   }
 }
 
