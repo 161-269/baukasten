@@ -11,20 +11,76 @@ import lustre/element/html
 import widgets/component/component_interface.{type InnerNode, LeafNode}
 import widgets/helper/dynamic_helper
 import widgets/not_my_code/jot
+import widgets/tailwind/class/typography.{
+  type FontFamily, type FontSize, type FontStyle, type FontWeight,
+  type TextDecoration,
+} as _
+import widgets/tailwind/component/typography.{type Typography, Typography}
 
 // https://htmlpreview.github.io/?https://github.com/jgm/djot/blob/master/doc/syntax.html
 
 pub type Article {
-  Text(String)
-  Djot(String)
+  Text(content: String, typography: Typography)
+  Djot(content: String, typography: Typography)
 }
 
 pub fn text(text: String) -> Article {
-  Text(text)
+  Text(content: text, typography: typography.new())
 }
 
 pub fn djot(djot: String) -> Article {
-  Djot(djot)
+  Djot(content: djot, typography: typography.new())
+}
+
+/// https://tailwindcss.com/docs/font-family
+pub fn family(article: Article, family: FontFamily) -> Article {
+  let typography = Typography(..article.typography, font_family: Some(family))
+
+  case article {
+    Text(content, _) -> Text(content, typography)
+    Djot(content, _) -> Djot(content, typography)
+  }
+}
+
+/// https://tailwindcss.com/docs/font-size
+pub fn size(article: Article, size: FontSize) -> Article {
+  let typography = Typography(..article.typography, font_size: Some(size))
+
+  case article {
+    Text(content, _) -> Text(content, typography)
+    Djot(content, _) -> Djot(content, typography)
+  }
+}
+
+/// https://tailwindcss.com/docs/font-style
+pub fn italic(article: Article, style: FontStyle) -> Article {
+  let typography = Typography(..article.typography, font_style: Some(style))
+
+  case article {
+    Text(content, _) -> Text(content, typography)
+    Djot(content, _) -> Djot(content, typography)
+  }
+}
+
+/// https://tailwindcss.com/docs/font-weight
+pub fn weight(article: Article, weight: FontWeight) -> Article {
+  let typography = Typography(..article.typography, font_weight: Some(weight))
+
+  case article {
+    Text(content, _) -> Text(content, typography)
+    Djot(content, _) -> Djot(content, typography)
+  }
+}
+
+/// https://tailwindcss.com/docs/text-decoration
+pub fn decoration(article: Article, decoration: TextDecoration) -> Article {
+  let typography =
+    Typography(..article.typography, text_decoration: Some(decoration))
+
+  case article {
+    Text(content, _) -> Text(content, typography)
+    Djot(content, _) -> Djot(content, typography)
+  }
 }
 
 pub fn encode(article: Article) -> Json {
@@ -32,25 +88,21 @@ pub fn encode(article: Article) -> Json {
     #(
       "type",
       json.string(case article {
-        Text(_) -> "text"
-        Djot(_) -> "djot"
+        Text(_, _) -> "text"
+        Djot(_, _) -> "djot"
       }),
     ),
-    #(
-      "content",
-      json.string(case article {
-        Text(text) | Djot(text) -> text
-      }),
-    ),
+    #("content", json.string(article.content)),
+    #("typography", typography.encode(article.typography)),
   ])
 }
 
 pub fn decoder() -> fn(Dynamic) -> Result(Article, List(DecodeError)) {
-  dynamic.decode2(
-    fn(article_type, content) {
+  dynamic.decode3(
+    fn(article_type, content, typography) {
       case article_type {
-        "text" -> Ok(Text(content))
-        "djot" -> Ok(Djot(content))
+        "text" -> Ok(Text(content: content, typography: typography))
+        "djot" -> Ok(Djot(content: content, typography: typography))
         article_type ->
           Error([
             DecodeError("on of ['text', 'djot']", "'" <> article_type <> "'", [
@@ -61,17 +113,24 @@ pub fn decoder() -> fn(Dynamic) -> Result(Article, List(DecodeError)) {
     },
     dynamic.field("type", dynamic.string),
     dynamic.field("content", dynamic.string),
+    dynamic.field("typography", typography.decoder()),
   )
   |> dynamic_helper.flatten
 }
 
 pub fn render(article: Article) -> Element(a) {
   let content = case article {
-    Text(text) -> [html.p([], [html.text(text)])]
-    Djot(djot) -> render_djot(jot.parse(djot))
+    Text(_, _) -> [html.p([], [html.text(article.content)])]
+    Djot(_, _) -> render_djot(jot.parse(article.content))
   }
 
-  html.article([attribute.class("prose lg:prose-xl")], content)
+  html.article(
+    [
+      attribute.class("prose lg:prose-xl w-full max-w-full"),
+      ..typography.attributes(article.typography)
+    ],
+    content,
+  )
 }
 
 pub fn render_tree(article: Article) -> InnerNode(c, a) {
@@ -87,6 +146,8 @@ fn render_djot_container(
 ) -> fn(jot.Container) -> Element(a) {
   fn(container: jot.Container) {
     case container {
+      jot.ThematicBreak -> html.hr([])
+
       jot.Codeblock(attrs, language, content) -> {
         let attrs = jot_attributes(attrs)
         let attrs = case language {
@@ -106,6 +167,7 @@ fn render_djot_container(
           6 -> html.h6
           _ -> html.span
         }
+
         tag(jot_attributes(attrs), list.map(inlines, render_djot_inline(refs)))
       }
       jot.Paragraph(attrs, inlines) ->
