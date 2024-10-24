@@ -11,6 +11,7 @@ import widgets/component/break
 import widgets/component/component_interface.{
   type Node, InnerNode, LeafNode, Node,
 }
+import widgets/component/container
 import widgets/component/dialog
 import widgets/component/navbar
 import widgets/component/paragraph
@@ -34,6 +35,7 @@ pub type InnerComponent(a, data) {
   Paragraph(paragraph.Paragraph(Component(a, data), a))
   Dialog(dialog.Dialog(Component(a, data), a))
   Break(break.Break)
+  Container(container.Container(Component(a, data), a))
 }
 
 pub fn walk_map(
@@ -73,6 +75,13 @@ pub fn walk_map(
           ),
         )
       Break(_) -> component
+      Container(value) ->
+        Component(
+          ..component,
+          component: Container(
+            container.Container(..value, content: walk_map(value.content, with)),
+          ),
+        )
     }
   })
 }
@@ -95,6 +104,7 @@ pub fn walk_fold(
       Paragraph(value) -> walk_fold(value.content, result, with)
       Dialog(value) -> walk_fold(value.content, result, with)
       Break(_) -> result
+      Container(value) -> walk_fold(value.content, result, with)
     }
   })
 }
@@ -180,6 +190,26 @@ pub fn dialog(dialog: dialog.Dialog(Component(a, d), a)) -> Component(a, d) {
   )
 }
 
+pub fn br() -> Component(a, d) {
+  Component(
+    component: Break(break.new()),
+    attributes: [],
+    id: counter.unique_integer(),
+    data: None,
+  )
+}
+
+pub fn container(
+  container: container.Container(Component(a, d), a),
+) -> Component(a, d) {
+  Component(
+    component: Container(container),
+    attributes: [],
+    id: counter.unique_integer(),
+    data: None,
+  )
+}
+
 pub fn encode(components: List(Component(a, d))) -> Json {
   json.array(components, encode_component)
 }
@@ -194,6 +224,7 @@ pub fn encode_component(component: Component(a, d)) -> Json {
       Paragraph(paragraph) -> paragraph.encode(paragraph)
       Dialog(dialog) -> dialog.encode(dialog)
       Break(break) -> break.encode(break)
+      Container(container) -> container.encode(container)
     }),
   ])
 }
@@ -233,6 +264,13 @@ pub fn component_decoder() -> fn(Dynamic) ->
             component_type,
           )
         "break" -> data_decoder(data, break.decoder(), Break, component_type)
+        "container" ->
+          data_decoder(
+            data,
+            container.decoder(interface()),
+            Container,
+            component_type,
+          )
         component_type ->
           Error([
             dynamic.DecodeError(
@@ -269,6 +307,7 @@ pub fn render_component(component: Component(a, d)) -> Element(a) {
     Paragraph(paragraph) -> paragraph.render(paragraph)
     Dialog(dialog) -> dialog.render(dialog)
     Break(break) -> break.render(break)
+    Container(container) -> container.render(container)
   })
 }
 
@@ -280,6 +319,7 @@ pub fn render_tree(component: Component(a, d)) -> Node(Component(a, d), a) {
     Paragraph(paragraph) -> paragraph.render_tree(paragraph)
     Dialog(dialog) -> dialog.render_tree(dialog)
     Break(break) -> break.render_tree(break)
+    Container(container) -> container.render_tree(container)
   }
 
   let children = case inner_node {
@@ -326,6 +366,7 @@ fn render_with_wrapper(component: Component(a, d)) -> Bool {
     Paragraph(_) -> True
     Dialog(_) -> True
     Break(_) -> False
+    Container(_) -> True
   }
 }
 
@@ -337,6 +378,7 @@ fn component_type_name(component: Component(a, d)) -> String {
     Paragraph(_) -> "paragraph"
     Dialog(_) -> "dialog"
     Break(_) -> "break"
+    Container(_) -> "container"
   }
 }
 
