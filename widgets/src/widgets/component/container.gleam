@@ -51,7 +51,7 @@ pub fn render_tree(container: Container(c, a)) -> InnerNode(c, a) {
 }
 
 fn render_template(
-  container: Container(c, a),
+  _container: Container(c, a),
   children: List(Element(a)),
 ) -> Element(a) {
   html.div([attribute.class("container"), attribute.class("mx-auto")], children)
