@@ -167,6 +167,15 @@ pub fn paragraph(
   )
 }
 
+pub fn dialog(dialog: dialog.Dialog(Component(a, d), a)) -> Component(a, d) {
+  Component(
+    component: Dialog(dialog),
+    attributes: [],
+    id: counter.unique_integer(),
+    data: None,
+  )
+}
+
 pub fn encode(components: List(Component(a, d))) -> Json {
   json.array(components, encode_component)
 }
