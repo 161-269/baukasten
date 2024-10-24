@@ -25,7 +25,7 @@ pub fn new(component: Component(c, a), content: List(c)) -> Paragraph(c, a) {
   Paragraph(
     component: component,
     content: content,
-    typography: typography.empty(),
+    typography: typography.new(),
   )
 }
 

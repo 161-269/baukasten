@@ -15,7 +15,7 @@ pub type Text {
 }
 
 pub fn text(content: String) -> Text {
-  Text(content: content, typography: typography.empty())
+  Text(content: content, typography: typography.new())
 }
 
 /// https://tailwindcss.com/docs/font-family

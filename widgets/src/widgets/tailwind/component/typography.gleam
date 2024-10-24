@@ -23,7 +23,7 @@ pub type Typography {
   )
 }
 
-pub fn empty() -> Typography {
+pub fn new() -> Typography {
   Typography(
     font_family: None,
     font_size: None,
