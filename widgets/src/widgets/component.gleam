@@ -7,6 +7,7 @@ import lustre/attribute.{type Attribute}
 import lustre/element.{type Element}
 import lustre/element/html
 import widgets/component/article
+import widgets/component/break
 import widgets/component/component_interface.{
   type Node, InnerNode, LeafNode, Node,
 }
@@ -32,6 +33,7 @@ pub type InnerComponent(a, data) {
   Text(text.Text)
   Paragraph(paragraph.Paragraph(Component(a, data), a))
   Dialog(dialog.Dialog(Component(a, data), a))
+  Break(break.Break)
 }
 
 pub fn walk_map(
@@ -70,6 +72,7 @@ pub fn walk_map(
             dialog.Dialog(..value, content: walk_map(value.content, with)),
           ),
         )
+      Break(_) -> component
     }
   })
 }
@@ -91,6 +94,7 @@ pub fn walk_fold(
         |> walk_fold(value.end, _, with)
       Paragraph(value) -> walk_fold(value.content, result, with)
       Dialog(value) -> walk_fold(value.content, result, with)
+      Break(_) -> result
     }
   })
 }
@@ -189,6 +193,7 @@ pub fn encode_component(component: Component(a, d)) -> Json {
       Text(text) -> text.encode(text)
       Paragraph(paragraph) -> paragraph.encode(paragraph)
       Dialog(dialog) -> dialog.encode(dialog)
+      Break(break) -> break.encode(break)
     }),
   ])
 }
@@ -227,6 +232,7 @@ pub fn component_decoder() -> fn(Dynamic) ->
             Dialog,
             component_type,
           )
+        "break" -> data_decoder(data, break.decoder(), Break, component_type)
         component_type ->
           Error([
             dynamic.DecodeError(
@@ -262,6 +268,7 @@ pub fn render_component(component: Component(a, d)) -> Element(a) {
     Text(text) -> text.render(text)
     Paragraph(paragraph) -> paragraph.render(paragraph)
     Dialog(dialog) -> dialog.render(dialog)
+    Break(break) -> break.render(break)
   })
 }
 
@@ -272,6 +279,7 @@ pub fn render_tree(component: Component(a, d)) -> Node(Component(a, d), a) {
     Text(text) -> text.render_tree(text)
     Paragraph(paragraph) -> paragraph.render_tree(paragraph)
     Dialog(dialog) -> dialog.render_tree(dialog)
+    Break(break) -> break.render_tree(break)
   }
 
   let children = case inner_node {
@@ -292,17 +300,33 @@ pub fn render_tree(component: Component(a, d)) -> Node(Component(a, d), a) {
 }
 
 fn render_template(component: Component(a, d), child: Element(a)) -> Element(a) {
-  let name = component_type_name(component)
+  case render_with_wrapper(component) {
+    True -> {
+      let name = component_type_name(component)
 
-  html.div(
-    [
-      attribute.class("component"),
-      attribute.class("component-" <> name),
-      attribute.attribute("data-component-type", name),
-      ..component.attributes
-    ],
-    [child],
-  )
+      html.div(
+        [
+          attribute.class("component"),
+          attribute.class("component-" <> name),
+          attribute.attribute("data-component-type", name),
+          ..component.attributes
+        ],
+        [child],
+      )
+    }
+    False -> child
+  }
+}
+
+fn render_with_wrapper(component: Component(a, d)) -> Bool {
+  case component.component {
+    Article(_) -> True
+    Navbar(_) -> True
+    Text(_) -> False
+    Paragraph(_) -> True
+    Dialog(_) -> True
+    Break(_) -> False
+  }
 }
 
 fn component_type_name(component: Component(a, d)) -> String {
@@ -312,6 +336,7 @@ fn component_type_name(component: Component(a, d)) -> String {
     Text(_) -> "text"
     Paragraph(_) -> "paragraph"
     Dialog(_) -> "dialog"
+    Break(_) -> "break"
   }
 }
 
