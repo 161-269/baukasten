@@ -25,7 +25,8 @@ pub fn main() {
               component.article(
                 article.djot(
                   "
-# Baukasten CMS: Einfach. Schnell. Anpassbar. 🚀
+{.text-primary}
+# 🛠️ Baukasten - CMS: Einfach. Schnell. Anpassbar. 🚀
 
 Erstelle beeindruckende Webseiten ohne Vorkenntnisse.
 
