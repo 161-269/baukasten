@@ -274,7 +274,8 @@ pub fn component_decoder() -> fn(Dynamic) ->
         component_type ->
           Error([
             dynamic.DecodeError(
-              "on of ['article', 'navbar', 'text', 'paragraph']",
+              "on of ['article', 'navbar', 'text', 'paragraph', "
+                <> "'dialog', 'break', 'container']",
               "'" <> component_type <> "'",
               ["type"],
             ),
