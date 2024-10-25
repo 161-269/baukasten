@@ -1,4 +1,6 @@
+import backend/tailwind
 import gleam/erlang/process
+import gleam/io
 import gleam/json
 import lustre/attribute
 import lustre/element
@@ -12,6 +14,10 @@ import wisp.{type Request, type Response}
 import wisp/wisp_mist
 
 pub fn main() {
+  // TODO: Don't assume, start the app in a failed state and
+  // output error messages so the pages can be accessed
+  let assert Ok(_) = tailwind.delete_temporary_files()
+
   let secret_key_base = wisp.random_string(64)
 
   let assert Ok(_) =
@@ -40,8 +46,8 @@ Erstelle beeindruckende Webseiten ohne Vorkenntnisse.
 
 🚧 *Dieses Projekt befindet sich noch in einer frühen Entwicklungsphase.* 🚧
 
-[Jetzt starten 📥](#Installation) \\
-[Mehr erfahren 📖](#Funktionen)
+[Jetzt starten](#Installation) 📥 \\
+[Mehr erfahren](#Funktionen) 📖
 
 ---
 
@@ -305,6 +311,17 @@ und kann direkt in das Baukasten CMS integriert werden.
       ]),
     ),
   ]
+
+  let _ =
+    io.debug(
+      tailwind.generate_css_for()([
+        html.html([], [
+          html.head([], []),
+          html.body([], components |> component.render),
+        ])
+        |> element.to_document_string,
+      ]),
+    )
 
   fn(_req: Request) { components }
 }
