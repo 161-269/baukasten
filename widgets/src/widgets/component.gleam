@@ -4,7 +4,7 @@ import gleam/list
 import gleam/option.{type Option, None}
 import gleam/result
 import lustre/attribute.{type Attribute}
-import lustre/element.{type Element}
+import lustre/element.{type Element as LustreElement} as _
 import lustre/element/html
 import widgets/component/article
 import widgets/component/break
@@ -13,6 +13,7 @@ import widgets/component/component_interface.{
 }
 import widgets/component/container
 import widgets/component/dialog
+import widgets/component/element
 import widgets/component/navbar
 import widgets/component/paragraph
 import widgets/component/text
@@ -36,6 +37,7 @@ pub type InnerComponent(a, data) {
   Dialog(dialog.Dialog(Component(a, data), a))
   Break(break.Break)
   Container(container.Container(Component(a, data), a))
+  Element(element.Element(Component(a, data), a))
 }
 
 pub fn walk_map(
@@ -82,6 +84,13 @@ pub fn walk_map(
             container.Container(..value, content: walk_map(value.content, with)),
           ),
         )
+      Element(value) ->
+        Component(
+          ..component,
+          component: Element(
+            element.Element(..value, content: walk_map(value.content, with)),
+          ),
+        )
     }
   })
 }
@@ -105,6 +114,7 @@ pub fn walk_fold(
       Dialog(value) -> walk_fold(value.content, result, with)
       Break(_) -> result
       Container(value) -> walk_fold(value.content, result, with)
+      Element(value) -> walk_fold(value.content, result, with)
     }
   })
 }
@@ -225,6 +235,7 @@ pub fn encode_component(component: Component(a, d)) -> Json {
       Dialog(dialog) -> dialog.encode(dialog)
       Break(break) -> break.encode(break)
       Container(container) -> container.encode(container)
+      Element(element) -> element.encode(element)
     }),
   ])
 }
@@ -271,11 +282,18 @@ pub fn component_decoder() -> fn(Dynamic) ->
             Container,
             component_type,
           )
+        "element" ->
+          data_decoder(
+            data,
+            element.decoder(interface()),
+            Element,
+            component_type,
+          )
         component_type ->
           Error([
             dynamic.DecodeError(
               "on of ['article', 'navbar', 'text', 'paragraph', "
-                <> "'dialog', 'break', 'container']",
+                <> "'dialog', 'break', 'container', 'element']",
               "'" <> component_type <> "'",
               ["type"],
             ),
@@ -296,11 +314,11 @@ pub fn component_decoder() -> fn(Dynamic) ->
   })
 }
 
-pub fn render(components: List(Component(a, d))) -> List(Element(a)) {
+pub fn render(components: List(Component(a, d))) -> List(LustreElement(a)) {
   list.map(components, render_component)
 }
 
-pub fn render_component(component: Component(a, d)) -> Element(a) {
+pub fn render_component(component: Component(a, d)) -> LustreElement(a) {
   render_template(component, case component.component {
     Article(article) -> article.render(article)
     Navbar(navbar) -> navbar.render(navbar)
@@ -309,6 +327,7 @@ pub fn render_component(component: Component(a, d)) -> Element(a) {
     Dialog(dialog) -> dialog.render(dialog)
     Break(break) -> break.render(break)
     Container(container) -> container.render(container)
+    Element(element) -> element.render(element)
   })
 }
 
@@ -321,6 +340,7 @@ pub fn render_tree(component: Component(a, d)) -> Node(Component(a, d), a) {
     Dialog(dialog) -> dialog.render_tree(dialog)
     Break(break) -> break.render_tree(break)
     Container(container) -> container.render_tree(container)
+    Element(element) -> element.render_tree(element)
   }
 
   let children = case inner_node {
@@ -340,7 +360,10 @@ pub fn render_tree(component: Component(a, d)) -> Node(Component(a, d), a) {
   )
 }
 
-fn render_template(component: Component(a, d), child: Element(a)) -> Element(a) {
+fn render_template(
+  component: Component(a, d),
+  child: LustreElement(a),
+) -> LustreElement(a) {
   case render_with_wrapper(component) {
     True -> {
       let name = component_type_name(component)
@@ -368,6 +391,7 @@ fn render_with_wrapper(component: Component(a, d)) -> Bool {
     Dialog(_) -> True
     Break(_) -> False
     Container(_) -> True
+    Element(_) -> True
   }
 }
 
@@ -380,6 +404,7 @@ fn component_type_name(component: Component(a, d)) -> String {
     Dialog(_) -> "dialog"
     Break(_) -> "break"
     Container(_) -> "container"
+    Element(_) -> "element"
   }
 }
 
