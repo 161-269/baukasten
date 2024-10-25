@@ -14,6 +14,7 @@ import widgets/component/component_interface.{
 import widgets/component/container
 import widgets/component/dialog
 import widgets/component/element
+import widgets/component/icon
 import widgets/component/navbar
 import widgets/component/paragraph
 import widgets/component/text
@@ -38,6 +39,7 @@ pub type InnerComponent(a, data) {
   Break(break.Break)
   Container(container.Container(Component(a, data), a))
   Element(element.Element(Component(a, data), a))
+  Icon(icon.Icon)
 }
 
 pub fn walk_map(
@@ -91,6 +93,7 @@ pub fn walk_map(
             element.Element(..value, content: walk_map(value.content, with)),
           ),
         )
+      Icon(_) -> component
     }
   })
 }
@@ -115,6 +118,7 @@ pub fn walk_fold(
       Break(_) -> result
       Container(value) -> walk_fold(value.content, result, with)
       Element(value) -> walk_fold(value.content, result, with)
+      Icon(_) -> result
     }
   })
 }
@@ -220,6 +224,24 @@ pub fn container(
   )
 }
 
+pub fn element(element: element.Element(Component(a, d), a)) -> Component(a, d) {
+  Component(
+    component: Element(element),
+    attributes: [],
+    id: counter.unique_integer(),
+    data: None,
+  )
+}
+
+pub fn icon(icon: icon.Icon) -> Component(a, d) {
+  Component(
+    component: Icon(icon),
+    attributes: [],
+    id: counter.unique_integer(),
+    data: None,
+  )
+}
+
 pub fn encode(components: List(Component(a, d))) -> Json {
   json.array(components, encode_component)
 }
@@ -236,6 +258,7 @@ pub fn encode_component(component: Component(a, d)) -> Json {
       Break(break) -> break.encode(break)
       Container(container) -> container.encode(container)
       Element(element) -> element.encode(element)
+      Icon(icon) -> icon.encode(icon)
     }),
   ])
 }
@@ -289,11 +312,12 @@ pub fn component_decoder() -> fn(Dynamic) ->
             Element,
             component_type,
           )
+        "icon" -> data_decoder(data, icon.decoder(), Icon, component_type)
         component_type ->
           Error([
             dynamic.DecodeError(
               "on of ['article', 'navbar', 'text', 'paragraph', "
-                <> "'dialog', 'break', 'container', 'element']",
+                <> "'dialog', 'break', 'container', 'element', 'icon']",
               "'" <> component_type <> "'",
               ["type"],
             ),
@@ -328,6 +352,7 @@ pub fn render_component(component: Component(a, d)) -> LustreElement(a) {
     Break(break) -> break.render(break)
     Container(container) -> container.render(container)
     Element(element) -> element.render(element)
+    Icon(icon) -> icon.render(icon)
   })
 }
 
@@ -341,6 +366,7 @@ pub fn render_tree(component: Component(a, d)) -> Node(Component(a, d), a) {
     Break(break) -> break.render_tree(break)
     Container(container) -> container.render_tree(container)
     Element(element) -> element.render_tree(element)
+    Icon(icon) -> icon.render_tree(icon)
   }
 
   let children = case inner_node {
@@ -392,6 +418,7 @@ fn render_with_wrapper(component: Component(a, d)) -> Bool {
     Break(_) -> False
     Container(_) -> True
     Element(_) -> True
+    Icon(_) -> False
   }
 }
 
@@ -405,6 +432,7 @@ fn component_type_name(component: Component(a, d)) -> String {
     Break(_) -> "break"
     Container(_) -> "container"
     Element(_) -> "element"
+    Icon(_) -> "icon"
   }
 }
 
