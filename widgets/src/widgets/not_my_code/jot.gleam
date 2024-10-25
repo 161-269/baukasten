@@ -7,7 +7,6 @@ import gleam/dict.{type Dict}
 import gleam/int
 import gleam/list
 import gleam/option.{type Option, None, Some}
-import gleam/result
 import gleam/string
 
 pub type Document {
@@ -153,13 +152,7 @@ fn parse_document(
     }
 
     ["-", ..in2] | ["*", ..in2] -> {
-      case
-        parse_thematic_break(
-          string.slice(list.first(in) |> result.unwrap(""), 0, 1),
-          1,
-          in2,
-        )
-      {
+      case parse_thematic_break(1, in2) {
         None -> {
           let #(paragraph, in) = parse_paragraph(in, attrs)
           parse_document(in, refs, [paragraph, ..ast], dict.new())
@@ -177,23 +170,16 @@ fn parse_document(
   }
 }
 
-fn parse_thematic_break(
-  target: String,
-  count: Int,
-  in: Chars,
-) -> Option(#(Container, Chars)) {
+fn parse_thematic_break(count: Int, in: Chars) -> Option(#(Container, Chars)) {
   case in {
     [] | ["\n", ..] ->
       case count >= 3 {
         True -> Some(#(ThematicBreak, in))
         False -> None
       }
-    [" ", ..rest] | ["\t", ..rest] -> parse_thematic_break(target, count, rest)
-    [c, ..rest] ->
-      case c == target {
-        True -> parse_thematic_break(target, count + 1, rest)
-        False -> None
-      }
+    [" ", ..rest] | ["\t", ..rest] -> parse_thematic_break(count, rest)
+    ["-", ..rest] | ["*", ..rest] -> parse_thematic_break(count + 1, rest)
+    _ -> None
   }
 }
 
@@ -567,6 +553,9 @@ fn parse_inline(in: Chars, text: String, acc: List(Inline)) -> List(Inline) {
       parse_inline(in, "", [code, Text(text), ..acc])
     }
 
+    ["\n", ..rest] ->
+      drop_spaces(rest)
+      |> parse_inline(text <> "\n", acc)
     [c, ..rest] -> parse_inline(rest, text <> c, acc)
   }
 }
