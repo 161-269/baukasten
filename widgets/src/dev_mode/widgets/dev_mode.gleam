@@ -32,8 +32,8 @@ Erstelle beeindruckende Webseiten ohne Vorkenntnisse.
 
 🚧 *Dieses Projekt befindet sich noch in einer frühen Entwicklungsphase.* 🚧
 
-[Jetzt starten 📥](#Installation) \\
-[Mehr erfahren 📖](#Funktionen)
+[Jetzt starten](#Installation) 📥 \\
+[Mehr erfahren](#Funktionen) 📖
 
 ---
 

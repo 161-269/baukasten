@@ -233,9 +233,9 @@ pub fn element(element: element.Element(Component(a, d), a)) -> Component(a, d) 
   )
 }
 
-pub fn icon(icon: icon.Icon) -> Component(a, d) {
+pub fn icon(icon: icon.IconType) -> Component(a, d) {
   Component(
-    component: Icon(icon),
+    component: Icon(icon.new(icon)),
     attributes: [],
     id: counter.unique_integer(),
     data: None,

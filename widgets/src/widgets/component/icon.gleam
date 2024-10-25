@@ -6183,7 +6183,7 @@ pub type Icon {
   Icon(icon_type: IconType, typography: Typography)
 }
 
-pub fn icon(icon_type: IconType) -> Icon {
+pub fn new(icon_type: IconType) -> Icon {
   Icon(icon_type: icon_type, typography: typography.new())
 }
 
