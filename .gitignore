@@ -15,6 +15,7 @@ erl_crash.dump
 /backend/priv/widgets.min.css
 /backend/priv/widgets.min.mjs
 
+/backend/data
 /backend/tmp
 
 /editor/priv

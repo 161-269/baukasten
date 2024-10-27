@@ -1,3 +1,4 @@
+import backend/database
 import backend/tailwind
 import gleam/erlang/process
 import gleam/io
@@ -6,6 +7,7 @@ import lustre/attribute
 import lustre/element
 import lustre/element/html
 import mist
+import simplifile
 import widgets/component.{type Component}
 import widgets/component/article
 import widgets/component/container
@@ -14,6 +16,24 @@ import wisp.{type Request, type Response}
 import wisp/wisp_mist
 
 pub fn main() {
+  case simplifile.create_directory_all("./data") {
+    Ok(_) -> Nil
+    Error(error) -> {
+      io.println_error("Error creating data directory:")
+      io.debug(error)
+      panic as "Could not create data directory"
+    }
+  }
+
+  let _db = case database.connect("./data/database.sqlite", 20) {
+    Ok(db) -> db
+    Error(error) -> {
+      io.println_error("Error connecting to database:")
+      io.debug(error)
+      panic as "Could not connect to database"
+    }
+  }
+
   // TODO: Don't assume, start the app in a failed state and
   // output error messages so the pages can be accessed
   let assert Ok(_) = tailwind.delete_temporary_files()
