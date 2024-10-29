@@ -103,6 +103,7 @@ RUN apk add --no-cache build-base sqlite-dev
 
 WORKDIR /build
 
+COPY immutype_lite /build/immutype_lite
 COPY backend /build/backend
 
 COPY --from=widgets-builder /build/widgets /build/widgets

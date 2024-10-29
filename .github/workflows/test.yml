@@ -29,39 +29,48 @@ jobs:
 
 
       # Download dependencies
-      - name: "Download backend dependencies"
-        run: cd backend && gleam deps download
-
+      - name: "Download widgets dependencies"
+        run: cd widgets && gleam deps download
+        
       - name: "Download editor dependencies"
         run: cd editor && gleam deps download
 
-      - name: "Download widgets dependencies"
-        run: cd widgets && gleam deps download
+      - name: "Download immutype lite dependencies"
+        run: cd immutype_lite && gleam deps download
+
+      - name: "Download backend dependencies"
+        run: cd backend && gleam deps download
 
       - name: "Install other dependencies"
         run: ./scripts/install.sh
 
 
       # Run tests
+      - name: "Run widgets tests"
+        run: cd widgets && gleam test
+        
+      - name: "Run editor tests"
+        run: cd editor && gleam test
+        
+      - name: "Run immutype lite tests"
+        run: cd immutype_lite && gleam test
+
       - name: "Run backend tests"
         run: cd backend && gleam test
 
-      - name: "Run editor tests"
-        run: cd editor && gleam test
-
-      - name: "Run widgets tests"
-        run: cd widgets && gleam test
-
 
       # Check formatting
-      - name: "Check backend formatting"
-        run: cd backend && gleam format --check src test
-
-      - name: "Check editor formatting"
-        run: cd editor && gleam format --check src test
-
       - name: "Check widgets formatting"
         run: cd widgets && gleam format --check src test
+        
+      - name: "Check editor formatting"
+        run: cd editor && gleam format --check src test
+        
+      - name: "Check immutype lite formatting"
+        run: cd immutype_lite && gleam format --check src test
+
+      - name: "Check backend formatting"
+        run: cd backend && gleam format --check src test
 
       
       # Build
@@ -70,11 +79,15 @@ jobs:
 
       
       # Clean up Gleam
+      - name: "Clean up widgets"
+        run: cd widgets && gleam clean
+      
+      - name: "Clean up editor"
+        run: cd editor && gleam clean
+      
+      - name: "Clean up immutype lite"
+        run: cd immutype_lite && gleam clean
+
       - name: "Clean up backend"
         run: cd backend && gleam clean
         
-      - name: "Clean up editor"
-        run: cd editor && gleam clean
-        
-      - name: "Clean up widgets"
-        run: cd widgets && gleam clean

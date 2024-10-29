@@ -43,6 +43,10 @@ cd editor
 gleam deps download
 cd ..
 
+cd immutype_lite
+gleam deps download
+cd ..
+
 cd backend
 gleam deps download
 cd ..

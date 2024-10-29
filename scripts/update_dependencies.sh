@@ -16,6 +16,12 @@ rm -rf build
 gleam deps download
 cd ..
 
+cd immutype_lite
+rm -rf manifest.toml
+rm -rf build
+gleam deps download
+cd ..
+
 cd backend
 rm -rf manifest.toml
 rm -rf build

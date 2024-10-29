@@ -10,6 +10,11 @@ gleam test
 gleam format --check src test
 cd ..
 
+cd immutype_lite
+gleam test
+gleam format --check src test
+cd ..
+
 cd backend
 gleam test
 gleam format --check src test
