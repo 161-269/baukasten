@@ -8,6 +8,7 @@ erl_crash.dump
 
 /backend/build
 /editor/build
+/immutype_lite/build
 /widgets/build
 
 /backend/priv/editor.min.css
