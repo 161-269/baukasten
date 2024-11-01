@@ -1,27 +1,31 @@
+import gleam/int
+import gleam/io
+import gleam/list
 import gleeunit
 import gleeunit/should
-import immutype_lite/column
-import immutype_lite/table
-import immutype_lite/where
+import helper
+import lexer
 
 pub fn main() {
   gleeunit.main()
 }
 
-// gleeunit test functions end in `_test`
 pub fn hello_world_test() {
-  1
-  |> should.equal(1)
-}
-
-pub fn column_test() {
-  table.table2(
-    "user",
-    column.integer("id")
-      |> column.set_auto_increment_primary_key
-      |> column.set_unique,
-    column.text("name"),
-  )
-  |> where.where2
-  |> where.where2_c1(where.Equals(1))
+  let cases = helper.load_test_cases()
+  //  list.map(cases, fn(tuple) {
+  //    let #(path, input) = tuple
+  //    let tokens = lexer.lex(path, input)
+  //
+  //    //io.debug(path)
+  //    list.fold(tokens, 0, fn(index, token) {
+  //      //io.println(int.to_string(index) <> ":")
+  //      //io.debug(token.value)
+  //      //io.println(token.lexeme)
+  //      index + 1
+  //    })
+  //
+  //    //should.be_true(False)
+  //
+  //    tokens
+  //  })
 }
