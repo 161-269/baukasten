@@ -88,6 +88,8 @@ pub fn test_lexer(
   let result = list.map(test_cases, lex(lexer, _))
 
   list.map(result, fn(test_case) {
+    io.print(".")
+
     let #(content, file_name) = case test_case {
       Error(error) -> #(stringify_lex_error(error), error.test_case.file_name)
       Ok(test_case) -> #(
@@ -108,6 +110,18 @@ pub fn oks(
     case result.value {
       Ok(result) -> Ok(result)
       Error(_) -> Error(Nil)
+    }
+  })
+}
+
+pub fn errors(
+  result: List(CompareResult(Result(LexResult, LexError))),
+) -> List(LexError) {
+  helper.oks(result)
+  |> list.filter_map(fn(result) {
+    case result.value {
+      Ok(_) -> Error(Nil)
+      Error(result) -> Ok(result)
     }
   })
 }

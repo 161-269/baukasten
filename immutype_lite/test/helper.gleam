@@ -39,6 +39,8 @@ pub fn load_test_cases() -> List(Result(TestCase, TestCaseError)) {
 
   should.be_ok(tests)
   |> list.map(fn(file_name) {
+    io.print(".")
+
     let path = input_directory <> "/" <> file_name
     let content = simplifile.read(path)
 
