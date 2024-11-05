@@ -13,7 +13,21 @@ pub fn regex_matcher(
   let lookahead_check = lookahead_check(lookahead_pattern)
 
   use mode, lexeme, lookahead <- lexer.custom
-  case regex.check(regex, lexeme) && lookahead_check(lookahead) {
+  case lookahead_check(lookahead) && regex.check(regex, lexeme) {
+    True -> Keep(value(lexeme), mode)
+    False -> NoMatch
+  }
+}
+
+pub fn complex_matcher(
+  match: fn(String) -> Bool,
+  lookahead_pattern: String,
+  value: fn(String) -> a,
+) {
+  let lookahead_check = lookahead_check(lookahead_pattern)
+
+  use mode, lexeme, lookahead <- lexer.custom
+  case lookahead_check(lookahead) && match(lexeme) {
     True -> Keep(value(lexeme), mode)
     False -> NoMatch
   }
