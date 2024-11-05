@@ -1,6 +1,7 @@
 //// https://www.sqlite.org/lang.html
 
 import chomp/lexer.{type Lexer, type Matcher}
+import gleam/int
 import gleam/list
 import gleam/string
 import immutype_lite/parser/helper
@@ -46,6 +47,21 @@ pub type Token {
   Keyword(Keyword)
   Identifier(String)
   Whitespace(lines: Int)
+}
+
+pub fn stringify_token(token: Token) -> String {
+  case token {
+    Operator(operator) -> "Operator(" <> stringify_operator(operator) <> ")"
+    Special(special) -> "Special(" <> stringify_special(special) <> ")"
+    Comment(comment) -> "Comment(" <> comment <> ")"
+    Metadata(key, value) -> "Metadata(" <> key <> ":" <> value <> ")"
+    MacroDefinition(key, value) ->
+      "MacroDefinition(" <> key <> " -> " <> value <> ")"
+    StringLiteral(string) -> "StringLiteral(" <> string <> ")"
+    Keyword(keyword) -> "Keyword(" <> keyword.stringify(keyword) <> ")"
+    Identifier(identifier) -> "Identifier(" <> identifier <> ")"
+    Whitespace(lines) -> "Whitespace(" <> int.to_string(lines) <> ")"
+  }
 }
 
 pub fn lexer() -> Lexer(Token, Nil) {
