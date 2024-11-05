@@ -1,5 +1,5 @@
 Lexer error:
-test/sql_files/input/41_nested_comments_and_unconventional_comment_placement.sql:9:28
+test/sql_files/input/41_nested_comments_and_unconventional_comment_placement.sql:14:1
 
 -- Nested Comments: SQLite supports C-style comments /* ... */, but does not support nested comments. Including them can confuse lexers not designed to detect improper nesting.
 -- Unmatched Comment Delimiters: An unmatched /* or */ can cause the lexer to enter or exit comment mode incorrectly.
@@ -9,14 +9,14 @@ test/sql_files/input/41_nested_comments_and_unconventional_comment_placement.sql
 
 /* Outer comment start
    /* Nested comment */
-   Still in outer comment *
-
-Lexer error begins here:
-v
-/
+   Still in outer comment */
 CREATE TABLE test_table (
     id INTEGER PRIMARY KEY, -- Inline comment /* with nested comment */
     value TEXT
 );
+
+
+Lexer error begins here:
+v
 /* Unmatched comment start
 -- SELECT * FROM test_table; -- This line is commented out

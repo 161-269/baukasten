@@ -39,7 +39,7 @@ Whitespace(0) |
 Special(() | (
 Identifier(base_value) | base_value
 Whitespace(0) |  
-Special(*) | *
+Operator(*) | *
 Whitespace(0) |  
 Identifier(2) | 2
 Special()) | )
@@ -78,7 +78,7 @@ Whitespace(2) |
 
 Keyword(SELECT) | SELECT
 Whitespace(0) |  
-Special(*) | *
+Operator(*) | *
 Whitespace(0) |  
 Keyword(FROM) | FROM
 Whitespace(0) |  

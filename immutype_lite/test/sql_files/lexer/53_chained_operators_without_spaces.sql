@@ -68,7 +68,7 @@ Whitespace(2) |
 
 Keyword(SELECT) | SELECT
 Whitespace(0) |  
-Special(*) | *
+Operator(*) | *
 Whitespace(0) |  
 Keyword(FROM) | FROM
 Whitespace(0) |  
@@ -82,7 +82,7 @@ Whitespace(1) |
 
 Keyword(SELECT) | SELECT
 Whitespace(0) |  
-Special(*) | *
+Operator(*) | *
 Whitespace(0) |  
 Keyword(FROM) | FROM
 Whitespace(0) |  

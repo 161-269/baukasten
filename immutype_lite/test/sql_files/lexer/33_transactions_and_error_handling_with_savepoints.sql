@@ -1,77 +1,488 @@
-Lexer error:
-test/sql_files/input/33_transactions_and_error_handling_with_savepoints.sql:11:47
+Lexer result:
 
--- Transaction Management: Uses transactions and savepoints to ensure atomicity of multiple operations.
--- Inventory Update and Order Insertion: Updates inventory quantities and inserts corresponding orders.
--- Error Checking with RAISE(ABORT): Checks for negative inventory quantities and aborts the transaction if detected.
--- Exception Handling: If an error occurs, rolls back to the savepoint and commits the transaction to release locks.
+Comment( Transaction Management: Uses transactions and savepoints to ensure atomicity of multiple operations.) | -- Transaction Management: Uses transactions and savepoints to ensure atomicity of multiple operations.
+Whitespace(1) | 
+
+Comment( Inventory Update and Order Insertion: Updates inventory quantities and inserts corresponding orders.) | -- Inventory Update and Order Insertion: Updates inventory quantities and inserts corresponding orders.
+Whitespace(1) | 
+
+Comment( Error Checking with RAISE(ABORT): Checks for negative inventory quantities and aborts the transaction if detected.) | -- Error Checking with RAISE(ABORT): Checks for negative inventory quantities and aborts the transaction if detected.
+Whitespace(1) | 
+
+Comment( Exception Handling: If an error occurs, rolls back to the savepoint and commits the transaction to release locks.) | -- Exception Handling: If an error occurs, rolls back to the savepoint and commits the transaction to release locks.
+Whitespace(3) | 
 
 
--- Create tables for orders and inventory
-CREATE TABLE inventory (
-    product_id INTEGER PRIMARY KEY,
-    product_name TEXT NOT NULL,
-    quantity INTEGER NOT NULL CHECK (quantity 
 
-Lexer error begins here:
-v
->= 0)
-);
+Comment( Create tables for orders and inventory) | -- Create tables for orders and inventory
+Whitespace(1) | 
 
-CREATE TABLE orders (
-    order_id INTEGER PRIMARY KEY,
-    product_id INTEGER NOT NULL,
-    order_quantity INTEGER NOT NULL CHECK (order_quantity > 0),
-    order_date DATE NOT NULL,
-    FOREIGN KEY (product_id) REFERENCES inventory(product_id)
-);
+Keyword(CREATE) | CREATE
+Whitespace(0) |  
+Keyword(TABLE) | TABLE
+Whitespace(0) |  
+Identifier(inventory) | inventory
+Whitespace(0) |  
+Special(() | (
+Whitespace(1) | 
+    
+Identifier(product_id) | product_id
+Whitespace(0) |  
+Keyword(INTEGER) | INTEGER
+Whitespace(0) |  
+Keyword(PRIMARY) | PRIMARY
+Whitespace(0) |  
+Keyword(KEY) | KEY
+Special(,) | ,
+Whitespace(1) | 
+    
+Identifier(product_name) | product_name
+Whitespace(0) |  
+Keyword(TEXT) | TEXT
+Whitespace(0) |  
+Keyword(NOT) | NOT
+Whitespace(0) |  
+Keyword(NULL) | NULL
+Special(,) | ,
+Whitespace(1) | 
+    
+Identifier(quantity) | quantity
+Whitespace(0) |  
+Keyword(INTEGER) | INTEGER
+Whitespace(0) |  
+Keyword(NOT) | NOT
+Whitespace(0) |  
+Keyword(NULL) | NULL
+Whitespace(0) |  
+Keyword(CHECK) | CHECK
+Whitespace(0) |  
+Special(() | (
+Identifier(quantity) | quantity
+Whitespace(0) |  
+Operator(>=) | >=
+Whitespace(0) |  
+Identifier(0) | 0
+Special()) | )
+Whitespace(1) | 
 
--- Insert sample data into inventory
-INSERT INTO inventory (product_id, product_name, quantity) VALUES
-    (101, 'Widget', 50),
-    (102, 'Gadget', 75),
-    (103, 'Thingamajig', 100);
+Special()) | )
+Special(;) | ;
+Whitespace(2) | 
 
--- Begin a transaction to process multiple orders atomically
-BEGIN TRANSACTION;
 
--- Set a savepoint in case we need to roll back to this point
-SAVEPOINT order_processing;
+Keyword(CREATE) | CREATE
+Whitespace(0) |  
+Keyword(TABLE) | TABLE
+Whitespace(0) |  
+Identifier(orders) | orders
+Whitespace(0) |  
+Special(() | (
+Whitespace(1) | 
+    
+Identifier(order_id) | order_id
+Whitespace(0) |  
+Keyword(INTEGER) | INTEGER
+Whitespace(0) |  
+Keyword(PRIMARY) | PRIMARY
+Whitespace(0) |  
+Keyword(KEY) | KEY
+Special(,) | ,
+Whitespace(1) | 
+    
+Identifier(product_id) | product_id
+Whitespace(0) |  
+Keyword(INTEGER) | INTEGER
+Whitespace(0) |  
+Keyword(NOT) | NOT
+Whitespace(0) |  
+Keyword(NULL) | NULL
+Special(,) | ,
+Whitespace(1) | 
+    
+Identifier(order_quantity) | order_quantity
+Whitespace(0) |  
+Keyword(INTEGER) | INTEGER
+Whitespace(0) |  
+Keyword(NOT) | NOT
+Whitespace(0) |  
+Keyword(NULL) | NULL
+Whitespace(0) |  
+Keyword(CHECK) | CHECK
+Whitespace(0) |  
+Special(() | (
+Identifier(order_quantity) | order_quantity
+Whitespace(0) |  
+Operator(>) | >
+Whitespace(0) |  
+Identifier(0) | 0
+Special()) | )
+Special(,) | ,
+Whitespace(1) | 
+    
+Identifier(order_date) | order_date
+Whitespace(0) |  
+Identifier(DATE) | DATE
+Whitespace(0) |  
+Keyword(NOT) | NOT
+Whitespace(0) |  
+Keyword(NULL) | NULL
+Special(,) | ,
+Whitespace(1) | 
+    
+Keyword(FOREIGN) | FOREIGN
+Whitespace(0) |  
+Keyword(KEY) | KEY
+Whitespace(0) |  
+Special(() | (
+Identifier(product_id) | product_id
+Special()) | )
+Whitespace(0) |  
+Keyword(REFERENCES) | REFERENCES
+Whitespace(0) |  
+Identifier(inventory) | inventory
+Special(() | (
+Identifier(product_id) | product_id
+Special()) | )
+Whitespace(1) | 
 
--- Attempt to process an order for Widgets
-UPDATE inventory
-SET quantity = quantity - 20
-WHERE product_id = 101;
+Special()) | )
+Special(;) | ;
+Whitespace(2) | 
 
-INSERT INTO orders (product_id, order_quantity, order_date) VALUES
-    (101, 20, DATE('now'));
 
--- Check if inventory quantity went negative
-SELECT CASE
-    WHEN quantity < 0 THEN RAISE(ABORT, 'Insufficient inventory for product_id 101')
-END
-FROM inventory
-WHERE product_id = 101;
+Comment( Insert sample data into inventory) | -- Insert sample data into inventory
+Whitespace(1) | 
 
--- Attempt to process an order for Gadgets
-UPDATE inventory
-SET quantity = quantity - 80
-WHERE product_id = 102;
+Keyword(INSERT) | INSERT
+Whitespace(0) |  
+Keyword(INTO) | INTO
+Whitespace(0) |  
+Identifier(inventory) | inventory
+Whitespace(0) |  
+Special(() | (
+Identifier(product_id) | product_id
+Special(,) | ,
+Whitespace(0) |  
+Identifier(product_name) | product_name
+Special(,) | ,
+Whitespace(0) |  
+Identifier(quantity) | quantity
+Special()) | )
+Whitespace(0) |  
+Keyword(VALUES) | VALUES
+Whitespace(1) | 
+    
+Special(() | (
+Identifier(101) | 101
+Special(,) | ,
+Whitespace(0) |  
+StringLiteral(Widget) | 'Widget'
+Special(,) | ,
+Whitespace(0) |  
+Identifier(50) | 50
+Special()) | )
+Special(,) | ,
+Whitespace(1) | 
+    
+Special(() | (
+Identifier(102) | 102
+Special(,) | ,
+Whitespace(0) |  
+StringLiteral(Gadget) | 'Gadget'
+Special(,) | ,
+Whitespace(0) |  
+Identifier(75) | 75
+Special()) | )
+Special(,) | ,
+Whitespace(1) | 
+    
+Special(() | (
+Identifier(103) | 103
+Special(,) | ,
+Whitespace(0) |  
+StringLiteral(Thingamajig) | 'Thingamajig'
+Special(,) | ,
+Whitespace(0) |  
+Identifier(100) | 100
+Special()) | )
+Special(;) | ;
+Whitespace(2) | 
 
-INSERT INTO orders (product_id, order_quantity, order_date) VALUES
-    (102, 80, DATE('now'));
 
--- Check if inventory quantity went negative
-SELECT CASE
-    WHEN quantity < 0 THEN RAISE(ABORT, 'Insufficient inventory for product_id 102')
-END
-FROM inventory
-WHERE product_id = 102;
+Comment( Begin a transaction to process multiple orders atomically) | -- Begin a transaction to process multiple orders atomically
+Whitespace(1) | 
 
--- Commit the transaction if all operations succeeded
-RELEASE SAVEPOINT order_processing;
-COMMIT;
+Keyword(BEGIN) | BEGIN
+Whitespace(0) |  
+Keyword(TRANSACTION) | TRANSACTION
+Special(;) | ;
+Whitespace(2) | 
 
--- Exception handling: Roll back to savepoint if an error occurred
-ROLLBACK TO order_processing;
-COMMIT;
+
+Comment( Set a savepoint in case we need to roll back to this point) | -- Set a savepoint in case we need to roll back to this point
+Whitespace(1) | 
+
+Keyword(SAVEPOINT) | SAVEPOINT
+Whitespace(0) |  
+Identifier(order_processing) | order_processing
+Special(;) | ;
+Whitespace(2) | 
+
+
+Comment( Attempt to process an order for Widgets) | -- Attempt to process an order for Widgets
+Whitespace(1) | 
+
+Keyword(UPDATE) | UPDATE
+Whitespace(0) |  
+Identifier(inventory) | inventory
+Whitespace(1) | 
+
+Keyword(SET) | SET
+Whitespace(0) |  
+Identifier(quantity) | quantity
+Whitespace(0) |  
+Operator(=) | =
+Whitespace(0) |  
+Identifier(quantity) | quantity
+Whitespace(0) |  
+Operator(-) | -
+Whitespace(0) |  
+Identifier(20) | 20
+Whitespace(1) | 
+
+Keyword(WHERE) | WHERE
+Whitespace(0) |  
+Identifier(product_id) | product_id
+Whitespace(0) |  
+Operator(=) | =
+Whitespace(0) |  
+Identifier(101) | 101
+Special(;) | ;
+Whitespace(2) | 
+
+
+Keyword(INSERT) | INSERT
+Whitespace(0) |  
+Keyword(INTO) | INTO
+Whitespace(0) |  
+Identifier(orders) | orders
+Whitespace(0) |  
+Special(() | (
+Identifier(product_id) | product_id
+Special(,) | ,
+Whitespace(0) |  
+Identifier(order_quantity) | order_quantity
+Special(,) | ,
+Whitespace(0) |  
+Identifier(order_date) | order_date
+Special()) | )
+Whitespace(0) |  
+Keyword(VALUES) | VALUES
+Whitespace(1) | 
+    
+Special(() | (
+Identifier(101) | 101
+Special(,) | ,
+Whitespace(0) |  
+Identifier(20) | 20
+Special(,) | ,
+Whitespace(0) |  
+Identifier(DATE) | DATE
+Special(() | (
+StringLiteral(now) | 'now'
+Special()) | )
+Special()) | )
+Special(;) | ;
+Whitespace(2) | 
+
+
+Comment( Check if inventory quantity went negative) | -- Check if inventory quantity went negative
+Whitespace(1) | 
+
+Keyword(SELECT) | SELECT
+Whitespace(0) |  
+Keyword(CASE) | CASE
+Whitespace(1) | 
+    
+Keyword(WHEN) | WHEN
+Whitespace(0) |  
+Identifier(quantity) | quantity
+Whitespace(0) |  
+Operator(<) | <
+Whitespace(0) |  
+Identifier(0) | 0
+Whitespace(0) |  
+Keyword(THEN) | THEN
+Whitespace(0) |  
+Keyword(RAISE) | RAISE
+Special(() | (
+Keyword(ABORT) | ABORT
+Special(,) | ,
+Whitespace(0) |  
+StringLiteral(Insufficient inventory for product_id 101) | 'Insufficient inventory for product_id 101'
+Special()) | )
+Whitespace(1) | 
+
+Keyword(END) | END
+Whitespace(1) | 
+
+Keyword(FROM) | FROM
+Whitespace(0) |  
+Identifier(inventory) | inventory
+Whitespace(1) | 
+
+Keyword(WHERE) | WHERE
+Whitespace(0) |  
+Identifier(product_id) | product_id
+Whitespace(0) |  
+Operator(=) | =
+Whitespace(0) |  
+Identifier(101) | 101
+Special(;) | ;
+Whitespace(2) | 
+
+
+Comment( Attempt to process an order for Gadgets) | -- Attempt to process an order for Gadgets
+Whitespace(1) | 
+
+Keyword(UPDATE) | UPDATE
+Whitespace(0) |  
+Identifier(inventory) | inventory
+Whitespace(1) | 
+
+Keyword(SET) | SET
+Whitespace(0) |  
+Identifier(quantity) | quantity
+Whitespace(0) |  
+Operator(=) | =
+Whitespace(0) |  
+Identifier(quantity) | quantity
+Whitespace(0) |  
+Operator(-) | -
+Whitespace(0) |  
+Identifier(80) | 80
+Whitespace(1) | 
+
+Keyword(WHERE) | WHERE
+Whitespace(0) |  
+Identifier(product_id) | product_id
+Whitespace(0) |  
+Operator(=) | =
+Whitespace(0) |  
+Identifier(102) | 102
+Special(;) | ;
+Whitespace(2) | 
+
+
+Keyword(INSERT) | INSERT
+Whitespace(0) |  
+Keyword(INTO) | INTO
+Whitespace(0) |  
+Identifier(orders) | orders
+Whitespace(0) |  
+Special(() | (
+Identifier(product_id) | product_id
+Special(,) | ,
+Whitespace(0) |  
+Identifier(order_quantity) | order_quantity
+Special(,) | ,
+Whitespace(0) |  
+Identifier(order_date) | order_date
+Special()) | )
+Whitespace(0) |  
+Keyword(VALUES) | VALUES
+Whitespace(1) | 
+    
+Special(() | (
+Identifier(102) | 102
+Special(,) | ,
+Whitespace(0) |  
+Identifier(80) | 80
+Special(,) | ,
+Whitespace(0) |  
+Identifier(DATE) | DATE
+Special(() | (
+StringLiteral(now) | 'now'
+Special()) | )
+Special()) | )
+Special(;) | ;
+Whitespace(2) | 
+
+
+Comment( Check if inventory quantity went negative) | -- Check if inventory quantity went negative
+Whitespace(1) | 
+
+Keyword(SELECT) | SELECT
+Whitespace(0) |  
+Keyword(CASE) | CASE
+Whitespace(1) | 
+    
+Keyword(WHEN) | WHEN
+Whitespace(0) |  
+Identifier(quantity) | quantity
+Whitespace(0) |  
+Operator(<) | <
+Whitespace(0) |  
+Identifier(0) | 0
+Whitespace(0) |  
+Keyword(THEN) | THEN
+Whitespace(0) |  
+Keyword(RAISE) | RAISE
+Special(() | (
+Keyword(ABORT) | ABORT
+Special(,) | ,
+Whitespace(0) |  
+StringLiteral(Insufficient inventory for product_id 102) | 'Insufficient inventory for product_id 102'
+Special()) | )
+Whitespace(1) | 
+
+Keyword(END) | END
+Whitespace(1) | 
+
+Keyword(FROM) | FROM
+Whitespace(0) |  
+Identifier(inventory) | inventory
+Whitespace(1) | 
+
+Keyword(WHERE) | WHERE
+Whitespace(0) |  
+Identifier(product_id) | product_id
+Whitespace(0) |  
+Operator(=) | =
+Whitespace(0) |  
+Identifier(102) | 102
+Special(;) | ;
+Whitespace(2) | 
+
+
+Comment( Commit the transaction if all operations succeeded) | -- Commit the transaction if all operations succeeded
+Whitespace(1) | 
+
+Keyword(RELEASE) | RELEASE
+Whitespace(0) |  
+Keyword(SAVEPOINT) | SAVEPOINT
+Whitespace(0) |  
+Identifier(order_processing) | order_processing
+Special(;) | ;
+Whitespace(1) | 
+
+Keyword(COMMIT) | COMMIT
+Special(;) | ;
+Whitespace(2) | 
+
+
+Comment( Exception handling: Roll back to savepoint if an error occurred) | -- Exception handling: Roll back to savepoint if an error occurred
+Whitespace(1) | 
+
+Keyword(ROLLBACK) | ROLLBACK
+Whitespace(0) |  
+Keyword(TO) | TO
+Whitespace(0) |  
+Identifier(order_processing) | order_processing
+Special(;) | ;
+Whitespace(1) | 
+
+Keyword(COMMIT) | COMMIT
+Special(;) | ;
+Whitespace(1) | 
+

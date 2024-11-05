@@ -1,20 +1,109 @@
-Lexer error:
-test/sql_files/input/28_expressions_in_limit_and_offset.sql:13:80
+Lexer result:
 
--- Using subqueries and expressions in LIMIT and OFFSET.
--- Dynamic pagination based on table data.
--- Parser's handling of expressions in these clauses.
+Comment( Using subqueries and expressions in LIMIT and OFFSET.) | -- Using subqueries and expressions in LIMIT and OFFSET.
+Whitespace(1) | 
+
+Comment( Dynamic pagination based on table data.) | -- Dynamic pagination based on table data.
+Whitespace(1) | 
+
+Comment( Parser's handling of expressions in these clauses.) | -- Parser's handling of expressions in these clauses.
+Whitespace(3) | 
 
 
-CREATE TABLE limit_offset_test (
-  id INTEGER PRIMARY KEY,
-  value TEXT
-);
 
-INSERT INTO limit_offset_test (value) VALUES ('Row1'), ('Row2'), ('Row3'), ('Row4');
+Keyword(CREATE) | CREATE
+Whitespace(0) |  
+Keyword(TABLE) | TABLE
+Whitespace(0) |  
+Identifier(limit_offset_test) | limit_offset_test
+Whitespace(0) |  
+Special(() | (
+Whitespace(1) | 
+  
+Identifier(id) | id
+Whitespace(0) |  
+Keyword(INTEGER) | INTEGER
+Whitespace(0) |  
+Keyword(PRIMARY) | PRIMARY
+Whitespace(0) |  
+Keyword(KEY) | KEY
+Special(,) | ,
+Whitespace(1) | 
+  
+Identifier(value) | value
+Whitespace(0) |  
+Keyword(TEXT) | TEXT
+Whitespace(1) | 
 
-SELECT * FROM limit_offset_test LIMIT (SELECT COUNT(*) FROM limit_offset_test) 
+Special()) | )
+Special(;) | ;
+Whitespace(2) | 
 
-Lexer error begins here:
-v
-- 2 OFFSET 1;
+
+Keyword(INSERT) | INSERT
+Whitespace(0) |  
+Keyword(INTO) | INTO
+Whitespace(0) |  
+Identifier(limit_offset_test) | limit_offset_test
+Whitespace(0) |  
+Special(() | (
+Identifier(value) | value
+Special()) | )
+Whitespace(0) |  
+Keyword(VALUES) | VALUES
+Whitespace(0) |  
+Special(() | (
+StringLiteral(Row1) | 'Row1'
+Special()) | )
+Special(,) | ,
+Whitespace(0) |  
+Special(() | (
+StringLiteral(Row2) | 'Row2'
+Special()) | )
+Special(,) | ,
+Whitespace(0) |  
+Special(() | (
+StringLiteral(Row3) | 'Row3'
+Special()) | )
+Special(,) | ,
+Whitespace(0) |  
+Special(() | (
+StringLiteral(Row4) | 'Row4'
+Special()) | )
+Special(;) | ;
+Whitespace(2) | 
+
+
+Keyword(SELECT) | SELECT
+Whitespace(0) |  
+Operator(*) | *
+Whitespace(0) |  
+Keyword(FROM) | FROM
+Whitespace(0) |  
+Identifier(limit_offset_test) | limit_offset_test
+Whitespace(0) |  
+Keyword(LIMIT) | LIMIT
+Whitespace(0) |  
+Special(() | (
+Keyword(SELECT) | SELECT
+Whitespace(0) |  
+Identifier(COUNT) | COUNT
+Special(() | (
+Operator(*) | *
+Special()) | )
+Whitespace(0) |  
+Keyword(FROM) | FROM
+Whitespace(0) |  
+Identifier(limit_offset_test) | limit_offset_test
+Special()) | )
+Whitespace(0) |  
+Operator(-) | -
+Whitespace(0) |  
+Identifier(2) | 2
+Whitespace(0) |  
+Keyword(OFFSET) | OFFSET
+Whitespace(0) |  
+Identifier(1) | 1
+Special(;) | ;
+Whitespace(1) | 
+

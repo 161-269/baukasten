@@ -68,7 +68,7 @@ Operator(=) | =
 Whitespace(0) |  
 Identifier(value) | value
 Whitespace(0) |  
-Special(*) | *
+Operator(*) | *
 Whitespace(0) |  
 Special(() | (
 Keyword(SELECT) | SELECT

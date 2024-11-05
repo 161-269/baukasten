@@ -57,7 +57,7 @@ Whitespace(2) |
 
 Keyword(SELECT) | SELECT
 Whitespace(0) |  
-Special(*) | *
+Operator(*) | *
 Whitespace(0) |  
 Keyword(FROM) | FROM
 Whitespace(0) |  
@@ -68,7 +68,7 @@ Keyword(SELECT) | SELECT
 Whitespace(0) |  
 Identifier(COUNT) | COUNT
 Special(() | (
-Special(*) | *
+Operator(*) | *
 Special()) | )
 Whitespace(0) |  
 Keyword(FROM) | FROM

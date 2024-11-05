@@ -26,7 +26,7 @@ Special()) | )
 Special()) | )
 Special()) | )
 Whitespace(0) |  
-Special(*) | *
+Operator(*) | *
 Whitespace(0) |  
 Special(() | (
 Special(() | (
@@ -34,7 +34,7 @@ Special(() | (
 Special(() | (
 Special(() | (
 Identifier(3) | 3
-Special(*) | *
+Operator(*) | *
 Identifier(4) | 4
 Special()) | )
 Special()) | )

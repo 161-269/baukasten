@@ -1,111 +1,834 @@
-Lexer error:
-test/sql_files/input/36_advanced_join_operations_and_subqueries.sql:38:47
+Lexer result:
 
--- Tables Creation and Data Insertion: Defines products, categories, orders, and order_items tables with appropriate relationships and inserts sample data.
--- Order Summary Query:
--- 
---     Joins multiple tables to calculate the total amount per order.
---     Uses SUM to compute total amounts and GROUP_CONCAT to list ordered items.
--- 
--- Top-Selling Category Subquery:
--- 
---     Calculates total quantities sold per category.
---     Uses a subquery in the HAVING clause to find the category with the maximum total quantity sold.
+Comment( Tables Creation and Data Insertion: Defines products, categories, orders, and order_items tables with appropriate relationships and inserts sample data.) | -- Tables Creation and Data Insertion: Defines products, categories, orders, and order_items tables with appropriate relationships and inserts sample data.
+Whitespace(1) | 
+
+Comment( Order Summary Query:) | -- Order Summary Query:
+Whitespace(1) | 
+
+Comment( ) | -- 
+Whitespace(1) | 
+
+Comment(     Joins multiple tables to calculate the total amount per order.) | --     Joins multiple tables to calculate the total amount per order.
+Whitespace(1) | 
+
+Comment(     Uses SUM to compute total amounts and GROUP_CONCAT to list ordered items.) | --     Uses SUM to compute total amounts and GROUP_CONCAT to list ordered items.
+Whitespace(1) | 
+
+Comment( ) | -- 
+Whitespace(1) | 
+
+Comment( Top-Selling Category Subquery:) | -- Top-Selling Category Subquery:
+Whitespace(1) | 
+
+Comment( ) | -- 
+Whitespace(1) | 
+
+Comment(     Calculates total quantities sold per category.) | --     Calculates total quantities sold per category.
+Whitespace(1) | 
+
+Comment(     Uses a subquery in the HAVING clause to find the category with the maximum total quantity sold.) | --     Uses a subquery in the HAVING clause to find the category with the maximum total quantity sold.
+Whitespace(3) | 
 
 
--- Create a table for products
-CREATE TABLE products (
-    product_id INTEGER PRIMARY KEY,
-    product_name TEXT NOT NULL,
-    category_id INTEGER NOT NULL,
-    price REAL NOT NULL,
-    FOREIGN KEY (category_id) REFERENCES categories(category_id)
-);
 
--- Create a table for categories
-CREATE TABLE categories (
-    category_id INTEGER PRIMARY KEY,
-    category_name TEXT NOT NULL
-);
+Comment( Create a table for products) | -- Create a table for products
+Whitespace(1) | 
 
--- Create a table for orders
-CREATE TABLE orders (
-    order_id INTEGER PRIMARY KEY,
-    order_date DATE NOT NULL
-);
+Keyword(CREATE) | CREATE
+Whitespace(0) |  
+Keyword(TABLE) | TABLE
+Whitespace(0) |  
+Identifier(products) | products
+Whitespace(0) |  
+Special(() | (
+Whitespace(1) | 
+    
+Identifier(product_id) | product_id
+Whitespace(0) |  
+Keyword(INTEGER) | INTEGER
+Whitespace(0) |  
+Keyword(PRIMARY) | PRIMARY
+Whitespace(0) |  
+Keyword(KEY) | KEY
+Special(,) | ,
+Whitespace(1) | 
+    
+Identifier(product_name) | product_name
+Whitespace(0) |  
+Keyword(TEXT) | TEXT
+Whitespace(0) |  
+Keyword(NOT) | NOT
+Whitespace(0) |  
+Keyword(NULL) | NULL
+Special(,) | ,
+Whitespace(1) | 
+    
+Identifier(category_id) | category_id
+Whitespace(0) |  
+Keyword(INTEGER) | INTEGER
+Whitespace(0) |  
+Keyword(NOT) | NOT
+Whitespace(0) |  
+Keyword(NULL) | NULL
+Special(,) | ,
+Whitespace(1) | 
+    
+Identifier(price) | price
+Whitespace(0) |  
+Keyword(REAL) | REAL
+Whitespace(0) |  
+Keyword(NOT) | NOT
+Whitespace(0) |  
+Keyword(NULL) | NULL
+Special(,) | ,
+Whitespace(1) | 
+    
+Keyword(FOREIGN) | FOREIGN
+Whitespace(0) |  
+Keyword(KEY) | KEY
+Whitespace(0) |  
+Special(() | (
+Identifier(category_id) | category_id
+Special()) | )
+Whitespace(0) |  
+Keyword(REFERENCES) | REFERENCES
+Whitespace(0) |  
+Identifier(categories) | categories
+Special(() | (
+Identifier(category_id) | category_id
+Special()) | )
+Whitespace(1) | 
 
--- Create a table for order items
-CREATE TABLE order_items (
-    order_id INTEGER NOT NULL,
-    product_id INTEGER NOT NULL,
-    quantity INTEGER NOT NULL CHECK (quantity 
+Special()) | )
+Special(;) | ;
+Whitespace(2) | 
 
-Lexer error begins here:
-v
-> 0),
-    FOREIGN KEY (order_id) REFERENCES orders(order_id),
-    FOREIGN KEY (product_id) REFERENCES products(product_id)
-);
 
--- Insert sample data into categories
-INSERT INTO categories (category_id, category_name) VALUES
-    (1, 'Electronics'),
-    (2, 'Books'),
-    (3, 'Clothing');
+Comment( Create a table for categories) | -- Create a table for categories
+Whitespace(1) | 
 
--- Insert sample data into products
-INSERT INTO products (product_name, category_id, price) VALUES
-    ('Smartphone', 1, 699.99),
-    ('Laptop', 1, 999.99),
-    ('Novel', 2, 19.99),
-    ('T-Shirt', 3, 9.99);
+Keyword(CREATE) | CREATE
+Whitespace(0) |  
+Keyword(TABLE) | TABLE
+Whitespace(0) |  
+Identifier(categories) | categories
+Whitespace(0) |  
+Special(() | (
+Whitespace(1) | 
+    
+Identifier(category_id) | category_id
+Whitespace(0) |  
+Keyword(INTEGER) | INTEGER
+Whitespace(0) |  
+Keyword(PRIMARY) | PRIMARY
+Whitespace(0) |  
+Keyword(KEY) | KEY
+Special(,) | ,
+Whitespace(1) | 
+    
+Identifier(category_name) | category_name
+Whitespace(0) |  
+Keyword(TEXT) | TEXT
+Whitespace(0) |  
+Keyword(NOT) | NOT
+Whitespace(0) |  
+Keyword(NULL) | NULL
+Whitespace(1) | 
 
--- Insert sample data into orders
-INSERT INTO orders (order_date) VALUES
-    ('2023-03-01'),
-    ('2023-03-05');
+Special()) | )
+Special(;) | ;
+Whitespace(2) | 
 
--- Insert sample data into order_items
-INSERT INTO order_items (order_id, product_id, quantity) VALUES
-    (1, 1, 2), -- 2 Smartphones
-    (1, 3, 1), -- 1 Novel
-    (2, 2, 1), -- 1 Laptop
-    (2, 4, 3); -- 3 T-Shirts
 
--- Complex query to get order summaries with total amounts
-SELECT
-    o.order_id,
-    o.order_date,
-    SUM(p.price * oi.quantity) AS total_amount,
-    GROUP_CONCAT(p.product_name || ' x' || oi.quantity, ', ') AS items_ordered
-FROM
-    orders o
-    INNER JOIN order_items oi ON o.order_id = oi.order_id
-    INNER JOIN products p ON oi.product_id = p.product_id
-GROUP BY
-    o.order_id,
-    o.order_date
-ORDER BY
-    o.order_date;
+Comment( Create a table for orders) | -- Create a table for orders
+Whitespace(1) | 
 
--- Subquery to find the top-selling category
-SELECT
-    c.category_name,
-    SUM(oi.quantity) AS total_quantity_sold
-FROM
-    categories c
-    INNER JOIN products p ON c.category_id = p.category_id
-    INNER JOIN order_items oi ON p.product_id = oi.product_id
-GROUP BY
-    c.category_name
-HAVING
-    SUM(oi.quantity) = (
-        SELECT MAX(total_quantity)
-        FROM (
-            SELECT SUM(oi_inner.quantity) AS total_quantity
-            FROM categories c_inner
-            INNER JOIN products p_inner ON c_inner.category_id = p_inner.category_id
-            INNER JOIN order_items oi_inner ON p_inner.product_id = oi_inner.product_id
-            GROUP BY c_inner.category_name
-        )
-    );
+Keyword(CREATE) | CREATE
+Whitespace(0) |  
+Keyword(TABLE) | TABLE
+Whitespace(0) |  
+Identifier(orders) | orders
+Whitespace(0) |  
+Special(() | (
+Whitespace(1) | 
+    
+Identifier(order_id) | order_id
+Whitespace(0) |  
+Keyword(INTEGER) | INTEGER
+Whitespace(0) |  
+Keyword(PRIMARY) | PRIMARY
+Whitespace(0) |  
+Keyword(KEY) | KEY
+Special(,) | ,
+Whitespace(1) | 
+    
+Identifier(order_date) | order_date
+Whitespace(0) |  
+Identifier(DATE) | DATE
+Whitespace(0) |  
+Keyword(NOT) | NOT
+Whitespace(0) |  
+Keyword(NULL) | NULL
+Whitespace(1) | 
+
+Special()) | )
+Special(;) | ;
+Whitespace(2) | 
+
+
+Comment( Create a table for order items) | -- Create a table for order items
+Whitespace(1) | 
+
+Keyword(CREATE) | CREATE
+Whitespace(0) |  
+Keyword(TABLE) | TABLE
+Whitespace(0) |  
+Identifier(order_items) | order_items
+Whitespace(0) |  
+Special(() | (
+Whitespace(1) | 
+    
+Identifier(order_id) | order_id
+Whitespace(0) |  
+Keyword(INTEGER) | INTEGER
+Whitespace(0) |  
+Keyword(NOT) | NOT
+Whitespace(0) |  
+Keyword(NULL) | NULL
+Special(,) | ,
+Whitespace(1) | 
+    
+Identifier(product_id) | product_id
+Whitespace(0) |  
+Keyword(INTEGER) | INTEGER
+Whitespace(0) |  
+Keyword(NOT) | NOT
+Whitespace(0) |  
+Keyword(NULL) | NULL
+Special(,) | ,
+Whitespace(1) | 
+    
+Identifier(quantity) | quantity
+Whitespace(0) |  
+Keyword(INTEGER) | INTEGER
+Whitespace(0) |  
+Keyword(NOT) | NOT
+Whitespace(0) |  
+Keyword(NULL) | NULL
+Whitespace(0) |  
+Keyword(CHECK) | CHECK
+Whitespace(0) |  
+Special(() | (
+Identifier(quantity) | quantity
+Whitespace(0) |  
+Operator(>) | >
+Whitespace(0) |  
+Identifier(0) | 0
+Special()) | )
+Special(,) | ,
+Whitespace(1) | 
+    
+Keyword(FOREIGN) | FOREIGN
+Whitespace(0) |  
+Keyword(KEY) | KEY
+Whitespace(0) |  
+Special(() | (
+Identifier(order_id) | order_id
+Special()) | )
+Whitespace(0) |  
+Keyword(REFERENCES) | REFERENCES
+Whitespace(0) |  
+Identifier(orders) | orders
+Special(() | (
+Identifier(order_id) | order_id
+Special()) | )
+Special(,) | ,
+Whitespace(1) | 
+    
+Keyword(FOREIGN) | FOREIGN
+Whitespace(0) |  
+Keyword(KEY) | KEY
+Whitespace(0) |  
+Special(() | (
+Identifier(product_id) | product_id
+Special()) | )
+Whitespace(0) |  
+Keyword(REFERENCES) | REFERENCES
+Whitespace(0) |  
+Identifier(products) | products
+Special(() | (
+Identifier(product_id) | product_id
+Special()) | )
+Whitespace(1) | 
+
+Special()) | )
+Special(;) | ;
+Whitespace(2) | 
+
+
+Comment( Insert sample data into categories) | -- Insert sample data into categories
+Whitespace(1) | 
+
+Keyword(INSERT) | INSERT
+Whitespace(0) |  
+Keyword(INTO) | INTO
+Whitespace(0) |  
+Identifier(categories) | categories
+Whitespace(0) |  
+Special(() | (
+Identifier(category_id) | category_id
+Special(,) | ,
+Whitespace(0) |  
+Identifier(category_name) | category_name
+Special()) | )
+Whitespace(0) |  
+Keyword(VALUES) | VALUES
+Whitespace(1) | 
+    
+Special(() | (
+Identifier(1) | 1
+Special(,) | ,
+Whitespace(0) |  
+StringLiteral(Electronics) | 'Electronics'
+Special()) | )
+Special(,) | ,
+Whitespace(1) | 
+    
+Special(() | (
+Identifier(2) | 2
+Special(,) | ,
+Whitespace(0) |  
+StringLiteral(Books) | 'Books'
+Special()) | )
+Special(,) | ,
+Whitespace(1) | 
+    
+Special(() | (
+Identifier(3) | 3
+Special(,) | ,
+Whitespace(0) |  
+StringLiteral(Clothing) | 'Clothing'
+Special()) | )
+Special(;) | ;
+Whitespace(2) | 
+
+
+Comment( Insert sample data into products) | -- Insert sample data into products
+Whitespace(1) | 
+
+Keyword(INSERT) | INSERT
+Whitespace(0) |  
+Keyword(INTO) | INTO
+Whitespace(0) |  
+Identifier(products) | products
+Whitespace(0) |  
+Special(() | (
+Identifier(product_name) | product_name
+Special(,) | ,
+Whitespace(0) |  
+Identifier(category_id) | category_id
+Special(,) | ,
+Whitespace(0) |  
+Identifier(price) | price
+Special()) | )
+Whitespace(0) |  
+Keyword(VALUES) | VALUES
+Whitespace(1) | 
+    
+Special(() | (
+StringLiteral(Smartphone) | 'Smartphone'
+Special(,) | ,
+Whitespace(0) |  
+Identifier(1) | 1
+Special(,) | ,
+Whitespace(0) |  
+Identifier(699) | 699
+Special(.) | .
+Identifier(99) | 99
+Special()) | )
+Special(,) | ,
+Whitespace(1) | 
+    
+Special(() | (
+StringLiteral(Laptop) | 'Laptop'
+Special(,) | ,
+Whitespace(0) |  
+Identifier(1) | 1
+Special(,) | ,
+Whitespace(0) |  
+Identifier(999) | 999
+Special(.) | .
+Identifier(99) | 99
+Special()) | )
+Special(,) | ,
+Whitespace(1) | 
+    
+Special(() | (
+StringLiteral(Novel) | 'Novel'
+Special(,) | ,
+Whitespace(0) |  
+Identifier(2) | 2
+Special(,) | ,
+Whitespace(0) |  
+Identifier(19) | 19
+Special(.) | .
+Identifier(99) | 99
+Special()) | )
+Special(,) | ,
+Whitespace(1) | 
+    
+Special(() | (
+StringLiteral(T-Shirt) | 'T-Shirt'
+Special(,) | ,
+Whitespace(0) |  
+Identifier(3) | 3
+Special(,) | ,
+Whitespace(0) |  
+Identifier(9) | 9
+Special(.) | .
+Identifier(99) | 99
+Special()) | )
+Special(;) | ;
+Whitespace(2) | 
+
+
+Comment( Insert sample data into orders) | -- Insert sample data into orders
+Whitespace(1) | 
+
+Keyword(INSERT) | INSERT
+Whitespace(0) |  
+Keyword(INTO) | INTO
+Whitespace(0) |  
+Identifier(orders) | orders
+Whitespace(0) |  
+Special(() | (
+Identifier(order_date) | order_date
+Special()) | )
+Whitespace(0) |  
+Keyword(VALUES) | VALUES
+Whitespace(1) | 
+    
+Special(() | (
+StringLiteral(2023-03-01) | '2023-03-01'
+Special()) | )
+Special(,) | ,
+Whitespace(1) | 
+    
+Special(() | (
+StringLiteral(2023-03-05) | '2023-03-05'
+Special()) | )
+Special(;) | ;
+Whitespace(2) | 
+
+
+Comment( Insert sample data into order_items) | -- Insert sample data into order_items
+Whitespace(1) | 
+
+Keyword(INSERT) | INSERT
+Whitespace(0) |  
+Keyword(INTO) | INTO
+Whitespace(0) |  
+Identifier(order_items) | order_items
+Whitespace(0) |  
+Special(() | (
+Identifier(order_id) | order_id
+Special(,) | ,
+Whitespace(0) |  
+Identifier(product_id) | product_id
+Special(,) | ,
+Whitespace(0) |  
+Identifier(quantity) | quantity
+Special()) | )
+Whitespace(0) |  
+Keyword(VALUES) | VALUES
+Whitespace(1) | 
+    
+Special(() | (
+Identifier(1) | 1
+Special(,) | ,
+Whitespace(0) |  
+Identifier(1) | 1
+Special(,) | ,
+Whitespace(0) |  
+Identifier(2) | 2
+Special()) | )
+Special(,) | ,
+Whitespace(0) |  
+Comment( 2 Smartphones) | -- 2 Smartphones
+Whitespace(1) | 
+    
+Special(() | (
+Identifier(1) | 1
+Special(,) | ,
+Whitespace(0) |  
+Identifier(3) | 3
+Special(,) | ,
+Whitespace(0) |  
+Identifier(1) | 1
+Special()) | )
+Special(,) | ,
+Whitespace(0) |  
+Comment( 1 Novel) | -- 1 Novel
+Whitespace(1) | 
+    
+Special(() | (
+Identifier(2) | 2
+Special(,) | ,
+Whitespace(0) |  
+Identifier(2) | 2
+Special(,) | ,
+Whitespace(0) |  
+Identifier(1) | 1
+Special()) | )
+Special(,) | ,
+Whitespace(0) |  
+Comment( 1 Laptop) | -- 1 Laptop
+Whitespace(1) | 
+    
+Special(() | (
+Identifier(2) | 2
+Special(,) | ,
+Whitespace(0) |  
+Identifier(4) | 4
+Special(,) | ,
+Whitespace(0) |  
+Identifier(3) | 3
+Special()) | )
+Special(;) | ;
+Whitespace(0) |  
+Comment( 3 T-Shirts) | -- 3 T-Shirts
+Whitespace(2) | 
+
+
+Comment( Complex query to get order summaries with total amounts) | -- Complex query to get order summaries with total amounts
+Whitespace(1) | 
+
+Keyword(SELECT) | SELECT
+Whitespace(1) | 
+    
+Identifier(o) | o
+Special(.) | .
+Identifier(order_id) | order_id
+Special(,) | ,
+Whitespace(1) | 
+    
+Identifier(o) | o
+Special(.) | .
+Identifier(order_date) | order_date
+Special(,) | ,
+Whitespace(1) | 
+    
+Identifier(SUM) | SUM
+Special(() | (
+Identifier(p) | p
+Special(.) | .
+Identifier(price) | price
+Whitespace(0) |  
+Operator(*) | *
+Whitespace(0) |  
+Identifier(oi) | oi
+Special(.) | .
+Identifier(quantity) | quantity
+Special()) | )
+Whitespace(0) |  
+Keyword(AS) | AS
+Whitespace(0) |  
+Identifier(total_amount) | total_amount
+Special(,) | ,
+Whitespace(1) | 
+    
+Identifier(GROUP_CONCAT) | GROUP_CONCAT
+Special(() | (
+Identifier(p) | p
+Special(.) | .
+Identifier(product_name) | product_name
+Whitespace(0) |  
+Operator(||) | ||
+Whitespace(0) |  
+StringLiteral( x) | ' x'
+Whitespace(0) |  
+Operator(||) | ||
+Whitespace(0) |  
+Identifier(oi) | oi
+Special(.) | .
+Identifier(quantity) | quantity
+Special(,) | ,
+Whitespace(0) |  
+StringLiteral(, ) | ', '
+Special()) | )
+Whitespace(0) |  
+Keyword(AS) | AS
+Whitespace(0) |  
+Identifier(items_ordered) | items_ordered
+Whitespace(1) | 
+
+Keyword(FROM) | FROM
+Whitespace(1) | 
+    
+Identifier(orders) | orders
+Whitespace(0) |  
+Identifier(o) | o
+Whitespace(1) | 
+    
+Keyword(INNER) | INNER
+Whitespace(0) |  
+Keyword(JOIN) | JOIN
+Whitespace(0) |  
+Identifier(order_items) | order_items
+Whitespace(0) |  
+Identifier(oi) | oi
+Whitespace(0) |  
+Keyword(ON) | ON
+Whitespace(0) |  
+Identifier(o) | o
+Special(.) | .
+Identifier(order_id) | order_id
+Whitespace(0) |  
+Operator(=) | =
+Whitespace(0) |  
+Identifier(oi) | oi
+Special(.) | .
+Identifier(order_id) | order_id
+Whitespace(1) | 
+    
+Keyword(INNER) | INNER
+Whitespace(0) |  
+Keyword(JOIN) | JOIN
+Whitespace(0) |  
+Identifier(products) | products
+Whitespace(0) |  
+Identifier(p) | p
+Whitespace(0) |  
+Keyword(ON) | ON
+Whitespace(0) |  
+Identifier(oi) | oi
+Special(.) | .
+Identifier(product_id) | product_id
+Whitespace(0) |  
+Operator(=) | =
+Whitespace(0) |  
+Identifier(p) | p
+Special(.) | .
+Identifier(product_id) | product_id
+Whitespace(1) | 
+
+Keyword(GROUP) | GROUP
+Whitespace(0) |  
+Keyword(BY) | BY
+Whitespace(1) | 
+    
+Identifier(o) | o
+Special(.) | .
+Identifier(order_id) | order_id
+Special(,) | ,
+Whitespace(1) | 
+    
+Identifier(o) | o
+Special(.) | .
+Identifier(order_date) | order_date
+Whitespace(1) | 
+
+Keyword(ORDER) | ORDER
+Whitespace(0) |  
+Keyword(BY) | BY
+Whitespace(1) | 
+    
+Identifier(o) | o
+Special(.) | .
+Identifier(order_date) | order_date
+Special(;) | ;
+Whitespace(2) | 
+
+
+Comment( Subquery to find the top-selling category) | -- Subquery to find the top-selling category
+Whitespace(1) | 
+
+Keyword(SELECT) | SELECT
+Whitespace(1) | 
+    
+Identifier(c) | c
+Special(.) | .
+Identifier(category_name) | category_name
+Special(,) | ,
+Whitespace(1) | 
+    
+Identifier(SUM) | SUM
+Special(() | (
+Identifier(oi) | oi
+Special(.) | .
+Identifier(quantity) | quantity
+Special()) | )
+Whitespace(0) |  
+Keyword(AS) | AS
+Whitespace(0) |  
+Identifier(total_quantity_sold) | total_quantity_sold
+Whitespace(1) | 
+
+Keyword(FROM) | FROM
+Whitespace(1) | 
+    
+Identifier(categories) | categories
+Whitespace(0) |  
+Identifier(c) | c
+Whitespace(1) | 
+    
+Keyword(INNER) | INNER
+Whitespace(0) |  
+Keyword(JOIN) | JOIN
+Whitespace(0) |  
+Identifier(products) | products
+Whitespace(0) |  
+Identifier(p) | p
+Whitespace(0) |  
+Keyword(ON) | ON
+Whitespace(0) |  
+Identifier(c) | c
+Special(.) | .
+Identifier(category_id) | category_id
+Whitespace(0) |  
+Operator(=) | =
+Whitespace(0) |  
+Identifier(p) | p
+Special(.) | .
+Identifier(category_id) | category_id
+Whitespace(1) | 
+    
+Keyword(INNER) | INNER
+Whitespace(0) |  
+Keyword(JOIN) | JOIN
+Whitespace(0) |  
+Identifier(order_items) | order_items
+Whitespace(0) |  
+Identifier(oi) | oi
+Whitespace(0) |  
+Keyword(ON) | ON
+Whitespace(0) |  
+Identifier(p) | p
+Special(.) | .
+Identifier(product_id) | product_id
+Whitespace(0) |  
+Operator(=) | =
+Whitespace(0) |  
+Identifier(oi) | oi
+Special(.) | .
+Identifier(product_id) | product_id
+Whitespace(1) | 
+
+Keyword(GROUP) | GROUP
+Whitespace(0) |  
+Keyword(BY) | BY
+Whitespace(1) | 
+    
+Identifier(c) | c
+Special(.) | .
+Identifier(category_name) | category_name
+Whitespace(1) | 
+
+Keyword(HAVING) | HAVING
+Whitespace(1) | 
+    
+Identifier(SUM) | SUM
+Special(() | (
+Identifier(oi) | oi
+Special(.) | .
+Identifier(quantity) | quantity
+Special()) | )
+Whitespace(0) |  
+Operator(=) | =
+Whitespace(0) |  
+Special(() | (
+Whitespace(1) | 
+        
+Keyword(SELECT) | SELECT
+Whitespace(0) |  
+Identifier(MAX) | MAX
+Special(() | (
+Identifier(total_quantity) | total_quantity
+Special()) | )
+Whitespace(1) | 
+        
+Keyword(FROM) | FROM
+Whitespace(0) |  
+Special(() | (
+Whitespace(1) | 
+            
+Keyword(SELECT) | SELECT
+Whitespace(0) |  
+Identifier(SUM) | SUM
+Special(() | (
+Identifier(oi_inner) | oi_inner
+Special(.) | .
+Identifier(quantity) | quantity
+Special()) | )
+Whitespace(0) |  
+Keyword(AS) | AS
+Whitespace(0) |  
+Identifier(total_quantity) | total_quantity
+Whitespace(1) | 
+            
+Keyword(FROM) | FROM
+Whitespace(0) |  
+Identifier(categories) | categories
+Whitespace(0) |  
+Identifier(c_inner) | c_inner
+Whitespace(1) | 
+            
+Keyword(INNER) | INNER
+Whitespace(0) |  
+Keyword(JOIN) | JOIN
+Whitespace(0) |  
+Identifier(products) | products
+Whitespace(0) |  
+Identifier(p_inner) | p_inner
+Whitespace(0) |  
+Keyword(ON) | ON
+Whitespace(0) |  
+Identifier(c_inner) | c_inner
+Special(.) | .
+Identifier(category_id) | category_id
+Whitespace(0) |  
+Operator(=) | =
+Whitespace(0) |  
+Identifier(p_inner) | p_inner
+Special(.) | .
+Identifier(category_id) | category_id
+Whitespace(1) | 
+            
+Keyword(INNER) | INNER
+Whitespace(0) |  
+Keyword(JOIN) | JOIN
+Whitespace(0) |  
+Identifier(order_items) | order_items
+Whitespace(0) |  
+Identifier(oi_inner) | oi_inner
+Whitespace(0) |  
+Keyword(ON) | ON
+Whitespace(0) |  
+Identifier(p_inner) | p_inner
+Special(.) | .
+Identifier(product_id) | product_id
+Whitespace(0) |  
+Operator(=) | =
+Whitespace(0) |  
+Identifier(oi_inner) | oi_inner
+Special(.) | .
+Identifier(product_id) | product_id
+Whitespace(1) | 
+            
+Keyword(GROUP) | GROUP
+Whitespace(0) |  
+Keyword(BY) | BY
+Whitespace(0) |  
+Identifier(c_inner) | c_inner
+Special(.) | .
+Identifier(category_name) | category_name
+Whitespace(1) | 
+        
+Special()) | )
+Whitespace(1) | 
+    
+Special()) | )
+Special(;) | ;
+Whitespace(1) | 
+

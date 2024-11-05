@@ -1,13 +1,41 @@
-Lexer error:
-test/sql_files/input/15_casting_and_type_affinity.sql:6:31
+Lexer result:
 
--- Casting strings to different numeric types.
--- Mixing integer and real numbers in calculations.
--- Testing type affinity and conversion behaviors.
+Comment( Casting strings to different numeric types.) | -- Casting strings to different numeric types.
+Whitespace(1) | 
+
+Comment( Mixing integer and real numbers in calculations.) | -- Mixing integer and real numbers in calculations.
+Whitespace(1) | 
+
+Comment( Testing type affinity and conversion behaviors.) | -- Testing type affinity and conversion behaviors.
+Whitespace(3) | 
 
 
-SELECT CAST('123' AS INTEGER) 
 
-Lexer error begins here:
-v
-+ CAST('456.789' AS REAL) AS result;
+Keyword(SELECT) | SELECT
+Whitespace(0) |  
+Keyword(CAST) | CAST
+Special(() | (
+StringLiteral(123) | '123'
+Whitespace(0) |  
+Keyword(AS) | AS
+Whitespace(0) |  
+Keyword(INTEGER) | INTEGER
+Special()) | )
+Whitespace(0) |  
+Operator(+) | +
+Whitespace(0) |  
+Keyword(CAST) | CAST
+Special(() | (
+StringLiteral(456.789) | '456.789'
+Whitespace(0) |  
+Keyword(AS) | AS
+Whitespace(0) |  
+Keyword(REAL) | REAL
+Special()) | )
+Whitespace(0) |  
+Keyword(AS) | AS
+Whitespace(0) |  
+Identifier(result) | result
+Special(;) | ;
+Whitespace(1) | 
+
