@@ -52,7 +52,7 @@ Whitespace(0) |
 Keyword(VALUES) | VALUES
 Whitespace(0) |  
 Special(() | (
-Identifier(1) | 1
+Numeric(1) | 1
 Special(,) | ,
 Whitespace(0) |  
 Keyword(NULL) | NULL
@@ -60,7 +60,7 @@ Special()) | )
 Special(,) | ,
 Whitespace(0) |  
 Special(() | (
-Identifier(2) | 2
+Numeric(2) | 2
 Special(,) | ,
 Whitespace(0) |  
 StringLiteral(Not Null) | 'Not Null'

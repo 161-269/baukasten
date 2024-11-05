@@ -56,7 +56,7 @@ Whitespace(0) |
 Keyword(VALUES) | VALUES
 Whitespace(0) |  
 Special(() | (
-Identifier(1) | 1
+Numeric(1) | 1
 Special(,) | ,
 Whitespace(0) |  
 StringLiteral(测试) | '测试'
@@ -79,7 +79,7 @@ Identifier(编号) | 编号
 Whitespace(0) |  
 Operator(=) | =
 Whitespace(0) |  
-Identifier(1) | 1
+Numeric(1) | 1
 Special(;) | ;
 Whitespace(1) | 
 

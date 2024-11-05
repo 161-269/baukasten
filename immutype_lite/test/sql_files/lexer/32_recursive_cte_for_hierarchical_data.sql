@@ -107,7 +107,7 @@ Keyword(VALUES) | VALUES
 Whitespace(1) | 
     
 Special(() | (
-Identifier(1) | 1
+Numeric(1) | 1
 Special(,) | ,
 Whitespace(0) |  
 StringLiteral(CEO) | 'CEO'
@@ -119,73 +119,73 @@ Special(,) | ,
 Whitespace(1) | 
     
 Special(() | (
-Identifier(2) | 2
+Numeric(2) | 2
 Special(,) | ,
 Whitespace(0) |  
 StringLiteral(VP of Sales) | 'VP of Sales'
 Special(,) | ,
 Whitespace(0) |  
-Identifier(1) | 1
+Numeric(1) | 1
 Special()) | )
 Special(,) | ,
 Whitespace(1) | 
     
 Special(() | (
-Identifier(3) | 3
+Numeric(3) | 3
 Special(,) | ,
 Whitespace(0) |  
 StringLiteral(Sales Manager) | 'Sales Manager'
 Special(,) | ,
 Whitespace(0) |  
-Identifier(2) | 2
+Numeric(2) | 2
 Special()) | )
 Special(,) | ,
 Whitespace(1) | 
     
 Special(() | (
-Identifier(4) | 4
+Numeric(4) | 4
 Special(,) | ,
 Whitespace(0) |  
 StringLiteral(Sales Associate) | 'Sales Associate'
 Special(,) | ,
 Whitespace(0) |  
-Identifier(3) | 3
+Numeric(3) | 3
 Special()) | )
 Special(,) | ,
 Whitespace(1) | 
     
 Special(() | (
-Identifier(5) | 5
+Numeric(5) | 5
 Special(,) | ,
 Whitespace(0) |  
 StringLiteral(VP of Engineering) | 'VP of Engineering'
 Special(,) | ,
 Whitespace(0) |  
-Identifier(1) | 1
+Numeric(1) | 1
 Special()) | )
 Special(,) | ,
 Whitespace(1) | 
     
 Special(() | (
-Identifier(6) | 6
+Numeric(6) | 6
 Special(,) | ,
 Whitespace(0) |  
 StringLiteral(Engineering Manager) | 'Engineering Manager'
 Special(,) | ,
 Whitespace(0) |  
-Identifier(5) | 5
+Numeric(5) | 5
 Special()) | )
 Special(,) | ,
 Whitespace(1) | 
     
 Special(() | (
-Identifier(7) | 7
+Numeric(7) | 7
 Special(,) | ,
 Whitespace(0) |  
 StringLiteral(Engineer) | 'Engineer'
 Special(,) | ,
 Whitespace(0) |  
-Identifier(6) | 6
+Numeric(6) | 6
 Special()) | )
 Special(;) | ;
 Whitespace(2) | 
@@ -223,7 +223,7 @@ Identifier(manager_id) | manager_id
 Special(,) | ,
 Whitespace(1) | 
         
-Identifier(1) | 1
+Numeric(1) | 1
 Whitespace(0) |  
 Keyword(AS) | AS
 Whitespace(0) |  
@@ -283,7 +283,7 @@ Identifier(level) | level
 Whitespace(0) |  
 Operator(+) | +
 Whitespace(0) |  
-Identifier(1) | 1
+Numeric(1) | 1
 Whitespace(0) |  
 Keyword(AS) | AS
 Whitespace(0) |  
@@ -361,7 +361,7 @@ Identifier(level) | level
 Whitespace(0) |  
 Operator(*) | *
 Whitespace(0) |  
-Identifier(4) | 4
+Numeric(4) | 4
 Special()) | )
 Whitespace(0) |  
 Operator(||) | ||

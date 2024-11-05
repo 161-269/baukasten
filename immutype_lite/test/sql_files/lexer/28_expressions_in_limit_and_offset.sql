@@ -99,11 +99,11 @@ Special()) | )
 Whitespace(0) |  
 Operator(-) | -
 Whitespace(0) |  
-Identifier(2) | 2
+Numeric(2) | 2
 Whitespace(0) |  
 Keyword(OFFSET) | OFFSET
 Whitespace(0) |  
-Identifier(1) | 1
+Numeric(1) | 1
 Special(;) | ;
 Whitespace(1) | 
 

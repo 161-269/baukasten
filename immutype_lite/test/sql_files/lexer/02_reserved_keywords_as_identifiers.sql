@@ -50,7 +50,7 @@ Special()) | )
 Whitespace(0) |  
 Keyword(VALUES) | VALUES
 Special(() | (
-Identifier(1) | 1
+Numeric(1) | 1
 Special(,) | ,
 Whitespace(0) |  
 StringLiteral(Test) | 'Test'

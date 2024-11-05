@@ -62,7 +62,7 @@ Special(() | (
 StringLiteral(Test) | 'Test'
 Special(,) | ,
 Whitespace(0) |  
-Identifier(1) | 1
+Numeric(1) | 1
 Special()) | )
 Special(;) | ;
 Whitespace(2) | 

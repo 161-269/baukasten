@@ -48,7 +48,7 @@ Special(() | (
 StringLiteral(Alice) | 'Alice'
 Special(,) | ,
 Whitespace(0) |  
-Identifier(500) | 500
+Numeric(500) | 500
 Special()) | )
 Special(,) | ,
 Whitespace(0) |  
@@ -56,7 +56,7 @@ Special(() | (
 StringLiteral(Bob) | 'Bob'
 Special(,) | ,
 Whitespace(0) |  
-Identifier(700) | 700
+Numeric(700) | 700
 Special()) | )
 Special(,) | ,
 Whitespace(0) |  
@@ -64,7 +64,7 @@ Special(() | (
 StringLiteral(Alice) | 'Alice'
 Special(,) | ,
 Whitespace(0) |  
-Identifier(300) | 300
+Numeric(300) | 300
 Special()) | )
 Special(,) | ,
 Whitespace(0) |  
@@ -72,7 +72,7 @@ Special(() | (
 StringLiteral(Bob) | 'Bob'
 Special(,) | ,
 Whitespace(0) |  
-Identifier(400) | 400
+Numeric(400) | 400
 Special()) | )
 Special(;) | ;
 Whitespace(2) | 

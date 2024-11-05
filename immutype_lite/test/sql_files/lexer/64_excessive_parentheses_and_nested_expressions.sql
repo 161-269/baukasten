@@ -17,7 +17,9 @@ Special(() | (
 Special(() | (
 Special(() | (
 Special(() | (
-Identifier(1+2) | 1+2
+Numeric(1) | 1
+Operator(+) | +
+Numeric(2) | 2
 Special()) | )
 Special()) | )
 Special()) | )
@@ -33,9 +35,9 @@ Special(() | (
 Special(() | (
 Special(() | (
 Special(() | (
-Identifier(3) | 3
+Numeric(3) | 3
 Operator(*) | *
-Identifier(4) | 4
+Numeric(4) | 4
 Special()) | )
 Special()) | )
 Special()) | )
@@ -46,7 +48,7 @@ Whitespace(0) |
 Special(() | (
 Special(() | (
 Special(() | (
-Identifier(5) | 5
+Numeric(5) | 5
 Special()) | )
 Special()) | )
 Special()) | )
@@ -62,7 +64,7 @@ Special(() | (
 Special(() | (
 Special(() | (
 Special(() | (
-Identifier(6) | 6
+Numeric(6) | 6
 Special()) | )
 Special()) | )
 Special()) | )

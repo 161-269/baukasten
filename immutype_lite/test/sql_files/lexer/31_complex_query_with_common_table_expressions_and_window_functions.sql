@@ -121,9 +121,7 @@ Whitespace(0) |
 StringLiteral(North) | 'North'
 Special(,) | ,
 Whitespace(0) |  
-Identifier(5000) | 5000
-Special(.) | .
-Identifier(00) | 00
+Numeric(5.0e3) | 5000.00
 Special(,) | ,
 Whitespace(0) |  
 StringLiteral(2023-01-15) | '2023-01-15'
@@ -138,9 +136,7 @@ Whitespace(0) |
 StringLiteral(South) | 'South'
 Special(,) | ,
 Whitespace(0) |  
-Identifier(7000) | 7000
-Special(.) | .
-Identifier(00) | 00
+Numeric(7.0e3) | 7000.00
 Special(,) | ,
 Whitespace(0) |  
 StringLiteral(2023-01-20) | '2023-01-20'
@@ -155,9 +151,7 @@ Whitespace(0) |
 StringLiteral(North) | 'North'
 Special(,) | ,
 Whitespace(0) |  
-Identifier(8000) | 8000
-Special(.) | .
-Identifier(00) | 00
+Numeric(8.0e3) | 8000.00
 Special(,) | ,
 Whitespace(0) |  
 StringLiteral(2023-02-10) | '2023-02-10'
@@ -172,9 +166,7 @@ Whitespace(0) |
 StringLiteral(East) | 'East'
 Special(,) | ,
 Whitespace(0) |  
-Identifier(6000) | 6000
-Special(.) | .
-Identifier(00) | 00
+Numeric(6.0e3) | 6000.00
 Special(,) | ,
 Whitespace(0) |  
 StringLiteral(2023-02-15) | '2023-02-15'
@@ -189,9 +181,7 @@ Whitespace(0) |
 StringLiteral(South) | 'South'
 Special(,) | ,
 Whitespace(0) |  
-Identifier(4000) | 4000
-Special(.) | .
-Identifier(00) | 00
+Numeric(4.0e3) | 4000.00
 Special(,) | ,
 Whitespace(0) |  
 StringLiteral(2023-03-05) | '2023-03-05'
@@ -206,9 +196,7 @@ Whitespace(0) |
 StringLiteral(East) | 'East'
 Special(,) | ,
 Whitespace(0) |  
-Identifier(7000) | 7000
-Special(.) | .
-Identifier(00) | 00
+Numeric(7.0e3) | 7000.00
 Special(,) | ,
 Whitespace(0) |  
 StringLiteral(2023-03-10) | '2023-03-10'

@@ -53,7 +53,7 @@ Whitespace(0) |
 Keyword(VALUES) | VALUES
 Whitespace(0) |  
 Special(() | (
-Identifier(1) | 1
+Numeric(1) | 1
 Special(,) | ,
 Whitespace(0) |  
 StringLiteral(Test) | 'Test'
@@ -61,7 +61,7 @@ Special()) | )
 Special(,) | ,
 Whitespace(0) |  
 Special(() | (
-Identifier(2) | 2
+Numeric(2) | 2
 Special(,) | ,
 Whitespace(0) |  
 StringLiteral(Another Test) | 'Another Test'
@@ -72,7 +72,9 @@ Whitespace(2) |
 
 Identifier(SELECTvalue) | SELECTvalue
 Whitespace(0) |  
-Identifier(FROMlookahead_testWHEREid=1) | FROMlookahead_testWHEREid=1
+Identifier(FROMlookahead_testWHEREid) | FROMlookahead_testWHEREid
+Operator(=) | =
+Numeric(1) | 1
 Special(;) | ;
 Whitespace(1) | 
 

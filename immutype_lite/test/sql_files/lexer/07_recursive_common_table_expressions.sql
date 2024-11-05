@@ -28,7 +28,7 @@ Whitespace(1) |
     
 Keyword(SELECT) | SELECT
 Whitespace(0) |  
-Identifier(1) | 1
+Numeric(1) | 1
 Whitespace(1) | 
     
 Keyword(UNION) | UNION
@@ -38,7 +38,9 @@ Whitespace(1) |
     
 Keyword(SELECT) | SELECT
 Whitespace(0) |  
-Identifier(x+1) | x+1
+Identifier(x) | x
+Operator(+) | +
+Numeric(1) | 1
 Whitespace(0) |  
 Keyword(FROM) | FROM
 Whitespace(0) |  
@@ -50,7 +52,7 @@ Identifier(x) | x
 Whitespace(0) |  
 Operator(<) | <
 Whitespace(0) |  
-Identifier(5) | 5
+Numeric(5) | 5
 Whitespace(1) | 
   
 Special()) | )

@@ -121,10 +121,10 @@ Whitespace(0) |
 Keyword(VALUES) | VALUES
 Whitespace(0) |  
 Special(() | (
-Identifier(1) | 1
+Numeric(1) | 1
 Special(,) | ,
 Whitespace(0) |  
-Identifier(1) | 1
+Numeric(1) | 1
 Special()) | )
 Special(;) | ;
 Whitespace(1) | 
@@ -142,7 +142,7 @@ Whitespace(0) |
 Keyword(VALUES) | VALUES
 Whitespace(0) |  
 Special(() | (
-Identifier(1) | 1
+Numeric(1) | 1
 Special()) | )
 Special(;) | ;
 Whitespace(1) | 

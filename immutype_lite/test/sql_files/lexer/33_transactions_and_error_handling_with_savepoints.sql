@@ -61,7 +61,7 @@ Identifier(quantity) | quantity
 Whitespace(0) |  
 Operator(>=) | >=
 Whitespace(0) |  
-Identifier(0) | 0
+Numeric(0) | 0
 Special()) | )
 Whitespace(1) | 
 
@@ -114,7 +114,7 @@ Identifier(order_quantity) | order_quantity
 Whitespace(0) |  
 Operator(>) | >
 Whitespace(0) |  
-Identifier(0) | 0
+Numeric(0) | 0
 Special()) | )
 Special(,) | ,
 Whitespace(1) | 
@@ -173,37 +173,37 @@ Keyword(VALUES) | VALUES
 Whitespace(1) | 
     
 Special(() | (
-Identifier(101) | 101
+Numeric(101) | 101
 Special(,) | ,
 Whitespace(0) |  
 StringLiteral(Widget) | 'Widget'
 Special(,) | ,
 Whitespace(0) |  
-Identifier(50) | 50
+Numeric(50) | 50
 Special()) | )
 Special(,) | ,
 Whitespace(1) | 
     
 Special(() | (
-Identifier(102) | 102
+Numeric(102) | 102
 Special(,) | ,
 Whitespace(0) |  
 StringLiteral(Gadget) | 'Gadget'
 Special(,) | ,
 Whitespace(0) |  
-Identifier(75) | 75
+Numeric(75) | 75
 Special()) | )
 Special(,) | ,
 Whitespace(1) | 
     
 Special(() | (
-Identifier(103) | 103
+Numeric(103) | 103
 Special(,) | ,
 Whitespace(0) |  
 StringLiteral(Thingamajig) | 'Thingamajig'
 Special(,) | ,
 Whitespace(0) |  
-Identifier(100) | 100
+Numeric(100) | 100
 Special()) | )
 Special(;) | ;
 Whitespace(2) | 
@@ -247,7 +247,7 @@ Identifier(quantity) | quantity
 Whitespace(0) |  
 Operator(-) | -
 Whitespace(0) |  
-Identifier(20) | 20
+Numeric(20) | 20
 Whitespace(1) | 
 
 Keyword(WHERE) | WHERE
@@ -256,7 +256,7 @@ Identifier(product_id) | product_id
 Whitespace(0) |  
 Operator(=) | =
 Whitespace(0) |  
-Identifier(101) | 101
+Numeric(101) | 101
 Special(;) | ;
 Whitespace(2) | 
 
@@ -281,10 +281,10 @@ Keyword(VALUES) | VALUES
 Whitespace(1) | 
     
 Special(() | (
-Identifier(101) | 101
+Numeric(101) | 101
 Special(,) | ,
 Whitespace(0) |  
-Identifier(20) | 20
+Numeric(20) | 20
 Special(,) | ,
 Whitespace(0) |  
 Identifier(DATE) | DATE
@@ -310,7 +310,7 @@ Identifier(quantity) | quantity
 Whitespace(0) |  
 Operator(<) | <
 Whitespace(0) |  
-Identifier(0) | 0
+Numeric(0) | 0
 Whitespace(0) |  
 Keyword(THEN) | THEN
 Whitespace(0) |  
@@ -337,7 +337,7 @@ Identifier(product_id) | product_id
 Whitespace(0) |  
 Operator(=) | =
 Whitespace(0) |  
-Identifier(101) | 101
+Numeric(101) | 101
 Special(;) | ;
 Whitespace(2) | 
 
@@ -360,7 +360,7 @@ Identifier(quantity) | quantity
 Whitespace(0) |  
 Operator(-) | -
 Whitespace(0) |  
-Identifier(80) | 80
+Numeric(80) | 80
 Whitespace(1) | 
 
 Keyword(WHERE) | WHERE
@@ -369,7 +369,7 @@ Identifier(product_id) | product_id
 Whitespace(0) |  
 Operator(=) | =
 Whitespace(0) |  
-Identifier(102) | 102
+Numeric(102) | 102
 Special(;) | ;
 Whitespace(2) | 
 
@@ -394,10 +394,10 @@ Keyword(VALUES) | VALUES
 Whitespace(1) | 
     
 Special(() | (
-Identifier(102) | 102
+Numeric(102) | 102
 Special(,) | ,
 Whitespace(0) |  
-Identifier(80) | 80
+Numeric(80) | 80
 Special(,) | ,
 Whitespace(0) |  
 Identifier(DATE) | DATE
@@ -423,7 +423,7 @@ Identifier(quantity) | quantity
 Whitespace(0) |  
 Operator(<) | <
 Whitespace(0) |  
-Identifier(0) | 0
+Numeric(0) | 0
 Whitespace(0) |  
 Keyword(THEN) | THEN
 Whitespace(0) |  
@@ -450,7 +450,7 @@ Identifier(product_id) | product_id
 Whitespace(0) |  
 Operator(=) | =
 Whitespace(0) |  
-Identifier(102) | 102
+Numeric(102) | 102
 Special(;) | ;
 Whitespace(2) | 
 

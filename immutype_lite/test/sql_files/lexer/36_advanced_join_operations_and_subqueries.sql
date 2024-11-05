@@ -224,7 +224,7 @@ Identifier(quantity) | quantity
 Whitespace(0) |  
 Operator(>) | >
 Whitespace(0) |  
-Identifier(0) | 0
+Numeric(0) | 0
 Special()) | )
 Special(,) | ,
 Whitespace(1) | 
@@ -287,7 +287,7 @@ Keyword(VALUES) | VALUES
 Whitespace(1) | 
     
 Special(() | (
-Identifier(1) | 1
+Numeric(1) | 1
 Special(,) | ,
 Whitespace(0) |  
 StringLiteral(Electronics) | 'Electronics'
@@ -296,7 +296,7 @@ Special(,) | ,
 Whitespace(1) | 
     
 Special(() | (
-Identifier(2) | 2
+Numeric(2) | 2
 Special(,) | ,
 Whitespace(0) |  
 StringLiteral(Books) | 'Books'
@@ -305,7 +305,7 @@ Special(,) | ,
 Whitespace(1) | 
     
 Special(() | (
-Identifier(3) | 3
+Numeric(3) | 3
 Special(,) | ,
 Whitespace(0) |  
 StringLiteral(Clothing) | 'Clothing'
@@ -340,12 +340,10 @@ Special(() | (
 StringLiteral(Smartphone) | 'Smartphone'
 Special(,) | ,
 Whitespace(0) |  
-Identifier(1) | 1
+Numeric(1) | 1
 Special(,) | ,
 Whitespace(0) |  
-Identifier(699) | 699
-Special(.) | .
-Identifier(99) | 99
+Numeric(699.99) | 699.99
 Special()) | )
 Special(,) | ,
 Whitespace(1) | 
@@ -354,12 +352,10 @@ Special(() | (
 StringLiteral(Laptop) | 'Laptop'
 Special(,) | ,
 Whitespace(0) |  
-Identifier(1) | 1
+Numeric(1) | 1
 Special(,) | ,
 Whitespace(0) |  
-Identifier(999) | 999
-Special(.) | .
-Identifier(99) | 99
+Numeric(999.99) | 999.99
 Special()) | )
 Special(,) | ,
 Whitespace(1) | 
@@ -368,12 +364,10 @@ Special(() | (
 StringLiteral(Novel) | 'Novel'
 Special(,) | ,
 Whitespace(0) |  
-Identifier(2) | 2
+Numeric(2) | 2
 Special(,) | ,
 Whitespace(0) |  
-Identifier(19) | 19
-Special(.) | .
-Identifier(99) | 99
+Numeric(19.99) | 19.99
 Special()) | )
 Special(,) | ,
 Whitespace(1) | 
@@ -382,12 +376,10 @@ Special(() | (
 StringLiteral(T-Shirt) | 'T-Shirt'
 Special(,) | ,
 Whitespace(0) |  
-Identifier(3) | 3
+Numeric(3) | 3
 Special(,) | ,
 Whitespace(0) |  
-Identifier(9) | 9
-Special(.) | .
-Identifier(99) | 99
+Numeric(9.99) | 9.99
 Special()) | )
 Special(;) | ;
 Whitespace(2) | 
@@ -445,13 +437,13 @@ Keyword(VALUES) | VALUES
 Whitespace(1) | 
     
 Special(() | (
-Identifier(1) | 1
+Numeric(1) | 1
 Special(,) | ,
 Whitespace(0) |  
-Identifier(1) | 1
+Numeric(1) | 1
 Special(,) | ,
 Whitespace(0) |  
-Identifier(2) | 2
+Numeric(2) | 2
 Special()) | )
 Special(,) | ,
 Whitespace(0) |  
@@ -459,13 +451,13 @@ Comment( 2 Smartphones) | -- 2 Smartphones
 Whitespace(1) | 
     
 Special(() | (
-Identifier(1) | 1
+Numeric(1) | 1
 Special(,) | ,
 Whitespace(0) |  
-Identifier(3) | 3
+Numeric(3) | 3
 Special(,) | ,
 Whitespace(0) |  
-Identifier(1) | 1
+Numeric(1) | 1
 Special()) | )
 Special(,) | ,
 Whitespace(0) |  
@@ -473,13 +465,13 @@ Comment( 1 Novel) | -- 1 Novel
 Whitespace(1) | 
     
 Special(() | (
-Identifier(2) | 2
+Numeric(2) | 2
 Special(,) | ,
 Whitespace(0) |  
-Identifier(2) | 2
+Numeric(2) | 2
 Special(,) | ,
 Whitespace(0) |  
-Identifier(1) | 1
+Numeric(1) | 1
 Special()) | )
 Special(,) | ,
 Whitespace(0) |  
@@ -487,13 +479,13 @@ Comment( 1 Laptop) | -- 1 Laptop
 Whitespace(1) | 
     
 Special(() | (
-Identifier(2) | 2
+Numeric(2) | 2
 Special(,) | ,
 Whitespace(0) |  
-Identifier(4) | 4
+Numeric(4) | 4
 Special(,) | ,
 Whitespace(0) |  
-Identifier(3) | 3
+Numeric(3) | 3
 Special()) | )
 Special(;) | ;
 Whitespace(0) |  

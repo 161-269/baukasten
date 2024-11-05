@@ -50,7 +50,7 @@ Special()) | )
 Whitespace(0) |  
 Keyword(VALUES) | VALUES
 Special(() | (
-Identifier(1) | 1
+Numeric(1) | 1
 Special(,) | ,
 Whitespace(0) |  
 StringLiteral(Data with unicode spaces) | 'Data with unicode spaces'
@@ -69,7 +69,9 @@ Identifier(unicode_whitespace) | unicode_whitespace
 Whitespace(0) |  
 Keyword(WHERE) | WHERE
 Whitespace(0) |  
-Identifier(id=1) | id=1
+Identifier(id) | id
+Operator(=) | =
+Numeric(1) | 1
 Special(;) | ;
 Whitespace(1) | 
 

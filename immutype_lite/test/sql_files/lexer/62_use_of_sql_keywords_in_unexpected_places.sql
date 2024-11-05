@@ -58,13 +58,13 @@ Whitespace(0) |
 Keyword(VALUES) | VALUES
 Whitespace(0) |  
 Special(() | (
-Identifier(1) | 1
+Numeric(1) | 1
 Special(,) | ,
 Whitespace(0) |  
 StringLiteral(Data) | 'Data'
 Special(,) | ,
 Whitespace(0) |  
-Identifier(2) | 2
+Numeric(2) | 2
 Special()) | )
 Special(;) | ;
 Whitespace(2) | 
@@ -90,7 +90,7 @@ Keyword(WHERE) | where
 Whitespace(0) |  
 Operator(=) | =
 Whitespace(0) |  
-Identifier(2) | 2
+Numeric(2) | 2
 Special(;) | ;
 Whitespace(1) | 
 

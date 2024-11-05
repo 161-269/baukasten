@@ -55,11 +55,15 @@ Identifier(body) | body
 Special(,) | ,
 Whitespace(1) | 
     
-Identifier(content='') | content=''
+Identifier(content) | content
+Operator(=) | =
+StringLiteral() | ''
 Special(,) | ,
 Whitespace(1) | 
     
-Identifier(tokenize='porter') | tokenize='porter'
+Identifier(tokenize) | tokenize
+Operator(=) | =
+StringLiteral(porter) | 'porter'
 Whitespace(1) | 
 
 Special()) | )
@@ -129,7 +133,7 @@ Special(() | (
 Identifier(articles) | articles
 Special(,) | ,
 Whitespace(0) |  
-Identifier(1) | 1
+Numeric(1) | 1
 Special(,) | ,
 Whitespace(0) |  
 StringLiteral(<b>) | '<b>'
@@ -141,7 +145,7 @@ Whitespace(0) |
 StringLiteral(...) | '...'
 Special(,) | ,
 Whitespace(0) |  
-Identifier(10) | 10
+Numeric(10) | 10
 Special()) | )
 Whitespace(0) |  
 Keyword(AS) | AS

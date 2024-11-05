@@ -17,7 +17,7 @@ Identifier(page_size) | page_size
 Whitespace(0) |  
 Operator(=) | =
 Whitespace(0) |  
-Identifier(1024) | 1024
+Numeric(1024) | 1024
 Special(;) | ;
 Whitespace(1) | 
 
@@ -28,7 +28,7 @@ Whitespace(0) |
 Operator(=) | =
 Whitespace(0) |  
 Operator(-) | -
-Identifier(2000) | 2000
+Numeric(2000) | 2000
 Special(;) | ;
 Whitespace(1) | 
 

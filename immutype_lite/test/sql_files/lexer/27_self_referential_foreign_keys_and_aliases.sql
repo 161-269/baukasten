@@ -81,7 +81,7 @@ Whitespace(0) |
 Keyword(VALUES) | VALUES
 Whitespace(0) |  
 Special(() | (
-Identifier(1) | 1
+Numeric(1) | 1
 Special(,) | ,
 Whitespace(0) |  
 Keyword(NULL) | NULL
@@ -92,10 +92,10 @@ Special()) | )
 Special(,) | ,
 Whitespace(0) |  
 Special(() | (
-Identifier(2) | 2
+Numeric(2) | 2
 Special(,) | ,
 Whitespace(0) |  
-Identifier(1) | 1
+Numeric(1) | 1
 Special(,) | ,
 Whitespace(0) |  
 StringLiteral(Child) | 'Child'
@@ -103,10 +103,10 @@ Special()) | )
 Special(,) | ,
 Whitespace(0) |  
 Special(() | (
-Identifier(3) | 3
+Numeric(3) | 3
 Special(,) | ,
 Whitespace(0) |  
-Identifier(2) | 2
+Numeric(2) | 2
 Special(,) | ,
 Whitespace(0) |  
 StringLiteral(Grandchild) | 'Grandchild'

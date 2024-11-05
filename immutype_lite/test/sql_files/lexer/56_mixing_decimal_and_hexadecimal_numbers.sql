@@ -50,17 +50,18 @@ Whitespace(0) |
 Keyword(VALUES) | VALUES
 Whitespace(0) |  
 Special(() | (
-Identifier(10) | 10
+Numeric(10) | 10
 Special()) | )
 Special(,) | ,
 Whitespace(0) |  
 Special(() | (
-Identifier(0x0A) | 0x0A
+Numeric(0) | 0
+Identifier(x0A) | x0A
 Special()) | )
 Special(,) | ,
 Whitespace(0) |  
 Special(() | (
-Identifier(012) | 012
+Numeric(12) | 012
 Special()) | )
 Special(;) | ;
 Whitespace(2) | 
@@ -80,7 +81,7 @@ Identifier(value) | value
 Whitespace(0) |  
 Operator(=) | =
 Whitespace(0) |  
-Identifier(10) | 10
+Numeric(10) | 10
 Special(;) | ;
 Whitespace(1) | 
 

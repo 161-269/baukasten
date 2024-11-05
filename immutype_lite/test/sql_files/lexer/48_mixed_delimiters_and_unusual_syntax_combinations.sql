@@ -72,7 +72,7 @@ Whitespace(0) |
 Keyword(VALUES) | VALUES
 Whitespace(0) |  
 Special(() | (
-Identifier(1) | 1
+Numeric(1) | 1
 Special(,) | ,
 Whitespace(0) |  
 StringLiteral(Data) | 'Data'
@@ -95,7 +95,7 @@ Identifier(key) | `key`
 Whitespace(0) |  
 Operator(=) | =
 Whitespace(0) |  
-Identifier(1) | 1
+Numeric(1) | 1
 Special(;) | ;
 Whitespace(1) | 
 

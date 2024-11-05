@@ -317,7 +317,7 @@ Special(() | (
 StringLiteral(admin_user) | 'admin_user'
 Special(,) | ,
 Whitespace(0) |  
-Identifier(1) | 1
+Numeric(1) | 1
 Special()) | )
 Special(,) | ,
 Whitespace(1) | 
@@ -326,7 +326,7 @@ Special(() | (
 StringLiteral(editor_user) | 'editor_user'
 Special(,) | ,
 Whitespace(0) |  
-Identifier(2) | 2
+Numeric(2) | 2
 Special()) | )
 Special(,) | ,
 Whitespace(1) | 
@@ -335,7 +335,7 @@ Special(() | (
 StringLiteral(viewer_user) | 'viewer_user'
 Special(,) | ,
 Whitespace(0) |  
-Identifier(3) | 3
+Numeric(3) | 3
 Special()) | )
 Special(;) | ;
 Whitespace(2) | 
@@ -402,10 +402,10 @@ Keyword(VALUES) | VALUES
 Whitespace(1) | 
     
 Special(() | (
-Identifier(1) | 1
+Numeric(1) | 1
 Special(,) | ,
 Whitespace(0) |  
-Identifier(1) | 1
+Numeric(1) | 1
 Special()) | )
 Special(,) | ,
 Whitespace(0) |  
@@ -413,10 +413,10 @@ Comment( Admin has Create) | -- Admin has Create
 Whitespace(1) | 
     
 Special(() | (
-Identifier(1) | 1
+Numeric(1) | 1
 Special(,) | ,
 Whitespace(0) |  
-Identifier(2) | 2
+Numeric(2) | 2
 Special()) | )
 Special(,) | ,
 Whitespace(0) |  
@@ -424,10 +424,10 @@ Comment( Admin has Read) | -- Admin has Read
 Whitespace(1) | 
     
 Special(() | (
-Identifier(1) | 1
+Numeric(1) | 1
 Special(,) | ,
 Whitespace(0) |  
-Identifier(3) | 3
+Numeric(3) | 3
 Special()) | )
 Special(,) | ,
 Whitespace(0) |  
@@ -435,10 +435,10 @@ Comment( Admin has Update) | -- Admin has Update
 Whitespace(1) | 
     
 Special(() | (
-Identifier(1) | 1
+Numeric(1) | 1
 Special(,) | ,
 Whitespace(0) |  
-Identifier(4) | 4
+Numeric(4) | 4
 Special()) | )
 Special(,) | ,
 Whitespace(0) |  
@@ -446,10 +446,10 @@ Comment( Admin has Delete) | -- Admin has Delete
 Whitespace(1) | 
     
 Special(() | (
-Identifier(2) | 2
+Numeric(2) | 2
 Special(,) | ,
 Whitespace(0) |  
-Identifier(2) | 2
+Numeric(2) | 2
 Special()) | )
 Special(,) | ,
 Whitespace(0) |  
@@ -457,10 +457,10 @@ Comment( Editor has Read) | -- Editor has Read
 Whitespace(1) | 
     
 Special(() | (
-Identifier(2) | 2
+Numeric(2) | 2
 Special(,) | ,
 Whitespace(0) |  
-Identifier(3) | 3
+Numeric(3) | 3
 Special()) | )
 Special(,) | ,
 Whitespace(0) |  
@@ -468,10 +468,10 @@ Comment( Editor has Update) | -- Editor has Update
 Whitespace(1) | 
     
 Special(() | (
-Identifier(3) | 3
+Numeric(3) | 3
 Special(,) | ,
 Whitespace(0) |  
-Identifier(2) | 2
+Numeric(2) | 2
 Special()) | )
 Special(;) | ;
 Whitespace(0) |  

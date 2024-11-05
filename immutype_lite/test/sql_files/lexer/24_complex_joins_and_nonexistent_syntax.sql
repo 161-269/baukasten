@@ -47,17 +47,17 @@ Whitespace(0) |
 Keyword(VALUES) | VALUES
 Whitespace(0) |  
 Special(() | (
-Identifier(1) | 1
+Numeric(1) | 1
 Special()) | )
 Special(,) | ,
 Whitespace(0) |  
 Special(() | (
-Identifier(2) | 2
+Numeric(2) | 2
 Special()) | )
 Special(,) | ,
 Whitespace(0) |  
 Special(() | (
-Identifier(3) | 3
+Numeric(3) | 3
 Special()) | )
 Special(;) | ;
 Whitespace(1) | 
@@ -71,17 +71,17 @@ Whitespace(0) |
 Keyword(VALUES) | VALUES
 Whitespace(0) |  
 Special(() | (
-Identifier(2) | 2
+Numeric(2) | 2
 Special()) | )
 Special(,) | ,
 Whitespace(0) |  
 Special(() | (
-Identifier(3) | 3
+Numeric(3) | 3
 Special()) | )
 Special(,) | ,
 Whitespace(0) |  
 Special(() | (
-Identifier(4) | 4
+Numeric(4) | 4
 Special()) | )
 Special(;) | ;
 Whitespace(2) | 
@@ -182,10 +182,10 @@ Keyword(ORDER) | ORDER
 Whitespace(0) |  
 Keyword(BY) | BY
 Whitespace(0) |  
-Identifier(1) | 1
+Numeric(1) | 1
 Special(,) | ,
 Whitespace(0) |  
-Identifier(2) | 2
+Numeric(2) | 2
 Special(;) | ;
 Whitespace(1) | 
 

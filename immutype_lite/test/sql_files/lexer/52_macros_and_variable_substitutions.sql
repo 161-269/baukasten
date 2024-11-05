@@ -67,7 +67,7 @@ Whitespace(0) |
 Keyword(VALUES) | VALUES
 Whitespace(0) |  
 Special(() | (
-Identifier(50) | 50
+Numeric(50) | 50
 Special()) | )
 Special(;) | ;
 Whitespace(1) | 

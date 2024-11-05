@@ -50,17 +50,17 @@ Whitespace(0) |
 Keyword(VALUES) | VALUES
 Whitespace(0) |  
 Special(() | (
-Identifier(1) | 1
+Numeric(1) | 1
 Special()) | )
 Special(,) | ,
 Whitespace(0) |  
 Special(() | (
-Identifier(2) | 2
+Numeric(2) | 2
 Special()) | )
 Special(,) | ,
 Whitespace(0) |  
 Special(() | (
-Identifier(3) | 3
+Numeric(3) | 3
 Special()) | )
 Special(;) | ;
 Whitespace(2) | 
@@ -76,7 +76,10 @@ Identifier(operator_test) | operator_test
 Whitespace(0) |  
 Keyword(WHERE) | WHERE
 Whitespace(0) |  
-Identifier(value>>>1) | value>>>1
+Identifier(value) | value
+Operator(>>) | >>
+Operator(>) | >
+Numeric(1) | 1
 Special(;) | ;
 Whitespace(1) | 
 
@@ -90,7 +93,10 @@ Identifier(operator_test) | operator_test
 Whitespace(0) |  
 Keyword(WHERE) | WHERE
 Whitespace(0) |  
-Identifier(value<<<=2) | value<<<=2
+Identifier(value) | value
+Operator(<<) | <<
+Operator(<=) | <=
+Numeric(2) | 2
 Special(;) | ;
 Whitespace(1) | 
 

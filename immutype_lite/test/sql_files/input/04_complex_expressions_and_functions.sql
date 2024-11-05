@@ -16,4 +16,4 @@ multi-line comment
 */
 INSERT INTO test_table (id, data) VALUES (1, 'Hello World'); -- End-of-line comment
 
-INSERT INTO test_table (id, data) VALUES (2, 'It\'s a sunny day');
+INSERT INTO test_table (id, data) VALUES (2, 'It''s a sunny day');

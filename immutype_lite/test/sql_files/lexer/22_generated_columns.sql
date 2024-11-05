@@ -41,7 +41,7 @@ Identifier(base_value) | base_value
 Whitespace(0) |  
 Operator(*) | *
 Whitespace(0) |  
-Identifier(2) | 2
+Numeric(2) | 2
 Special()) | )
 Whitespace(0) |  
 Identifier(STORED) | STORED
@@ -65,12 +65,12 @@ Whitespace(0) |
 Keyword(VALUES) | VALUES
 Whitespace(0) |  
 Special(() | (
-Identifier(10) | 10
+Numeric(10) | 10
 Special()) | )
 Special(,) | ,
 Whitespace(0) |  
 Special(() | (
-Identifier(20) | 20
+Numeric(20) | 20
 Special()) | )
 Special(;) | ;
 Whitespace(2) | 

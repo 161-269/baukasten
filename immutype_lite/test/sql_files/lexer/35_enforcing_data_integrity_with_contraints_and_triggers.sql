@@ -61,7 +61,7 @@ Identifier(balance) | balance
 Whitespace(0) |  
 Operator(>=) | >=
 Whitespace(0) |  
-Identifier(0) | 0
+Numeric(0) | 0
 Special()) | )
 Whitespace(1) | 
 
@@ -230,7 +230,7 @@ Special()) | )
 Whitespace(0) |  
 Operator(<) | <
 Whitespace(0) |  
-Identifier(0) | 0
+Numeric(0) | 0
 Whitespace(1) | 
         
 Keyword(THEN) | THEN
@@ -282,9 +282,7 @@ Special(() | (
 StringLiteral(Alice) | 'Alice'
 Special(,) | ,
 Whitespace(0) |  
-Identifier(1000) | 1000
-Special(.) | .
-Identifier(00) | 00
+Numeric(1.0e3) | 1000.00
 Special()) | )
 Special(,) | ,
 Whitespace(1) | 
@@ -293,9 +291,7 @@ Special(() | (
 StringLiteral(Bob) | 'Bob'
 Special(,) | ,
 Whitespace(0) |  
-Identifier(500) | 500
-Special(.) | .
-Identifier(00) | 00
+Numeric(500.0) | 500.00
 Special()) | )
 Special(;) | ;
 Whitespace(2) | 
@@ -334,13 +330,11 @@ Keyword(VALUES) | VALUES
 Whitespace(1) | 
     
 Special(() | (
-Identifier(1) | 1
+Numeric(1) | 1
 Special(,) | ,
 Whitespace(0) |  
 Operator(-) | -
-Identifier(200) | 200
-Special(.) | .
-Identifier(00) | 00
+Numeric(200.0) | 200.00
 Special(,) | ,
 Whitespace(0) |  
 Identifier(DATE) | DATE
@@ -375,13 +369,11 @@ Keyword(VALUES) | VALUES
 Whitespace(1) | 
     
 Special(() | (
-Identifier(2) | 2
+Numeric(2) | 2
 Special(,) | ,
 Whitespace(0) |  
 Operator(-) | -
-Identifier(600) | 600
-Special(.) | .
-Identifier(00) | 00
+Numeric(600.0) | 600.00
 Special(,) | ,
 Whitespace(0) |  
 Identifier(DATE) | DATE

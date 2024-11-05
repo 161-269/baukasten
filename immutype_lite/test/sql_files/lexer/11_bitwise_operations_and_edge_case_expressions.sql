@@ -57,41 +57,41 @@ Keyword(VALUES) | VALUES
 Whitespace(1) | 
 
 Special(() | (
-Identifier(1) | 1
+Numeric(1) | 1
 Special(,) | ,
 Whitespace(0) |  
-Identifier(0) | 0
+Numeric(0) | 0
 Whitespace(0) |  
 Operator(|) | |
 Whitespace(0) |  
-Identifier(1) | 1
+Numeric(1) | 1
 Special()) | )
 Special(,) | ,
 Whitespace(1) | 
 
 Special(() | (
-Identifier(2) | 2
+Numeric(2) | 2
 Special(,) | ,
 Whitespace(0) |  
-Identifier(1) | 1
+Numeric(1) | 1
 Whitespace(0) |  
 Operator(<<) | <<
 Whitespace(0) |  
-Identifier(2) | 2
+Numeric(2) | 2
 Special()) | )
 Special(,) | ,
 Whitespace(1) | 
 
 Special(() | (
-Identifier(3) | 3
+Numeric(3) | 3
 Special(,) | ,
 Whitespace(0) |  
 Operator(~) | ~
-Identifier(0) | 0
+Numeric(0) | 0
 Whitespace(0) |  
 Operator(&) | &
 Whitespace(0) |  
-Identifier(255) | 255
+Numeric(255) | 255
 Special()) | )
 Special(;) | ;
 Whitespace(2) | 
@@ -114,7 +114,7 @@ Identifier(flags) | flags
 Whitespace(0) |  
 Operator(&) | &
 Whitespace(0) |  
-Identifier(2) | 2
+Numeric(2) | 2
 Special(;) | ;
 Whitespace(1) | 
 

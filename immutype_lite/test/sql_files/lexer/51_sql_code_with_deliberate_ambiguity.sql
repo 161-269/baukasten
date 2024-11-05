@@ -18,7 +18,7 @@ Keyword(AS) | AS
 Whitespace(0) |  
 Keyword(SELECT) | SELECT
 Whitespace(0) |  
-Identifier(1) | 1
+Numeric(1) | 1
 Whitespace(0) |  
 Keyword(AS) | AS
 Whitespace(0) |  
@@ -47,7 +47,7 @@ Identifier(a) | a
 Whitespace(0) |  
 Operator(=) | =
 Whitespace(0) |  
-Identifier(1) | 1
+Numeric(1) | 1
 Special(;) | ;
 Whitespace(1) | 
 

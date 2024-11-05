@@ -73,7 +73,7 @@ Whitespace(0) |
 Keyword(VALUES) | VALUES
 Whitespace(0) |  
 Special(() | (
-Identifier(1) | 1
+Numeric(1) | 1
 Special(,) | ,
 Whitespace(0) |  
 StringLiteral(Hello World) | 'Hello World'
@@ -100,16 +100,10 @@ Whitespace(0) |
 Keyword(VALUES) | VALUES
 Whitespace(0) |  
 Special(() | (
-Identifier(2) | 2
+Numeric(2) | 2
 Special(,) | ,
 Whitespace(0) |  
-StringLiteral(It\') | 'It\'s
-Whitespace(0) |  
-Identifier(a) | a
-Whitespace(0) |  
-Identifier(sunny) | sunny
-Whitespace(0) |  
-Identifier(day') | day'
+StringLiteral(It''s a sunny day) | 'It''s a sunny day'
 Special()) | )
 Special(;) | ;
 Whitespace(1) | 

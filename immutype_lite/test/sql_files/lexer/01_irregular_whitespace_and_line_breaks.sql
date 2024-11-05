@@ -58,13 +58,13 @@ Identifier(name) | name
 Special()) | )
 Keyword(VALUES) | VALUES
 Special(() | (
-Identifier(1) | 1
+Numeric(1) | 1
 Special(,) | ,
 StringLiteral(Alice) | 'Alice'
 Special()) | )
 Special(,) | ,
 Special(() | (
-Identifier(2) | 2
+Numeric(2) | 2
 Special(,) | ,
 StringLiteral(Bob) | 'Bob'
 Special()) | )

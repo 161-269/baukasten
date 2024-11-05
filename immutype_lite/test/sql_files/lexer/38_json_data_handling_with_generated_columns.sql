@@ -219,7 +219,7 @@ Whitespace(0) |
 StringLiteral($.age) | '$.age'
 Special(,) | ,
 Whitespace(0) |  
-Identifier(31) | 31
+Numeric(31) | 31
 Special()) | )
 Whitespace(1) | 
 
