@@ -13,7 +13,6 @@ pub type Speacial {
   Dot
   LeftParen
   RightParen
-  Star
 }
 
 pub fn stringify_special(special: Speacial) -> String {
@@ -23,17 +22,57 @@ pub fn stringify_special(special: Speacial) -> String {
     Dot -> "."
     LeftParen -> "("
     RightParen -> ")"
-    Star -> "*"
   }
 }
 
+/// https://www.sqlite.org/lang_expr.html
 pub type Operator {
+  Tilda
+  Plus
+  Minus
+  LogicalOr
+  ExtractText
+  ExtractParsed
+  Multiply
+  Divide
+  Modulo
+  BinaryAnd
+  BinaryOr
+  ShiftLeft
+  ShiftRight
+  LessThan
+  GreaterThan
+  LessThanOrEqual
+  GreaterThanOrEqual
   Equals
+  EqualsEquals
+  LessOrGreaterThan
+  NotEquals
 }
 
 pub fn stringify_operator(operator: Operator) -> String {
   case operator {
+    Tilda -> "~"
+    Plus -> "+"
+    Minus -> "-"
+    LogicalOr -> "||"
+    ExtractText -> "->"
+    ExtractParsed -> "->>"
+    Multiply -> "*"
+    Divide -> "/"
+    Modulo -> "%"
+    BinaryAnd -> "&"
+    BinaryOr -> "|"
+    ShiftLeft -> "<<"
+    ShiftRight -> ">>"
+    LessThan -> "<"
+    GreaterThan -> ">"
+    LessThanOrEqual -> "<="
+    GreaterThanOrEqual -> ">="
     Equals -> "="
+    EqualsEquals -> "=="
+    LessOrGreaterThan -> "<>"
+    NotEquals -> "!="
   }
 }
 
@@ -105,20 +144,38 @@ fn specials() -> List(Matcher(Token, a)) {
     #(".", Dot),
     #("(", LeftParen),
     #(")", RightParen),
-    #("*", Star),
   ]
   |> list.map(fn(tuple) {
     let #(token, value) = tuple
-    lexer.token(token, Special(value))
+    helper.exact(token, [], Special(value))
   })
 }
 
+/// https://www.sqlite.org/lang_expr.html
 fn operators() -> List(Matcher(Token, a)) {
-  [#("=", Equals)]
-  |> list.map(fn(tuple) {
-    let #(token, value) = tuple
-    lexer.token(token, Operator(value))
-  })
+  [
+    helper.exact("~", [], Operator(Tilda)),
+    helper.exact("+", [], Operator(Plus)),
+    helper.exact("-", ["-"], Operator(Minus)),
+    helper.exact("||", [], Operator(LogicalOr)),
+    helper.exact("->", [">"], Operator(ExtractText)),
+    helper.exact("->>", [], Operator(ExtractParsed)),
+    helper.exact("*", [], Operator(Multiply)),
+    helper.exact("/", ["*"], Operator(Divide)),
+    helper.exact("%", [], Operator(Modulo)),
+    helper.exact("&", [], Operator(BinaryAnd)),
+    helper.exact("|", ["|"], Operator(BinaryOr)),
+    helper.exact("<<", [], Operator(ShiftLeft)),
+    helper.exact(">>", [], Operator(ShiftRight)),
+    helper.exact("<", ["<", ">", "="], Operator(LessThan)),
+    helper.exact(">", [">", "="], Operator(GreaterThan)),
+    helper.exact("<=", [], Operator(LessThanOrEqual)),
+    helper.exact(">=", [], Operator(GreaterThanOrEqual)),
+    helper.exact("=", ["="], Operator(Equals)),
+    helper.exact("==", [], Operator(EqualsEquals)),
+    helper.exact("<>", [], Operator(LessOrGreaterThan)),
+    helper.exact("!=", [], Operator(NotEquals)),
+  ]
 }
 
 fn new_metadata(input: String) -> Token {
