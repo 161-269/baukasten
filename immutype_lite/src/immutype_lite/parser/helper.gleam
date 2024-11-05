@@ -2,7 +2,7 @@ import chomp/lexer.{type Matcher, Keep, NoMatch}
 import gleam/list
 import gleam/regex
 
-pub const breaker_regex = "[;\\,\\.\\(\\)\\*\\s]"
+pub const breaker_regex = "[;\\,\\.\\(\\)\\~\\+\\-\\|\\*\\/\\%\\&\\<\\>\\=\\!\\s]"
 
 pub fn regex_matcher(
   pattern: String,

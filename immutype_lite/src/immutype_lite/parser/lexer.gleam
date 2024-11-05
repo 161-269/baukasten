@@ -405,7 +405,8 @@ fn identifiers() -> List(Matcher(Token, a)) {
   [
     helper.complex_matcher(
       fn(input) {
-        string.to_graphemes(input)
+        input != ""
+        && string.to_graphemes(input)
         |> list.fold_until(0, fn(index, grapheme) {
           let ok = case index {
             0 ->
