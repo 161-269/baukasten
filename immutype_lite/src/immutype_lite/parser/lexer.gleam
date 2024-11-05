@@ -1,6 +1,7 @@
 //// https://www.sqlite.org/lang.html
 
 import chomp/lexer.{type Lexer, type Matcher}
+import gleam/float
 import gleam/int
 import gleam/list.{Continue, Stop}
 import gleam/regex
@@ -83,10 +84,16 @@ pub type Token {
   Comment(String)
   Metadata(key: String, value: String)
   MacroDefinition(key: String, value: String)
+  Numeric(Numeric)
   StringLiteral(String)
   Keyword(Keyword)
   Identifier(String)
   Whitespace(lines: Int)
+}
+
+pub type Numeric {
+  Integer(Int)
+  Floating(Float)
 }
 
 pub fn stringify_token(token: Token) -> String {
@@ -97,6 +104,13 @@ pub fn stringify_token(token: Token) -> String {
     Metadata(key, value) -> "Metadata(" <> key <> ":" <> value <> ")"
     MacroDefinition(key, value) ->
       "MacroDefinition(" <> key <> " -> " <> value <> ")"
+    Numeric(numeric) ->
+      "Numeric("
+      <> case numeric {
+        Integer(value) -> int.to_string(value)
+        Floating(value) -> float.to_string(value)
+      }
+      <> ")"
     StringLiteral(string) -> "StringLiteral(" <> string <> ")"
     Keyword(keyword) -> "Keyword(" <> keyword.stringify(keyword) <> ")"
     Identifier(identifier) -> "Identifier(" <> identifier <> ")"
@@ -226,6 +240,7 @@ fn comments() -> List(Matcher(Token, a)) {
 }
 
 fn identifiers() -> List(Matcher(Token, a)) {
+  let assert Ok(is_digit) = regex.from_string("[\\d]")
   let assert Ok(identifier_first_char_regex) = regex.from_string("[\\w_]")
   let assert Ok(identifier_trailing_char_regex) = regex.from_string("[\\w_\\d]")
   let between = fn(value: String, utf_codepoints: List(#(Int, Int))) -> Bool {
@@ -410,8 +425,11 @@ fn identifiers() -> List(Matcher(Token, a)) {
         |> list.fold_until(0, fn(index, grapheme) {
           let ok = case index {
             0 ->
-              regex.check(identifier_first_char_regex, grapheme)
-              || is_emoji(grapheme)
+              !regex.check(is_digit, grapheme)
+              && {
+                regex.check(identifier_first_char_regex, grapheme)
+                || is_emoji(grapheme)
+              }
             _ ->
               regex.check(identifier_trailing_char_regex, grapheme)
               || is_emoji(grapheme)
@@ -427,9 +445,6 @@ fn identifiers() -> List(Matcher(Token, a)) {
       helper.breaker_regex,
       Identifier(_),
     ),
-    helper.regex_matcher("^[\\w_][\\w_\\d]*", helper.breaker_regex, fn(input) {
-      Identifier(input)
-    }),
     helper.regex_matcher(
       "^\"(?:\"\"|[^\"])*(?!\"\")\"",
       helper.breaker_regex,
@@ -459,5 +474,14 @@ fn string_literals() -> List(Matcher(Token, a)) {
 }
 
 fn number_literals() -> List(Matcher(Token, a)) {
-  []
+  [
+    lexer.number(fn(value) { Numeric(Integer(value)) }, fn(value) {
+      Numeric(Floating(value))
+    }),
+    lexer.number_with_separator(
+      "_",
+      fn(value) { Numeric(Integer(value)) },
+      fn(value) { Numeric(Floating(value)) },
+    ),
+  ]
 }
