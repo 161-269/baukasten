@@ -1,21 +1,65 @@
-Lexer error:
-test/sql_files/input/23_extremely_long_identifiers_and_literals.sql:12:161
+Lexer result:
 
--- Very long table and column names.
--- Extremely long string literals.
--- Testing parser limits for identifier and literal lengths.
+Comment( Very long table and column names.) | -- Very long table and column names.
+Whitespace(1) | 
+
+Comment( Extremely long string literals.) | -- Extremely long string literals.
+Whitespace(1) | 
+
+Comment( Testing parser limits for identifier and literal lengths.) | -- Testing parser limits for identifier and literal lengths.
+Whitespace(3) | 
 
 
-CREATE TABLE "this_is_an_extremely_long_table_name_that_should_still_be_valid_in_sql_but_is_unnecessarily_verbose" (
-  "this_is_an_extremely_long_column_name_that_tests_the_parser_limits" TEXT
-);
 
-INSERT INTO "this_is_an_extremely_long_table_name_that_should_still_be_valid_in_sql_but_is_unnecessarily_verbose" (
-  "this_is_an_extremely_long_column_name_that_tests_the_parser_limits"
-) VALUES ('This is a very long string literal that is used to test the parser\'s ability to handle large amounts of text in a single statement without breaking.
+Keyword(CREATE) | CREATE
+Whitespace(0) |  
+Keyword(TABLE) | TABLE
+Whitespace(0) |  
+Identifier(this_is_an_extremely_long_table_name_that_should_still_be_valid_in_sql_but_is_unnecessarily_verbose) | "this_is_an_extremely_long_table_name_that_should_still_be_valid_in_sql_but_is_unnecessarily_verbose"
+Whitespace(0) |  
+Special(() | (
+Whitespace(1) | 
+  
+Identifier(this_is_an_extremely_long_column_name_that_tests_the_parser_limits) | "this_is_an_extremely_long_column_name_that_tests_the_parser_limits"
+Whitespace(0) |  
+Keyword(TEXT) | TEXT
+Whitespace(1) | 
 
-Lexer error begins here:
-v
-');
+Special()) | )
+Special(;) | ;
+Whitespace(2) | 
 
-SELECT * FROM "this_is_an_extremely_long_table_name_that_should_still_be_valid_in_sql_but_is_unnecessarily_verbose";
+
+Keyword(INSERT) | INSERT
+Whitespace(0) |  
+Keyword(INTO) | INTO
+Whitespace(0) |  
+Identifier(this_is_an_extremely_long_table_name_that_should_still_be_valid_in_sql_but_is_unnecessarily_verbose) | "this_is_an_extremely_long_table_name_that_should_still_be_valid_in_sql_but_is_unnecessarily_verbose"
+Whitespace(0) |  
+Special(() | (
+Whitespace(1) | 
+  
+Identifier(this_is_an_extremely_long_column_name_that_tests_the_parser_limits) | "this_is_an_extremely_long_column_name_that_tests_the_parser_limits"
+Whitespace(1) | 
+
+Special()) | )
+Whitespace(0) |  
+Keyword(VALUES) | VALUES
+Whitespace(0) |  
+Special(() | (
+StringLiteral(This is a very long string literal that is used to test the parser''s ability to handle large amounts of text in a single statement without breaking.) | 'This is a very long string literal that is used to test the parser''s ability to handle large amounts of text in a single statement without breaking.'
+Special()) | )
+Special(;) | ;
+Whitespace(2) | 
+
+
+Keyword(SELECT) | SELECT
+Whitespace(0) |  
+Operator(*) | *
+Whitespace(0) |  
+Keyword(FROM) | FROM
+Whitespace(0) |  
+Identifier(this_is_an_extremely_long_table_name_that_should_still_be_valid_in_sql_but_is_unnecessarily_verbose) | "this_is_an_extremely_long_table_name_that_should_still_be_valid_in_sql_but_is_unnecessarily_verbose"
+Special(;) | ;
+Whitespace(1) | 
+
