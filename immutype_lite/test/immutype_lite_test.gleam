@@ -38,7 +38,7 @@ pub fn immutype_test() {
     }
   }
 
-  io.println("Hint: You can use *--generate' for expeced test case generation.")
+  io.println("Hint: You can use '--generate' for expeced test case generation.")
   io.println("")
 
   io.println("Loading test cases")
