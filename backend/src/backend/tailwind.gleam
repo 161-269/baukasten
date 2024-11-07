@@ -233,6 +233,11 @@ fn tailwind_css_config(
   |> string_builder.append_builder(
     json.string(node_modules_path <> "/daisyui") |> json.to_string_builder,
   )
+  |> string_builder.append("),require(")
+  |> string_builder.append_builder(
+    json.string(node_modules_path <> "/tailwindcss-motion")
+    |> json.to_string_builder,
+  )
   |> string_builder.append(")]};")
   |> string_builder.to_string
 }

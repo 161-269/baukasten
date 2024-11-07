@@ -97,6 +97,7 @@ module.exports = {
 	plugins: [
 		require("@tailwindcss/typography"),
 		require("@tailwindcss/aspect-ratio"),
-		require("../node_modules/daisyui")
+		require("../node_modules/daisyui"),
+		require("../node_modules/tailwindcss-motion"),
 	],
 };
