@@ -3,6 +3,7 @@ import backend/tailwind
 import gleam/erlang/process
 import gleam/io
 import gleam/json
+import gleam/string_builder
 import lustre/attribute
 import lustre/element
 import lustre/element/html
@@ -50,7 +51,7 @@ pub fn main() {
   process.sleep_forever()
 }
 
-fn content() -> fn(Request) -> List(Component(a, d)) {
+fn content() -> fn(Request) -> #(List(Component(a, d)), String) {
   let components = [
     component.br(),
     component.br(),
@@ -332,18 +333,16 @@ und kann direkt in das Baukasten CMS integriert werden.
     ),
   ]
 
-  let _ =
-    io.debug(
-      tailwind.generate_css_for()([
-        html.html([], [
-          html.head([], []),
-          html.body([], components |> component.render),
-        ])
-        |> element.to_document_string,
-      ]),
-    )
+  let assert Ok(tailwind_css) =
+    tailwind.generate_css_for()([
+      html.html([], [
+        html.head([], []),
+        html.body([], components |> component.render),
+      ])
+      |> element.to_document_string,
+    ])
 
-  fn(_req: Request) { components }
+  fn(_req: Request) { #(components, tailwind_css) }
 }
 
 fn handle_request() -> fn(Request) -> Response {
@@ -351,13 +350,10 @@ fn handle_request() -> fn(Request) -> Response {
   let components = content()
 
   fn(req: Request) {
-    use req <- middleware_handler(req)
+    let #(components, tailwind_css) = components(req)
+    use _req, path_segments <- middleware_handler(req, tailwind_css)
 
-    let components = components(req)
-
-    let #(title, css, mjs, link_href, link_text) = case
-      wisp.path_segments(req)
-    {
+    let #(title, css, mjs, link_href, link_text) = case path_segments {
       ["edit"] -> #(
         "Editor",
         html.link([
@@ -421,17 +417,35 @@ fn handle_request() -> fn(Request) -> Response {
   }
 }
 
-fn middleware() -> fn(wisp.Request, fn(wisp.Request) -> wisp.Response) ->
+fn middleware() -> fn(
+  wisp.Request,
+  String,
+  fn(wisp.Request, List(String)) -> wisp.Response,
+) ->
   wisp.Response {
   let assert Ok(priv) = wisp.priv_directory("backend")
 
-  fn(req: wisp.Request, handle_request: fn(wisp.Request) -> wisp.Response) {
+  fn(
+    req: wisp.Request,
+    tailwind_css: String,
+    handle_request: fn(wisp.Request, List(String)) -> wisp.Response,
+  ) {
     use <- wisp.rescue_crashes
     let req = wisp.method_override(req)
     use req <- wisp.handle_head(req)
 
-    use <- wisp.serve_static(req, under: "/static", from: priv)
+    let path_segments = wisp.path_segments(req)
 
-    handle_request(req)
+    case path_segments == ["static", "widgets.min.css"] {
+      True ->
+        wisp.response(200)
+        |> wisp.set_header("Content-Type", "text/css; charset=utf-8")
+        |> wisp.set_body(wisp.Text(string_builder.from_string(tailwind_css)))
+      False -> {
+        use <- wisp.serve_static(req, under: "/static", from: priv)
+
+        handle_request(req, path_segments)
+      }
+    }
   }
 }
