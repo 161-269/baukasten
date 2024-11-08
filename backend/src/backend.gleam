@@ -60,28 +60,41 @@ fn content() -> fn(Request) -> #(List(Component(a, d)), String) {
         component.article(
           article.djot(
             "
-{.text-primary}
+{.text-primary .motion-preset-confetti .motion-duration-[2s]}
 # 🛠️ Baukasten - CMS: Einfach. Schnell. Anpassbar. 🚀
 
+{.motion-preset-slide-right .motion-duration-1500}
 Erstelle beeindruckende Webseiten ohne Vorkenntnisse.
 
+{.motion-preset-slide-right .motion-duration-1500 .motion-delay-[150ms]}
 🚧 *Dieses Projekt befindet sich noch in einer frühen Entwicklungsphase.* 🚧
 
+{.motion-preset-bounce .motion-delay-[250ms]}
 [Jetzt starten](#Installation) 📥 \\
 [Mehr erfahren](#Funktionen) 📖
 
 ---
 
+{.motion-preset-bounce .motion-delay-[500ms]}
 ## Hauptmerkmale auf einen Blick
 
+{.motion-preset-bounce .motion-delay-[750ms]}
 🛠️ *Benutzerfreundlich*\\
-- Intuitive Komponenten für individuelle Gestaltung.\\
+- Intuitive Komponenten für individuelle Gestaltung.
+
+{.motion-preset-bounce .motion-delay-[1000ms]}
 ⚡ *Hohe Performance*\\
-- Blitzschnelle Ladezeiten durch optimierte Technologie.\\
+- Blitzschnelle Ladezeiten durch optimierte Technologie.
+
+{.motion-preset-bounce .motion-delay-[1250ms]}
 💰 *Geringe Kosten*\\
-- Minimale Serverlast reduziert laufende Kosten.\\
+- Minimale Serverlast reduziert laufende Kosten.
+
+{.motion-preset-bounce .motion-delay-[1500ms]}
 🔒 *Stabil und Sicher*\\
-- Moderne Programmierung für einen reibungslosen Betrieb.\\
+- Moderne Programmierung für einen reibungslosen Betrieb.
+
+{.motion-preset-bounce .motion-delay-[1750ms]}
 🐳 *Einfache Installation*\\
 - Starte sofort mit unserem Docker-Container.
 
