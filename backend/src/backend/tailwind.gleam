@@ -231,6 +231,11 @@ fn tailwind_css_config(
   )
   |> string_builder.append("),require(")
   |> string_builder.append_builder(
+    json.string("@tailwindcss/forms") |> json.to_string_builder,
+  )
+  |> string_builder.append(")({ strategy: \"class\" }")
+  |> string_builder.append("),require(")
+  |> string_builder.append_builder(
     json.string(node_modules_path <> "/daisyui") |> json.to_string_builder,
   )
   |> string_builder.append("),require(")
