@@ -33,7 +33,7 @@ curl -L -o "$OUTPUT_NAME" "$DOWNLOAD_URL"
 
 chmod +x "$OUTPUT_NAME"
 
-npm install
+npm ci
 
 cd widgets
 gleam deps download
