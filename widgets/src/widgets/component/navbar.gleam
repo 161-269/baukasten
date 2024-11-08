@@ -61,7 +61,7 @@ pub fn render_tree(navbar: Navbar(c, a)) -> InnerNode(c, a) {
   let select_element = fn(node: Node(c, a)) { node.element }
 
   InnerNode(
-    children: list.concat([start, center, end]),
+    children: list.flatten([start, center, end]),
     element: render_template(
       list.map(start, select_element),
       list.map(center, select_element),
