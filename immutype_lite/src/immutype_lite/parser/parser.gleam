@@ -1,7 +1,7 @@
 //// https://www.sqlite.org/lang.html
 
 import chomp.{do, return}
-import chomp/lexer.{type Error as ChompError, type Token as ChompToken} as chomp_lexer
+import chomp/lexer.{type Token as ChompToken} as _
 import chomp/span
 import gleam/list
 import gleam/option.{type Option, None, Some}
@@ -27,7 +27,9 @@ pub type Statement {
   // https://www.sqlite.org/lang_select.html
 }
 
-pub type SelectStatement
+pub type SelectStatement {
+  SelectStatement(with: Option(List(CommonTableExpression)), recursive: Bool)
+}
 
 pub type CommonTableExpression {
   CommonTableExpression(
@@ -67,49 +69,60 @@ fn whitespace_filter(tokens: List(ChompToken(Token))) -> List(ChompToken(Token))
 }
 
 /// https://www.sqlite.org/lang_select.html
-fn select_statement_parser() -> Parser(SelectStatement) {
-  use _ <- do(keyword_parser(keyword.Select))
-  todo
+fn select_statement() -> Parser(SelectStatement) {
+  use with <- do(chomp.optional(keyword(keyword.With)))
+  use #(with, recursive) <- do(case with {
+    None -> return(#(None, False))
+    Some(_) -> {
+      use recursive <- do(chomp.optional(keyword(keyword.Recursive)))
+      use with <- do(non_empty_sequence(
+        common_table_expression(),
+        special(lexer.Comma),
+      ))
+
+      return(#(Some(with), option.is_some(recursive)))
+    }
+  })
+
+  return(SelectStatement(with:, recursive:))
 }
 
 /// https://www.sqlite.org/syntax/common-table-expression.html
-fn common_table_expression_parser() -> Parser(CommonTableExpression) {
+fn common_table_expression() -> Parser(CommonTableExpression) {
   {
-    use table_name <- do(identifier_parser())
-    use left_paren <- do(chomp.optional(special_parser(lexer.LeftParen)))
+    use table_name <- do(identifier())
+    use left_paren <- do(chomp.optional(special(lexer.LeftParen)))
     use column_names <- do(case left_paren {
       Some(_) -> {
         use column_names <- do(chomp.sequence(
-          identifier_parser(),
-          special_parser(lexer.Comma),
+          identifier(),
+          special(lexer.Comma),
         ))
-        use _ <- do(special_parser(lexer.RightParen))
+        use _ <- do(special(lexer.RightParen))
 
         return(Some(column_names))
       }
       None -> return(None)
     })
 
-    use _ <- do(keyword_parser(keyword.As))
+    use _ <- do(keyword(keyword.As))
 
-    use not <- do(chomp.optional(keyword_parser(keyword.Not)))
+    use not <- do(chomp.optional(keyword(keyword.Not)))
     use materialized <- do(case not {
       None -> {
-        use materialized <- do(
-          chomp.optional(keyword_parser(keyword.Materialized)),
-        )
+        use materialized <- do(chomp.optional(keyword(keyword.Materialized)))
 
         return(option.map(materialized, fn(_) { True }))
       }
       Some(_) -> {
-        use _ <- do(keyword_parser(keyword.Materialized))
+        use _ <- do(keyword(keyword.Materialized))
         return(Some(False))
       }
     })
 
-    use _ <- do(special_parser(lexer.LeftParen))
-    use select_statement <- do(select_statement_parser())
-    use _ <- do(special_parser(lexer.RightParen))
+    use _ <- do(special(lexer.LeftParen))
+    use select_statement <- do(select_statement())
+    use _ <- do(special(lexer.RightParen))
 
     return(CommonTableExpression(
       table_name:,
@@ -123,7 +136,7 @@ fn common_table_expression_parser() -> Parser(CommonTableExpression) {
   })
 }
 
-fn list_parser(
+fn list(
   start: Parser(x),
   item: Parser(a),
   delimiter: Parser(y),
@@ -137,11 +150,25 @@ fn list_parser(
   return(result)
 }
 
-fn special_parser(special: lexer.Speacial) -> Parser(span.Span) {
+fn non_empty_sequence(item: Parser(a), delimiter: Parser(z)) -> Parser(List(a)) {
+  use first <- do(item)
+
+  use delimiter_set <- do(chomp.optional(delimiter))
+
+  case delimiter_set {
+    None -> return([first])
+    Some(_) -> {
+      use rest <- do(non_empty_sequence(item, delimiter))
+      return([first, ..rest])
+    }
+  }
+}
+
+fn special(special: lexer.Speacial) -> Parser(span.Span) {
   chomp.token(lexer.Special(special))
 }
 
-fn keyword_parser(keyword: keyword.Keyword) -> Parser(keyword.Keyword) {
+fn keyword(keyword: keyword.Keyword) -> Parser(keyword.Keyword) {
   chomp.take_map(fn(token: Token) {
     case token {
       lexer.Keyword(_, keyword) -> Some(keyword)
@@ -151,7 +178,7 @@ fn keyword_parser(keyword: keyword.Keyword) -> Parser(keyword.Keyword) {
   |> chomp.or_error(ExpectedKeyword(keyword))
 }
 
-fn identifier_parser() -> Parser(String) {
+fn identifier() -> Parser(String) {
   chomp.take_map(fn(token: Token) {
     case token {
       lexer.Identifier(value) -> Some(value)
