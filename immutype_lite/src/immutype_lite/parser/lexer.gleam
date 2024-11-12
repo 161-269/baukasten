@@ -86,7 +86,7 @@ pub type Token {
   MacroDefinition(key: String, value: String)
   Numeric(Numeric)
   StringLiteral(String)
-  Keyword(Keyword)
+  Keyword(String, Keyword)
   Identifier(String)
   Whitespace(lines: Int)
 }
@@ -112,7 +112,7 @@ pub fn stringify_token(token: Token) -> String {
       }
       <> ")"
     StringLiteral(string) -> "StringLiteral(" <> string <> ")"
-    Keyword(keyword) -> "Keyword(" <> keyword.stringify(keyword) <> ")"
+    Keyword(_, keyword) -> "Keyword(" <> keyword.stringify(keyword) <> ")"
     Identifier(identifier) -> "Identifier(" <> identifier <> ")"
     Whitespace(lines) -> "Whitespace(" <> int.to_string(lines) <> ")"
   }
