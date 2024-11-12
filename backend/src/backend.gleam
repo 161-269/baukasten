@@ -1,4 +1,5 @@
 import backend/database
+import backend/middleware/middleware
 import backend/tailwind
 import gleam/erlang/process
 import gleam/io
@@ -438,6 +439,8 @@ fn middleware() -> fn(
   wisp.Response {
   let assert Ok(priv) = wisp.priv_directory("backend")
 
+  let assert Ok(middleware) = middleware.middleware()
+
   fn(
     req: wisp.Request,
     tailwind_css: String,
@@ -446,6 +449,7 @@ fn middleware() -> fn(
     use <- wisp.rescue_crashes
     let req = wisp.method_override(req)
     use req <- wisp.handle_head(req)
+    use _ <- middleware(req)
 
     let path_segments = wisp.path_segments(req)
 
