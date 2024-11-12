@@ -93,7 +93,7 @@ pub type Keyword {
   Like
   Limit
   Match
-  Meterialized
+  Materialized
   Natural
   No
   Not
@@ -249,7 +249,7 @@ fn keywords() -> List(#(String, Keyword)) {
     #("LIKE", Like),
     #("LIMIT", Limit),
     #("MATCH", Match),
-    #("MATERIALIZED", Meterialized),
+    #("MATERIALIZED", Materialized),
     #("NATURAL", Natural),
     #("NO", No),
     #("NOT", Not),
@@ -317,10 +317,12 @@ fn keywords() -> List(#(String, Keyword)) {
   ]
 }
 
-pub fn keyword_mathers(mapper: fn(Keyword) -> a) -> List(Matcher(a, mode)) {
+pub fn keyword_mathers(
+  mapper: fn(String, Keyword) -> a,
+) -> List(Matcher(a, mode)) {
   list.map(keywords(), fn(tuple) {
     let #(keyword, value) = tuple
-    sql_keyword_matcher(keyword, mapper(value))
+    sql_keyword_matcher(keyword, value, mapper)
   })
 }
 
@@ -413,7 +415,7 @@ pub fn stringify(keyword: Keyword) -> String {
     Like -> "LIKE"
     Limit -> "LIMIT"
     Match -> "MATCH"
-    Meterialized -> "MATERIALIZED"
+    Materialized -> "MATERIALIZED"
     Natural -> "NATURAL"
     No -> "NO"
     Not -> "NOT"
@@ -481,17 +483,22 @@ pub fn stringify(keyword: Keyword) -> String {
   }
 }
 
-fn sql_keyword_matcher(keyword: String, value: a) -> Matcher(a, mode) {
+fn sql_keyword_matcher(
+  keyword: String,
+  value: Keyword,
+  mapper: fn(String, Keyword) -> a,
+) -> Matcher(a, mode) {
   let assert Ok(break) = regex.from_string(helper.breaker_regex)
   let keyword = string.uppercase(keyword)
 
   use mode, lexeme, lookahead <- lexer.custom
-  let lexeme = string.uppercase(lexeme)
+  let upper_lexeme = string.uppercase(lexeme)
 
   case
-    lexeme == keyword && { lookahead == "" || regex.check(break, lookahead) }
+    upper_lexeme == keyword
+    && { lookahead == "" || regex.check(break, lookahead) }
   {
-    True -> Keep(value, mode)
+    True -> Keep(mapper(lexeme, value), mode)
     False -> NoMatch
   }
 }
