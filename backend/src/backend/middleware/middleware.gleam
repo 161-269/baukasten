@@ -1,5 +1,6 @@
 import gleam/bit_array
 import gleam/crypto
+import gleam/dict.{type Dict}
 import gleam/erlang/process.{type Subject}
 import gleam/http
 import gleam/http/cookie
@@ -14,48 +15,65 @@ const session_query_key = "session-id"
 
 const session_cookie_name = "session-id"
 
-pub opaque type Middleware {
-  Middleware(subject: Subject(Msg), session_id: String)
+type Msg {
+  UpdateSession(session: Session)
+  GetSession(id: String, reply_to: Subject(Option(Session)))
 }
 
-type Msg
-
 type State {
-  State
+  State(sessions: Dict(String, Session))
+}
+
+pub type Session {
+  Session(id: String)
 }
 
 fn init() -> State {
-  State
+  State(sessions: dict.new())
+}
+
+fn new_session(id: String) {
+  Session(id:)
 }
 
 pub fn middleware(dev_mode: Bool) {
   use subject <- result.try(actor.start(init(), update))
 
-  Ok(fn(req: Request, next: fn(Middleware) -> Response) -> Response {
+  Ok(fn(req: Request, next: fn(Session) -> #(Response, Session)) -> Response {
     let session_id = case get_session_id(req) {
       Some(session_id) -> session_id
       None -> generate_session_id()
     }
 
-    let cookie_attributes =
-      cookie.Attributes(
-        ..cookie.defaults(case dev_mode {
-          False -> http.Https
-          True -> http.Http
-        }),
-        max_age: option.Some(60 * 60 * 24 * 161),
-        same_site: Some(cookie.Strict),
-      )
+    let session = case process.call(subject, GetSession(session_id, _), 100) {
+      Some(session) -> session
+      None -> new_session(session_id)
+    }
 
-    let cookie_value =
-      wisp.sign_message(req, <<session_id:utf8>>, crypto.Sha512)
+    let #(response, new_session) = next(session)
 
-    next(Middleware(subject:, session_id:))
-    |> response.set_cookie(session_cookie_name, cookie_value, cookie_attributes)
+    process.send(subject, UpdateSession(new_session))
+
+    response
+    |> set_session_cookie(req, session_id, dev_mode)
   })
 }
 
 fn update(msg: Msg, state: State) -> Next(Msg, State) {
+  let state = case msg {
+    UpdateSession(session) ->
+      State(sessions: dict.insert(state.sessions, session.id, session))
+    GetSession(id, reply_to) -> {
+      let session =
+        dict.get(state.sessions, id)
+        |> option.from_result
+
+      process.send(reply_to, session)
+
+      state
+    }
+  }
+
   actor.Continue(state, None)
 }
 
@@ -80,4 +98,30 @@ fn generate_session_id() -> String {
   crypto.strong_random_bytes(512 / 8)
   |> crypto.hash(crypto.Sha512, _)
   |> bit_array.base64_url_encode(False)
+}
+
+fn set_session_cookie(
+  response: Response,
+  request: Request,
+  id: String,
+  dev_mode: Bool,
+) -> Response {
+  let cookie_attributes =
+    cookie.Attributes(
+      ..cookie.defaults(case dev_mode {
+        False -> http.Https
+        True -> http.Http
+      }),
+      max_age: option.Some(60 * 60 * 24 * 161),
+      same_site: Some(cookie.Strict),
+    )
+
+  let cookie_value = wisp.sign_message(request, <<id:utf8>>, crypto.Sha512)
+
+  response.set_cookie(
+    response,
+    session_cookie_name,
+    cookie_value,
+    cookie_attributes,
+  )
 }

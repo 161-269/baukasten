@@ -449,11 +449,11 @@ fn middleware() -> fn(
     use <- wisp.rescue_crashes
     let req = wisp.method_override(req)
     use req <- wisp.handle_head(req)
-    use _ <- middleware(req)
+    use session <- middleware(req)
 
     let path_segments = wisp.path_segments(req)
 
-    case path_segments == ["static", "widgets.min.css"] {
+    let response = case path_segments == ["static", "widgets.min.css"] {
       True ->
         wisp.response(200)
         |> wisp.set_header("Content-Type", "text/css; charset=utf-8")
@@ -464,5 +464,7 @@ fn middleware() -> fn(
         handle_request(req, path_segments)
       }
     }
+
+    #(response, session)
   }
 }
