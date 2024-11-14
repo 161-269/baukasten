@@ -439,7 +439,7 @@ fn middleware() -> fn(
   wisp.Response {
   let assert Ok(priv) = wisp.priv_directory("backend")
 
-  let assert Ok(middleware) = middleware.middleware()
+  let assert Ok(middleware) = middleware.middleware(True)
 
   fn(
     req: wisp.Request,

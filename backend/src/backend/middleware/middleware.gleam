@@ -1,6 +1,9 @@
 import gleam/bit_array
 import gleam/crypto
 import gleam/erlang/process.{type Subject}
+import gleam/http
+import gleam/http/cookie
+import gleam/http/response
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/otp/actor.{type Next}
@@ -25,7 +28,7 @@ fn init() -> State {
   State
 }
 
-pub fn middleware() {
+pub fn middleware(dev_mode: Bool) {
   use subject <- result.try(actor.start(init(), update))
 
   Ok(fn(req: Request, next: fn(Middleware) -> Response) -> Response {
@@ -34,14 +37,21 @@ pub fn middleware() {
       None -> generate_session_id()
     }
 
+    let cookie_attributes =
+      cookie.Attributes(
+        ..cookie.defaults(case dev_mode {
+          False -> http.Https
+          True -> http.Http
+        }),
+        max_age: option.Some(60 * 60 * 24 * 161),
+        same_site: Some(cookie.Strict),
+      )
+
+    let cookie_value =
+      wisp.sign_message(req, <<session_id:utf8>>, crypto.Sha512)
+
     next(Middleware(subject:, session_id:))
-    |> wisp.set_cookie(
-      req,
-      session_cookie_name,
-      session_id,
-      wisp.Signed,
-      60 * 60 * 24 * 161,
-    )
+    |> response.set_cookie(session_cookie_name, cookie_value, cookie_attributes)
   })
 }
 
