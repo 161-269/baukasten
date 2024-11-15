@@ -1,3 +1,4 @@
+import backend/middleware/session.{type Session, Session}
 import birl
 import gleam/bit_array
 import gleam/crypto
@@ -26,16 +27,8 @@ type State {
   State(sessions: Dict(String, Session))
 }
 
-pub type Session {
-  Session(id: String)
-}
-
 fn init() -> State {
   State(sessions: dict.new())
-}
-
-fn new_session(id: String) {
-  Session(id:)
 }
 
 pub fn middleware(dev_mode: Bool) {
@@ -49,10 +42,11 @@ pub fn middleware(dev_mode: Bool) {
 
     let session = case process.call(subject, GetSession(session_id, _), 100) {
       Some(session) -> session
-      None -> new_session(session_id)
+      None -> session.new_session(session_id)
     }
 
     let #(response, new_session) = next(session)
+    let new_session = Session(..new_session, id: session_id)
 
     process.send(subject, UpdateSession(new_session))
 
