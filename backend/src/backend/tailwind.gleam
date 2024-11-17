@@ -5,7 +5,7 @@ import gleam/list.{Continue, Stop}
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
-import gleam/string_builder
+import gleam/string_tree
 import simplifile
 
 @external(erlang, "backend_ffi", "generate_css")
@@ -90,15 +90,15 @@ fn tailwind_css_config(
   html_directory_path: String,
   node_modules_path: String,
 ) -> String {
-  string_builder.new()
-  |> string_builder.append("module.exports = {")
-  |> string_builder.append("content:")
-  |> string_builder.append_builder(
+  string_tree.new()
+  |> string_tree.append("module.exports = {")
+  |> string_tree.append("content:")
+  |> string_tree.append_tree(
     json.array([html_directory_path <> "/*.html"], json.string)
     |> json.to_string_builder,
   )
-  |> string_builder.append(",daisyui:")
-  |> string_builder.append_builder(
+  |> string_tree.append(",daisyui:")
+  |> string_tree.append_tree(
     json.object([
       #(
         "themes",
@@ -172,8 +172,8 @@ fn tailwind_css_config(
     ])
     |> json.to_string_builder,
   )
-  |> string_builder.append(",theme:")
-  |> string_builder.append_builder(
+  |> string_tree.append(",theme:")
+  |> string_tree.append_tree(
     json.object([
       #(
         "extend",
@@ -220,31 +220,31 @@ fn tailwind_css_config(
     ])
     |> json.to_string_builder,
   )
-  |> string_builder.append(",plugins:[")
-  |> string_builder.append("require(")
-  |> string_builder.append_builder(
+  |> string_tree.append(",plugins:[")
+  |> string_tree.append("require(")
+  |> string_tree.append_tree(
     json.string("@tailwindcss/typography") |> json.to_string_builder,
   )
-  |> string_builder.append("),require(")
-  |> string_builder.append_builder(
+  |> string_tree.append("),require(")
+  |> string_tree.append_tree(
     json.string("@tailwindcss/aspect-ratio") |> json.to_string_builder,
   )
-  |> string_builder.append("),require(")
-  |> string_builder.append_builder(
+  |> string_tree.append("),require(")
+  |> string_tree.append_tree(
     json.string("@tailwindcss/forms") |> json.to_string_builder,
   )
-  |> string_builder.append(")({ strategy: \"class\" }")
-  |> string_builder.append("),require(")
-  |> string_builder.append_builder(
+  |> string_tree.append(")({ strategy: \"class\" }")
+  |> string_tree.append("),require(")
+  |> string_tree.append_tree(
     json.string(node_modules_path <> "/daisyui") |> json.to_string_builder,
   )
-  |> string_builder.append("),require(")
-  |> string_builder.append_builder(
+  |> string_tree.append("),require(")
+  |> string_tree.append_tree(
     json.string(node_modules_path <> "/tailwindcss-motion")
     |> json.to_string_builder,
   )
-  |> string_builder.append(")]};")
-  |> string_builder.to_string
+  |> string_tree.append(")]};")
+  |> string_tree.to_string
 }
 
 pub fn generate_css_for() -> fn(List(String)) -> Result(String, TailwindError) {

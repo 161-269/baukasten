@@ -3,10 +3,10 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
-import gleam/string_builder
+import gleam/string_tree
 
 pub fn stringify_decode_error(decode_error: DecodeError) -> String {
-  string_builder.from_strings([
+  string_tree.from_strings([
     "expected ",
     decode_error.expected,
     " but found ",
@@ -15,7 +15,7 @@ pub fn stringify_decode_error(decode_error: DecodeError) -> String {
     list.map(decode_error.path, fn(i) { "\"" <> i <> "\"" })
       |> string.join(", "),
   ])
-  |> string_builder.to_string()
+  |> string_tree.to_string()
 }
 
 pub fn map(

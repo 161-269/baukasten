@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TAILWIND_VERSION="v3.4.14"
+TAILWIND_VERSION="v3.4.15"
 
 OS="$(uname -s)"
 case "$OS" in

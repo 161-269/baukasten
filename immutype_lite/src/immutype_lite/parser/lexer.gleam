@@ -196,12 +196,12 @@ fn operators() -> List(Matcher(Token, a)) {
 fn new_metadata(input: String) -> Token {
   let input =
     input
-    |> string.drop_left(7)
+    |> string.drop_start(7)
     |> string.trim
 
   case string.split_once(input, " ") {
     Ok(#(key, value)) ->
-      MacroDefinition(string.trim_right(key), string.trim_left(value))
+      MacroDefinition(string.trim_end(key), string.trim_start(value))
     Error(_) -> MacroDefinition("", input)
   }
 }
@@ -209,12 +209,12 @@ fn new_metadata(input: String) -> Token {
 fn new_macro_definition(input: String) -> Token {
   let input =
     input
-    |> string.drop_left(8)
+    |> string.drop_start(8)
     |> string.trim
 
   case string.split_once(input, " ") {
     Ok(#(key, value)) ->
-      MacroDefinition(string.trim_right(key), string.trim_left(value))
+      MacroDefinition(string.trim_end(key), string.trim_start(value))
     Error(_) -> MacroDefinition("", input)
   }
 }
@@ -223,13 +223,13 @@ fn comments() -> List(Matcher(Token, a)) {
   [
     helper.regex_matcher("^---\\s*\\w+\\s*:\\s*\\w+\\s*", "\n", new_metadata),
     helper.regex_matcher("^--([^-].*)?", "\n", fn(input) {
-      Comment(string.drop_left(input, 2))
+      Comment(string.drop_start(input, 2))
     }),
     helper.regex_matcher("^\\/\\*[\\s\\S]*?\\*\\/", "", fn(input) {
-      Comment(input |> string.drop_left(2) |> string.drop_right(2))
+      Comment(input |> string.drop_start(2) |> string.drop_end(2))
     }),
     helper.regex_matcher("^#(?!define\\s).*", "\n", fn(input) {
-      Comment(input |> string.drop_left(1))
+      Comment(input |> string.drop_start(1))
     }),
     helper.regex_matcher(
       "^#define\\s+\\w+\\s* \\s*\\w+\\s*",
@@ -449,14 +449,14 @@ fn identifiers() -> List(Matcher(Token, a)) {
       "^\"(?:\"\"|[^\"])*(?!\"\")\"",
       helper.breaker_regex,
       fn(input) {
-        Identifier(input |> string.drop_left(1) |> string.drop_right(1))
+        Identifier(input |> string.drop_start(1) |> string.drop_end(1))
       },
     ),
     helper.regex_matcher("^\\[[^\\]]*\\]", helper.breaker_regex, fn(input) {
-      Identifier(input |> string.drop_left(1) |> string.drop_right(1))
+      Identifier(input |> string.drop_start(1) |> string.drop_end(1))
     }),
     helper.regex_matcher("^`[^`]*`", helper.breaker_regex, fn(input) {
-      Identifier(input |> string.drop_left(1) |> string.drop_right(1))
+      Identifier(input |> string.drop_start(1) |> string.drop_end(1))
     }),
   ]
 }
@@ -467,7 +467,7 @@ fn string_literals() -> List(Matcher(Token, a)) {
       "^'(?:''|[^'])*(?!'')'",
       helper.breaker_regex,
       fn(input) {
-        StringLiteral(input |> string.drop_left(1) |> string.drop_right(1))
+        StringLiteral(input |> string.drop_start(1) |> string.drop_end(1))
       },
     ),
   ]

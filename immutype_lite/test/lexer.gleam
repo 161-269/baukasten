@@ -3,7 +3,7 @@ import gleam/int
 import gleam/io
 import gleam/list
 import gleam/string
-import gleam/string_builder
+import gleam/string_tree
 import helper.{
   type CompareInput, type CompareResult, type Options, type TestCase,
   CompareInput,
@@ -46,38 +46,38 @@ fn lex(
 }
 
 fn stringify_lex_result(lex_result: LexResult) -> String {
-  string_builder.new()
-  |> string_builder.append("Lexer result:\n\n")
+  string_tree.new()
+  |> string_tree.append("Lexer result:\n\n")
   |> list.fold(
     lex_result.tokens,
     _,
     fn(acc, token) {
       acc
-      |> string_builder.append(lexer.stringify_token(token.value))
-      |> string_builder.append(" | ")
-      |> string_builder.append(token.lexeme)
-      |> string_builder.append("\n")
+      |> string_tree.append(lexer.stringify_token(token.value))
+      |> string_tree.append(" | ")
+      |> string_tree.append(token.lexeme)
+      |> string_tree.append("\n")
     },
   )
-  |> string_builder.to_string
+  |> string_tree.to_string
 }
 
 fn stringify_lex_error(lex_error: LexError) -> String {
-  string_builder.new()
-  |> string_builder.append("Lexer error:\n")
-  |> string_builder.append(lex_error.test_case.path)
-  |> string_builder.append(":")
-  |> string_builder.append(int.to_string(lex_error.error.row))
-  |> string_builder.append(":")
-  |> string_builder.append(int.to_string(lex_error.error.col))
-  |> string_builder.append("\n\n")
-  |> string_builder.append(
+  string_tree.new()
+  |> string_tree.append("Lexer error:\n")
+  |> string_tree.append(lex_error.test_case.path)
+  |> string_tree.append(":")
+  |> string_tree.append(int.to_string(lex_error.error.row))
+  |> string_tree.append(":")
+  |> string_tree.append(int.to_string(lex_error.error.col))
+  |> string_tree.append("\n\n")
+  |> string_tree.append(
     lex_error.test_case.content
-    |> string.drop_right(string.length(lex_error.error.lexeme)),
+    |> string.drop_end(string.length(lex_error.error.lexeme)),
   )
-  |> string_builder.append("\n\nLexer error begins here:\nv\n")
-  |> string_builder.append(lex_error.error.lexeme)
-  |> string_builder.to_string
+  |> string_tree.append("\n\nLexer error begins here:\nv\n")
+  |> string_tree.append(lex_error.error.lexeme)
+  |> string_tree.to_string
 }
 
 pub fn test_lexer(

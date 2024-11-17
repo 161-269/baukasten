@@ -16,7 +16,7 @@ ARG TARGETVARIANT
 
 RUN apk add --no-cache wget
 
-ENV TAILWIND_VERSION=v3.4.14
+ENV TAILWIND_VERSION=v3.4.15
 
 RUN set -ex; \
   if [ "$TARGETOS" = "linux" ]; then \

@@ -4,7 +4,7 @@ import backend/tailwind
 import gleam/erlang/process
 import gleam/io
 import gleam/json
-import gleam/string_builder
+import gleam/string_tree
 import lustre/attribute
 import lustre/element
 import lustre/element/html
@@ -457,7 +457,7 @@ fn middleware() -> fn(
       True ->
         wisp.response(200)
         |> wisp.set_header("Content-Type", "text/css; charset=utf-8")
-        |> wisp.set_body(wisp.Text(string_builder.from_string(tailwind_css)))
+        |> wisp.set_body(wisp.Text(string_tree.from_string(tailwind_css)))
       False -> {
         use <- wisp.serve_static(req, under: "/static", from: priv)
 

@@ -4,7 +4,7 @@ import gleam/json.{type Json}
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
-import gleam/string_builder
+import gleam/string_tree
 import lustre/attribute.{type Attribute}
 import lustre/element.{type Element}
 import lustre/element/html
@@ -192,10 +192,7 @@ fn render_djot_inline(
           option.map(djot_destination(destination, refs), attribute.src)
             |> option.unwrap(attribute.none()),
           attribute.alt(
-            string_builder.to_string(djot_inline_text(
-              inlines,
-              string_builder.new(),
-            )),
+            string_tree.to_string(djot_inline_text(inlines, string_tree.new())),
           ),
         ])
       jot.Linebreak -> html.br([])
@@ -229,21 +226,21 @@ fn djot_destination(
 
 fn djot_inline_text(
   inlines: List(jot.Inline),
-  accumulator: string_builder.StringBuilder,
-) -> string_builder.StringBuilder {
+  accumulator: string_tree.StringTree,
+) -> string_tree.StringTree {
   case inlines {
     [] -> accumulator
     [first, ..rest] ->
       case first {
         jot.Text(text) | jot.Code(text) ->
-          djot_inline_text(rest, string_builder.append(accumulator, text))
+          djot_inline_text(rest, string_tree.append(accumulator, text))
         jot.Strong(inlines)
         | jot.Emphasis(inlines)
         | jot.Link(inlines, _)
         | jot.Image(inlines, _) ->
           djot_inline_text(rest, djot_inline_text(inlines, accumulator))
         jot.Linebreak ->
-          djot_inline_text(rest, string_builder.append(accumulator, " "))
+          djot_inline_text(rest, string_tree.append(accumulator, " "))
       }
   }
 }

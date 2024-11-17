@@ -30,7 +30,6 @@ sqlight = ">= 0.9.1 and < 1.0.0"
 widgets = { path = "../widgets" }
 immutype_lite = { path = "../immutype_lite" }
 wisp = ">= 1.2.0 and < 2.0.0"
-gleam_pgo = ">= 0.14.0 and < 1.0.0"
 decode = ">= 0.3.0 and < 1.0.0"
 lustre = ">= 4.5.1 and < 5.0.0"
 feather = ">= 1.2.0 and < 2.0.0"
