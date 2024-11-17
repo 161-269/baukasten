@@ -54,7 +54,7 @@ pub fn connect(file: String, connections: Int) -> Result(Db(x), Error) {
 
   use pool <- result.then(
     puddle.start(connections, fn() {
-      feather.connect(config) |> result.nil_error
+      feather.connect(config) |> result.replace_error(Nil)
     })
     |> result.map_error(PoolError),
   )

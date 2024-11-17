@@ -836,7 +836,7 @@ fn inlines_to_html(html: String, inlines: List(Inline), refs: Refs) -> String {
       html
       |> inline_to_html(inline, refs)
       |> inlines_to_html(rest, refs)
-      |> string.trim_right
+      |> string.trim_start
     }
   }
 }
