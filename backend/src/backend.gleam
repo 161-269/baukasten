@@ -1,15 +1,19 @@
 import backend/database
+import backend/database/configuration
 import backend/middleware
 import backend/tailwind
 import gleam/erlang/process
 import gleam/io
 import gleam/json
+import gleam/option.{None, Some}
+import gleam/result
 import gleam/string_tree
 import lustre/attribute
 import lustre/element
 import lustre/element/html
 import mist
 import simplifile
+import sqlight
 import widgets/component.{type Component}
 import widgets/component/article
 import widgets/component/container
@@ -27,7 +31,7 @@ pub fn main() {
     }
   }
 
-  let _db = case database.connect("./data/database.sqlite", 20) {
+  let db = case database.connect("./data/database.sqlite", 20) {
     Ok(db) -> db
     Error(error) -> {
       io.println_error("Error connecting to database:")
@@ -40,7 +44,19 @@ pub fn main() {
   // output error messages so the pages can be accessed
   let assert Ok(_) = tailwind.delete_temporary_files()
 
-  let secret_key_base = wisp.random_string(64)
+  let assert Ok(secret_key_base) =
+    database.connection(
+      db,
+      100,
+      fn() {
+        sqlight.SqlightError(
+          sqlight.GenericError,
+          "Could not get pool connection",
+          -1,
+        )
+      },
+      secret_key_base,
+    )
 
   let assert Ok(_) =
     wisp_mist.handler(handle_request(), secret_key_base)
@@ -50,6 +66,25 @@ pub fn main() {
     |> mist.start_http
 
   process.sleep_forever()
+}
+
+fn secret_key_base(db: sqlight.Connection) -> Result(String, sqlight.Error) {
+  use value <- result.try(configuration.get(db, "general.secret_key_base"))
+
+  case value {
+    Some(value) -> Ok(value.value)
+    None -> {
+      let secret_key_base = wisp.random_string(128)
+
+      use _ <- result.try(configuration.set(
+        db,
+        "general.secret_key_base",
+        secret_key_base,
+      ))
+
+      Ok(secret_key_base)
+    }
+  }
 }
 
 fn content() -> fn(Request) -> #(List(Component(a, d)), String) {

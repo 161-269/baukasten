@@ -64,7 +64,7 @@ pub fn connect(file: String, connections: Int) -> Result(Db(x), Error) {
 
 pub fn connection(
   db: Db(Result(a, b)),
-  wait_timeout: Int,
+  wait_timeout_milliseconds: Int,
   pool_connection_error: fn() -> b,
   context: fn(Connection) -> Result(a, b),
 ) -> Result(a, b) {
@@ -72,7 +72,7 @@ pub fn connection(
     puddle.apply(
       db.pool,
       fn(connection) { context(connection) },
-      wait_timeout,
+      wait_timeout_milliseconds,
       function.identity,
     )
 
