@@ -15,7 +15,7 @@ CREATE TABLE "user" (
 	"username"	TEXT NOT NULL UNIQUE COLLATE NOCASE,
 	"email"	TEXT NOT NULL UNIQUE COLLATE NOCASE,
 	"password"	BLOB NOT NULL,
-	CHECK("username" NOT LIKE '%@%' AND "email" LIKE '%_@_%'),
+	CHECK("username" LIKE '__%' AND "username" NOT LIKE '%@%' AND "email" LIKE '%_@_%'),
 	PRIMARY KEY("id" AUTOINCREMENT)
 );
 
