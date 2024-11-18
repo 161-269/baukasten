@@ -210,3 +210,32 @@ WHERE
     Some(user) -> Ok(user)
   }
 }
+
+pub fn user_count(db: Connection) -> Result(Int, Error) {
+  let count =
+    sqlight.query(
+      "
+SELECT
+  COUNT(*)
+FROM
+  \"user\";
+    ",
+      db,
+      [],
+      dynamic.element(0, dynamic.int),
+    )
+
+  case count {
+    Ok(count) ->
+      case count {
+        [count] -> Ok(count)
+        _ ->
+          Error(sqlight.SqlightError(
+            sqlight.GenericError,
+            "Could not get user count",
+            -1,
+          ))
+      }
+    Error(error) -> Error(error)
+  }
+}
