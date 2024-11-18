@@ -31,10 +31,36 @@ fn init() -> State {
   State(sessions: dict.new())
 }
 
-pub fn middleware(dev_mode: Bool) {
+pub opaque type Middleware {
+  Middleware(subject: Subject(Msg), dev_mode: Bool)
+}
+
+pub fn new(dev_mode: Bool) {
   use subject <- result.try(actor.start(init(), update))
 
-  Ok(fn(req: Request, next: fn(Session) -> #(Response, Session)) -> Response {
+  Ok(Middleware(subject:, dev_mode:))
+}
+
+pub fn create_session(
+  middleware: Middleware,
+  map: fn(Session) -> Session,
+) -> Session {
+  let session_id = generate_session_id()
+  let session = session.new_session(session_id)
+  let session = map(session)
+
+  process.send(middleware.subject, UpdateSession(session))
+
+  session
+}
+
+pub fn handler(
+  middleware: Middleware,
+) -> fn(Request, fn(Session) -> #(Response, Session)) -> Response {
+  let subject = middleware.subject
+  let dev_mode = middleware.dev_mode
+
+  fn(req: Request, next: fn(Session) -> #(Response, Session)) -> Response {
     let session_id = case get_session_id(req) {
       Some(session_id) -> session_id
       None -> generate_session_id()
@@ -51,8 +77,8 @@ pub fn middleware(dev_mode: Bool) {
     process.send(subject, UpdateSession(new_session))
 
     response
-    |> set_session_cookie(req, session_id, dev_mode)
-  })
+    |> set_session_cookie(req, session_id, dev_mode, new_session.authenticated)
+  }
 }
 
 fn update(msg: Msg, state: State) -> Next(Msg, State) {
@@ -79,8 +105,15 @@ fn get_session_id(req: Request) -> Option(String) {
   let session_id =
     list.find(queries, fn(query) { query.0 == session_query_key })
 
+  let session_id = case session_id {
+    Error(Nil) -> Error(Nil)
+    Ok(query) ->
+      wisp.verify_signed_message(req, query.1)
+      |> result.then(bit_array.to_string)
+  }
+
   case session_id {
-    Ok(query) -> Some(query.1)
+    Ok(id) -> Some(id)
     Error(Nil) -> {
       case wisp.get_cookie(req, session_cookie_name, wisp.Signed) {
         Ok(id) -> Some(id)
@@ -106,6 +139,7 @@ fn set_session_cookie(
   request: Request,
   id: String,
   dev_mode: Bool,
+  permanent: Bool,
 ) -> Response {
   let cookie_attributes =
     cookie.Attributes(
@@ -113,7 +147,10 @@ fn set_session_cookie(
         False -> http.Https
         True -> http.Http
       }),
-      max_age: option.Some(60 * 60 * 24 * 161),
+      max_age: case permanent {
+        False -> None
+        True -> option.Some(60 * 60 * 24 * 161)
+      },
       same_site: Some(cookie.Strict),
     )
 

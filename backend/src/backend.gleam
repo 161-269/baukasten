@@ -439,7 +439,8 @@ fn middleware() -> fn(
   wisp.Response {
   let assert Ok(priv) = wisp.priv_directory("backend")
 
-  let assert Ok(middleware) = middleware.middleware(True)
+  let assert Ok(middleware) = middleware.new(True)
+  let middleware_handler = middleware.handler(middleware)
 
   fn(
     req: wisp.Request,
@@ -449,7 +450,7 @@ fn middleware() -> fn(
     use <- wisp.rescue_crashes
     let req = wisp.method_override(req)
     use req <- wisp.handle_head(req)
-    use session <- middleware(req)
+    use session <- middleware_handler(req)
 
     let path_segments = wisp.path_segments(req)
 
