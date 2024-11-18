@@ -2,7 +2,7 @@ CREATE TABLE storch_migrations (id integer, applied integer);
 
 CREATE TABLE "configuration" (
 	"id" INTEGER NOT NULL UNIQUE,
-	"key" TEXT NOT NULL UNIQUE COLLATE NOCASE,
+	"key" TEXT NOT NULL,
 	"value" TEXT NOT NULL,
 	"created_at" INTEGER NOT NULL,
 	PRIMARY KEY("id" AUTOINCREMENT)
