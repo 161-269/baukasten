@@ -1,5 +1,5 @@
 import backend/database
-import backend/middleware/middleware
+import backend/middleware
 import backend/tailwind
 import gleam/erlang/process
 import gleam/io
