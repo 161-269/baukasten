@@ -2,6 +2,7 @@
 # You typically do not need to edit this file
 
 packages = [
+  { name = "aragorn2", version = "0.1.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "aragorn2", source = "hex", outer_checksum = "541DBC073BE419EBB1E8F5A1BEA458BCC4229C2E803395E3C4EE6097342176D0" },
   { name = "argv", version = "1.0.2", build_tools = ["gleam"], requirements = [], otp_app = "argv", source = "hex", outer_checksum = "BA1FF0929525DEBA1CE67256E5ADF77A7CDDFE729E3E3F57A5BDCAA031DED09D" },
   { name = "birl", version = "1.7.1", build_tools = ["gleam"], requirements = ["gleam_stdlib", "ranger"], otp_app = "birl", source = "hex", outer_checksum = "5C66647D62BCB11FE327E7A6024907C4A17954EF22865FE0940B54A852446D01" },
   { name = "chomp", version = "0.4.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "chomp", source = "hex", outer_checksum = "6DDC9EE76C5364E80F43A90A238351C25F627E59135AEF2506629112A7C4FD4F" },
@@ -44,6 +45,7 @@ packages = [
 ]
 
 [requirements]
+aragorn2 = { version = ">= 0.1.0 and < 1.0.0" }
 birl = { version = ">= 1.7.1 and < 2.0.0" }
 decode = { version = ">= 0.3.0 and < 1.0.0" }
 feather = { version = ">= 1.2.0 and < 2.0.0" }
