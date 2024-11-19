@@ -96,6 +96,7 @@ CREATE TABLE "page" (
 	"updated_at" INTEGER NOT NULL,
 
 	"active" INTEGER NOT NULL,
+	"deleted" INTEGER NOT NULL,
 
 	PRIMARY KEY("id" AUTOINCREMENT)
 );
@@ -115,10 +116,11 @@ CREATE TABLE "file" (
 CREATE TABLE "file_metadata" (
 	"id" INTEGER NOT NULL UNIQUE,
 	"file_id" INTEGER NOT NULL,
-	"key" TEXT NOT NULL,
+	"key" BLOB NOT NULL UNIQUE,
 	"name" TEXT NOT NULL,
-	"content_type" TEXT NOT NULL,
+	"content_type" TEXT,
 	"created_at" INTEGER NOT NULL,
+	"updated_at" INTEGER NOT NULL,
 	"deleted" INTEGER NOT NULL,
 	PRIMARY KEY("id" AUTOINCREMENT),
 	FOREIGN KEY("file_id") REFERENCES "file"("id")
@@ -139,6 +141,9 @@ CREATE INDEX "request_path_path" ON "request_path" ("path");
 
 CREATE INDEX "page_request_visitor_id" ON "page_request" ("visitor_id");
 
-CREATE INDEX "page_active_path_updated_at" ON "page" ("active", "path", "updated_at" DESC);
+CREATE INDEX "page_deleted_updated_at" ON "page" ("deleted", "updated_at" ASC);
+CREATE INDEX "page_deleted_active_path_updated_at" ON "page" ("deleted", "active", "path", "updated_at" DESC);
 
+CREATE INDEX "file_hash" ON "file" ("hash");
 
+CREATE INDEX "file_metadata_key" ON "file_metadata" ("key");

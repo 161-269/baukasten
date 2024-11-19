@@ -128,9 +128,7 @@ fn generate_session_id() -> String {
 
   crypto.strong_random_bytes(512 / 8)
   |> bit_array.append(<<now:utf8>>)
-  |> crypto.hash(crypto.Sha512, _)
-  |> bit_array.slice(0, 24)
-  |> result.lazy_unwrap(fn() { panic as "Expected 64 bytes from sha512" })
+  |> crypto.hash(crypto.Sha224, _)
   |> bit_array.base64_url_encode(False)
 }
 

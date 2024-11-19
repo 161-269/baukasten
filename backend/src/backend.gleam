@@ -2,6 +2,7 @@ import backend/database
 import backend/database/configuration
 import backend/middleware
 import backend/tailwind
+import birl
 import gleam/erlang/process
 import gleam/io
 import gleam/json
@@ -80,6 +81,7 @@ fn secret_key_base(db: sqlight.Connection) -> Result(String, sqlight.Error) {
         db,
         "general.secret_key_base",
         secret_key_base,
+        birl.now() |> birl.to_unix_milli,
       ))
 
       Ok(secret_key_base)

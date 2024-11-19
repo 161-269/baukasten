@@ -1,4 +1,3 @@
-import birl
 import gleam/dynamic.{type DecodeError, type Dynamic}
 import gleam/option.{type Option, None, Some}
 import gleam/result
@@ -45,7 +44,12 @@ LIMIT 1;
   })
 }
 
-pub fn set(db: Connection, key: String, value: String) -> Result(Nil, Error) {
+pub fn set(
+  db: Connection,
+  key: String,
+  value: String,
+  now: Int,
+) -> Result(Nil, Error) {
   sqlight.query(
     "
 INSERT INTO
@@ -55,11 +59,7 @@ VALUES
   (?, ?, ?);
     ",
     db,
-    [
-      sqlight.text(key),
-      sqlight.text(value),
-      sqlight.int(birl.now() |> birl.to_unix_milli),
-    ],
+    [sqlight.text(key), sqlight.text(value), sqlight.int(now)],
     dynamic.dynamic,
   )
   |> result.map(fn(_) { Nil })

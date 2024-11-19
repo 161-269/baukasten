@@ -102,20 +102,23 @@ pub fn insert_new(
 ) -> Result(User, Error) {
   use password <- result.try(hash_password(password))
 
-  use _ <- result.try(sqlight.query(
+  use users <- result.try(sqlight.query(
     "
 INSERT INTO
   \"user\"
   (\"username\", \"email\", \"password\")
 VALUES
-  (?, ?, ?);
+  (?, ?, ?)
+RETURNING
+  \"id\",
+  \"username\",
+  \"email\",
+  \"password\";
       ",
     db,
     [sqlight.text(username), sqlight.text(email), sqlight.blob(password)],
-    dynamic.dynamic,
+    decoder(),
   ))
-
-  use users <- result.try(search(db, username))
 
   case users {
     [] ->
@@ -124,13 +127,7 @@ VALUES
         "Could not find inserted user",
         -1,
       ))
-    [user] -> Ok(user)
-    _ ->
-      Error(sqlight.SqlightError(
-        sqlight.GenericError,
-        "Found multiple users",
-        -1,
-      ))
+    [user, ..] -> Ok(user)
   }
 }
 
@@ -164,7 +161,7 @@ pub fn sarch_and_verify(
   }
 }
 
-pub fn update_user(
+pub fn update(
   db: Connection,
   user: User,
   password: Option(String),
@@ -181,7 +178,7 @@ pub fn update_user(
     Some(password) -> User(..user, password:)
   }
 
-  use _ <- result.try(sqlight.query(
+  use user <- result.try(sqlight.query(
     "
 UPDATE
   \"user\"
@@ -191,6 +188,11 @@ SET
   \"password\" = ?
 WHERE
   \"id\" = ?;
+RETURNING
+  \"id\",
+  \"username\",
+  \"email\",
+  \"password\";
     ",
     db,
     [
@@ -199,15 +201,13 @@ WHERE
       sqlight.blob(user.password),
       sqlight.int(user.id),
     ],
-    dynamic.dynamic,
+    decoder(),
   ))
 
-  use user <- result.try(get(db, user.id))
-
   case user {
-    None ->
+    [] ->
       Error(sqlight.SqlightError(sqlight.Notfound, "Could not find user", -1))
-    Some(user) -> Ok(user)
+    [user, ..] -> Ok(user)
   }
 }
 
