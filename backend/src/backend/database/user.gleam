@@ -46,9 +46,10 @@ WHERE
 pub fn search(
   db: Connection,
   username_or_email: String,
-) -> Result(List(User), Error) {
-  sqlight.query(
-    "
+) -> Result(Option(User), Error) {
+  case
+    sqlight.query(
+      "
 SELECT
   \"id\",
   \"username\",
@@ -63,10 +64,15 @@ WHERE
     \"email\" = ?
   );
     ",
-    db,
-    [sqlight.text(username_or_email), sqlight.text(username_or_email)],
-    decoder(),
-  )
+      db,
+      [sqlight.text(username_or_email), sqlight.text(username_or_email)],
+      decoder(),
+    )
+  {
+    Ok([]) -> Ok(None)
+    Ok([user, ..]) -> Ok(Some(user))
+    Error(error) -> Error(error)
+  }
 }
 
 fn hasher() -> aragorn2.Hasher {
@@ -136,23 +142,22 @@ pub fn sarch_and_verify(
   username_or_email: String,
   password: String,
 ) -> Result(User, Error) {
-  use users <- result.try(search(db, username_or_email))
-  case users {
-    [user] -> {
-      use _ <- result.try(
+  use user <- result.try(search(db, username_or_email))
+  case user {
+    Some(user) -> {
+      case
         aragorn2.verify_password(hasher(), <<password:utf8>>, user.password)
-        |> result.map_error(fn(_) {
-          sqlight.SqlightError(
+      {
+        Ok(_) -> Ok(user)
+        Error(_) ->
+          Error(sqlight.SqlightError(
             sqlight.GenericError,
             "Could not verify password",
             -1,
-          )
-        }),
-      )
-
-      Ok(user)
+          ))
+      }
     }
-    _ -> {
+    None -> {
       // Waste some time to prevent brute force and timing attacks
       let _ = aragorn2.hash_password(hasher(), <<password:utf8>>)
 
@@ -187,7 +192,7 @@ SET
   \"email\" = ?,
   \"password\" = ?
 WHERE
-  \"id\" = ?;
+  \"id\" = ?
 RETURNING
   \"id\",
   \"username\",
@@ -206,12 +211,16 @@ RETURNING
 
   case user {
     [] ->
-      Error(sqlight.SqlightError(sqlight.Notfound, "Could not find user", -1))
+      Error(sqlight.SqlightError(
+        sqlight.Notfound,
+        "Could not find updated user",
+        -1,
+      ))
     [user, ..] -> Ok(user)
   }
 }
 
-pub fn user_count(db: Connection) -> Result(Int, Error) {
+pub fn count(db: Connection) -> Result(Int, Error) {
   let count =
     sqlight.query(
       "

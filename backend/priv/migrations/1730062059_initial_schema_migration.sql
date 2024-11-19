@@ -9,11 +9,10 @@
 -- This table contains configuration information.
 -- It is used to store general settings from this instance.
 CREATE TABLE "configuration" (
-	"id" INTEGER NOT NULL UNIQUE,
 	"key" TEXT NOT NULL,
 	"value" TEXT NOT NULL,
 	"created_at" INTEGER NOT NULL,
-	PRIMARY KEY("id" AUTOINCREMENT)
+	PRIMARY KEY("key", "created_at" DESC)
 );
 
 -- This table contains user information including their credentials.

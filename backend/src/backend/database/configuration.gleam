@@ -5,14 +5,14 @@ import sqlight.{type Connection, type Error}
 import widgets/helper/dynamic_helper
 
 pub type Configuration {
-  Configuration(id: Int, key: String, value: String, created_at: Int)
+  Configuration(key: String, value: String, created_at: Int)
 }
 
 pub fn decoder() -> fn(Dynamic) -> Result(Configuration, List(DecodeError)) {
-  dynamic.tuple4(dynamic.int, dynamic.string, dynamic.string, dynamic.int)
+  dynamic.tuple3(dynamic.string, dynamic.string, dynamic.int)
   |> dynamic_helper.map(fn(value) {
-    let #(id, key, value, created_at) = value
-    Ok(Configuration(id:, key:, value:, created_at:))
+    let #(key, value, created_at) = value
+    Ok(Configuration(key:, value:, created_at:))
   })
 }
 
@@ -20,7 +20,6 @@ pub fn get(db: Connection, key: String) -> Result(Option(Configuration), Error) 
   sqlight.query(
     "
 SELECT
-  \"id\",
   \"key\",
   \"value\",
   \"created_at\"

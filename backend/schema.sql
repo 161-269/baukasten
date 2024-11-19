@@ -1,14 +1,11 @@
 CREATE TABLE storch_migrations (id integer, applied integer);
 
 CREATE TABLE "configuration" (
-	"id" INTEGER NOT NULL UNIQUE,
 	"key" TEXT NOT NULL,
 	"value" TEXT NOT NULL,
 	"created_at" INTEGER NOT NULL,
-	PRIMARY KEY("id" AUTOINCREMENT)
+	PRIMARY KEY("key", "created_at" DESC)
 );
-
-CREATE TABLE sqlite_sequence(name,seq);
 
 CREATE TABLE "user" (
 	"id"	INTEGER NOT NULL UNIQUE,
@@ -18,6 +15,8 @@ CREATE TABLE "user" (
 	CHECK("username" LIKE '__%' AND "username" NOT LIKE '%@%' AND "email" LIKE '%_@_%'),
 	PRIMARY KEY("id" AUTOINCREMENT)
 );
+
+CREATE TABLE sqlite_sequence(name,seq);
 
 CREATE TABLE "session" (
 	"id"	INTEGER NOT NULL UNIQUE,
