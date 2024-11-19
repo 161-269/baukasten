@@ -58,7 +58,7 @@ RUN npm ci
 
 
 # This container is used to build the widgets
-FROM ghcr.io/gleam-lang/gleam:v1.5.1-erlang-alpine AS widgets-builder
+FROM ghcr.io/gleam-lang/gleam:v1.6.0-erlang-alpine AS widgets-builder
 
 WORKDIR /build
 
@@ -76,7 +76,7 @@ RUN cd /build/widgets \
 
 
 # This container is used to build the editor
-FROM ghcr.io/gleam-lang/gleam:v1.5.1-erlang-alpine AS editor-builder
+FROM ghcr.io/gleam-lang/gleam:v1.6.0-erlang-alpine AS editor-builder
 
 WORKDIR /build
 
@@ -96,7 +96,7 @@ RUN cd /build/editor \
 
 
 # This container is used to build the full stack application
-FROM ghcr.io/gleam-lang/gleam:v1.5.1-erlang-alpine AS builder
+FROM ghcr.io/gleam-lang/gleam:v1.6.0-erlang-alpine AS builder
 
 # Add dependencies required to build SQLite
 RUN apk add --no-cache build-base sqlite-dev
@@ -129,7 +129,7 @@ RUN cd /build/backend \
 
 
 # This container is used to run the full stack application
-FROM ghcr.io/gleam-lang/gleam:v1.5.1-erlang-alpine AS runtime
+FROM ghcr.io/gleam-lang/gleam:v1.6.0-erlang-alpine AS runtime
 
 COPY --from=tailwind-css-cli /app/tailwind-css-cli /app/tailwind-css-cli
 COPY --from=node-dependencies /build/node_modules /app/node_modules

@@ -1,6 +1,6 @@
 name = "backend"
 version = "1.0.0"
-gleam = ">= 1.5.1"
+gleam = ">= 1.6.0"
 
 migrations_dir = "./priv/migrations"
 schemafile = "./schema.sql"
