@@ -188,7 +188,7 @@ pub fn insert_new(
   use file_id <- result.try(insert_file_data(db, data))
 
   let key =
-    crypto.strong_random_bytes(512 / 8)
+    crypto.strong_random_bytes(224 / 8)
     |> bit_array.append(<<int.to_string(file_id):utf8>>)
     |> bit_array.append(<<int.to_string(now):utf8>>)
     |> crypto.hash(crypto.Sha224, _)

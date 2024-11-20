@@ -32,7 +32,7 @@ pub fn main() {
     }
   }
 
-  let db = case database.connect("./data/database.sqlite", 20) {
+  let db = case database.connect("./data/database.sqlite", 20, 60_000) {
     Ok(db) -> db
     Error(error) -> {
       io.println_error("Error connecting to database:")
@@ -46,21 +46,12 @@ pub fn main() {
   let assert Ok(_) = tailwind.delete_temporary_files()
 
   let assert Ok(secret_key_base) =
-    database.connection(
-      db,
-      100,
-      fn() {
-        sqlight.SqlightError(
-          sqlight.GenericError,
-          "Could not get pool connection",
-          -1,
-        )
-      },
-      secret_key_base,
-    )
+    database.connection(db, 100, fn(error) { error }, fn(connection) {
+      secret_key_base(connection) |> result.map_error(database.SqlightError)
+    })
 
   let assert Ok(_) =
-    wisp_mist.handler(handle_request(), secret_key_base)
+    wisp_mist.handler(handle_request(db), secret_key_base)
     |> mist.new
     |> mist.bind("0.0.0.0")
     |> mist.port(8161)
@@ -396,13 +387,24 @@ und kann direkt in das Baukasten CMS integriert werden.
   fn(_req: Request) { #(components, tailwind_css) }
 }
 
-fn handle_request() -> fn(Request) -> Response {
-  let middleware_handler = middleware()
+fn handle_request(db: database.Db) -> fn(Request) -> Response {
+  let middleware_handler = middleware(db)
   let components = content()
 
   fn(req: Request) {
     let #(components, tailwind_css) = components(req)
     use _req, path_segments <- middleware_handler(req, tailwind_css)
+
+    use <-
+      fn(next: fn() -> Response) -> Response {
+        case path_segments {
+          ["db"] ->
+            wisp.response(200)
+            |> wisp.file_download("database.sqlite", "./data/database.sqlite")
+
+          _ -> next()
+        }
+      }
 
     let #(title, css, mjs, link_href, link_text) = case path_segments {
       ["edit"] -> #(
@@ -468,16 +470,13 @@ fn handle_request() -> fn(Request) -> Response {
   }
 }
 
-fn middleware() -> fn(
-  wisp.Request,
-  String,
-  fn(wisp.Request, List(String)) -> wisp.Response,
-) ->
+fn middleware(
+  db: database.Db,
+) -> fn(wisp.Request, String, fn(wisp.Request, List(String)) -> wisp.Response) ->
   wisp.Response {
   let assert Ok(priv) = wisp.priv_directory("backend")
 
-  let assert Ok(middleware) = middleware.new(True)
-  let middleware_handler = middleware.handler(middleware)
+  let middleware_handler = middleware.handler(db, True)
 
   fn(
     req: wisp.Request,

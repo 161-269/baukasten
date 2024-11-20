@@ -1,16 +1,20 @@
-import backend/middleware/session.{type Session, Session}
+import backend/database.{type Db}
+import backend/database/page_request
+import backend/database/session
+import backend/database/user
+import backend/database/visitor_session
+import backend/middleware/session.{type Session, Session} as middleware_session
 import birl
 import gleam/bit_array
 import gleam/crypto
-import gleam/dict.{type Dict}
-import gleam/erlang/process.{type Subject}
 import gleam/http
 import gleam/http/cookie
+import gleam/http/request
 import gleam/http/response
 import gleam/int
+import gleam/io
 import gleam/list
 import gleam/option.{type Option, None, Some}
-import gleam/otp/actor.{type Next}
 import gleam/result
 import wisp.{type Request, type Response}
 
@@ -18,124 +22,119 @@ const session_query_key = "session-id"
 
 const session_cookie_name = "session-id"
 
-type Msg {
-  UpdateSession(session: Session)
-  GetSession(id: String, reply_to: Subject(Option(Session)))
-}
+/// 60 * 60 * 24 * 161
+const session_lifetime_second = 13_910_400
 
-type State {
-  State(sessions: Dict(String, Session))
-}
+pub type Handler =
+  fn(Request, fn(Session) -> #(Response, Session)) -> Response
 
-fn init() -> State {
-  State(sessions: dict.new())
-}
-
-pub opaque type Middleware {
-  Middleware(subject: Subject(Msg), dev_mode: Bool)
-}
-
-pub fn new(dev_mode: Bool) {
-  use subject <- result.try(actor.start(init(), update))
-
-  Ok(Middleware(subject:, dev_mode:))
-}
-
-pub fn create_session(
-  middleware: Middleware,
-  map: fn(Session) -> Session,
-) -> Session {
-  let session_id = generate_session_id()
-  let session = session.new_session(session_id)
-  let session = map(session)
-
-  process.send(middleware.subject, UpdateSession(session))
-
-  session
-}
-
-pub fn handler(
-  middleware: Middleware,
-) -> fn(Request, fn(Session) -> #(Response, Session)) -> Response {
-  let subject = middleware.subject
-  let dev_mode = middleware.dev_mode
-
+pub fn handler(db: Db, dev_mode: Bool) -> Handler {
   fn(req: Request, next: fn(Session) -> #(Response, Session)) -> Response {
     let session_id = case get_session_id(req) {
       Some(session_id) -> session_id
       None -> generate_session_id()
     }
 
-    let session = case process.call(subject, GetSession(session_id, _), 100) {
-      Some(session) -> session
-      None -> session.new_session(session_id)
+    let user =
+      database.connection(db, 1000, fn(e) { e }, fn(connection) {
+        let now = birl.now() |> birl.to_unix_milli
+
+        {
+          use visitor <- result.try(
+            visitor_session.get_by_session_key_or_insert_new(
+              connection,
+              session_id,
+              now,
+            ),
+          )
+
+          use _ <- result.try(page_request.insert_new(
+            connection,
+            visitor.visitor_id,
+            req.path,
+            now,
+          ))
+
+          use session <- result.try(session.get_by_key(
+            connection,
+            session_id,
+            now,
+          ))
+
+          case session {
+            Some(session) -> {
+              use _ <- result.try(session.update(
+                connection,
+                session,
+                Some(session_lifetime_second * 1000),
+                case
+                  list.find(req.headers, fn(header) {
+                    let #(key, _) = header
+                    key == "user-agent"
+                  })
+                {
+                  Error(_) -> None
+                  Ok(#(_, value)) -> Some(value)
+                },
+                now,
+              ))
+
+              user.get(connection, session.user_id)
+            }
+            None -> Ok(None)
+          }
+        }
+        |> result.map_error(fn(error) { database.SqlightError(error) })
+      })
+
+    let user = case user {
+      Ok(user) -> user
+      Error(error) -> {
+        io.debug(error)
+        None
+      }
     }
+
+    let session = middleware_session.new(session_id, user)
 
     let #(response, new_session) = next(session)
     let new_session = Session(..new_session, id: session_id)
 
-    process.send(subject, UpdateSession(new_session))
-
     response
-    |> set_session_cookie(req, session_id, dev_mode, new_session.authenticated)
+    |> set_session_cookie(
+      req,
+      session_id,
+      dev_mode,
+      new_session.user |> option.is_some,
+    )
   }
 }
 
-fn update(msg: Msg, state: State) -> Next(Msg, State) {
-  let state = case msg {
-    UpdateSession(session) ->
-      State(sessions: dict.insert(state.sessions, session.id, session))
-    GetSession(id, reply_to) -> {
-      let session =
-        dict.get(state.sessions, id)
-        |> option.from_result
-
-      process.send(reply_to, session)
-
-      state
-    }
-  }
-
-  actor.Continue(state, None)
-}
-
-fn get_session_id(req: Request) -> Option(String) {
-  let queries = wisp.get_query(req)
+fn get_session_id(req: Request) -> Option(BitArray) {
+  let values = list.flatten([wisp.get_query(req), request.get_cookies(req)])
 
   let session_id =
-    list.find(queries, fn(query) { query.0 == session_query_key })
-
-  let session_id = case session_id {
-    Error(Nil) -> Error(Nil)
-    Ok(query) ->
-      wisp.verify_signed_message(req, query.1)
-      |> result.then(bit_array.to_string)
-  }
+    list.find(values, fn(value) { value.0 == session_query_key })
+    |> result.then(fn(value) { wisp.verify_signed_message(req, value.1) })
 
   case session_id {
-    Ok(id) -> Some(id)
-    Error(Nil) -> {
-      case wisp.get_cookie(req, session_cookie_name, wisp.Signed) {
-        Ok(id) -> Some(id)
-        Error(Nil) -> None
-      }
-    }
+    Error(Nil) -> None
+    Ok(session_id) -> Some(session_id)
   }
 }
 
-fn generate_session_id() -> String {
+fn generate_session_id() -> BitArray {
   let now = birl.now() |> birl.to_unix_micro |> int.to_string
 
-  crypto.strong_random_bytes(512 / 8)
+  crypto.strong_random_bytes(224 / 8)
   |> bit_array.append(<<now:utf8>>)
   |> crypto.hash(crypto.Sha224, _)
-  |> bit_array.base64_url_encode(False)
 }
 
 fn set_session_cookie(
   response: Response,
   request: Request,
-  id: String,
+  id: BitArray,
   dev_mode: Bool,
   permanent: Bool,
 ) -> Response {
@@ -147,12 +146,12 @@ fn set_session_cookie(
       }),
       max_age: case permanent {
         False -> None
-        True -> option.Some(60 * 60 * 24 * 161)
+        True -> option.Some(session_lifetime_second)
       },
       same_site: Some(cookie.Strict),
     )
 
-  let cookie_value = wisp.sign_message(request, <<id:utf8>>, crypto.Sha512)
+  let cookie_value = wisp.sign_message(request, id, crypto.Sha224)
 
   response.set_cookie(
     response,

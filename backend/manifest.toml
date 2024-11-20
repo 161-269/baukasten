@@ -21,6 +21,7 @@ packages = [
   { name = "gleam_json", version = "1.0.1", build_tools = ["gleam"], requirements = ["gleam_stdlib", "thoas"], otp_app = "gleam_json", source = "hex", outer_checksum = "9063D14D25406326C0255BDA0021541E797D8A7A12573D849462CAFED459F6EB" },
   { name = "gleam_otp", version = "0.14.1", build_tools = ["gleam"], requirements = ["gleam_erlang", "gleam_stdlib"], otp_app = "gleam_otp", source = "hex", outer_checksum = "5A8CE8DBD01C29403390A7BD5C0A63D26F865C83173CF9708E6E827E53159C65" },
   { name = "gleam_stdlib", version = "0.43.0", build_tools = ["gleam"], requirements = [], otp_app = "gleam_stdlib", source = "hex", outer_checksum = "69EF22E78FDCA9097CBE7DF91C05B2A8B5436826D9F66680D879182C0860A747" },
+  { name = "gleamy_structures", version = "1.0.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleamy_structures", source = "hex", outer_checksum = "FF1B7600123B2B7C15E91BEBE6F417B4003928BF4282EF01A74A792B4ED6985A" },
   { name = "gleeunit", version = "1.2.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleeunit", source = "hex", outer_checksum = "F7A7228925D3EE7D0813C922E062BFD6D7E9310F0BEE585D3A42F3307E3CFD13" },
   { name = "glesha", version = "0.1.4", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "glesha", source = "hex", outer_checksum = "31AAC355BF83A0565D858252F81193A61F4E6C3763D071EA6F76BA7686E8A65A" },
   { name = "glisten", version = "6.0.0", build_tools = ["gleam"], requirements = ["gleam_erlang", "gleam_otp", "gleam_stdlib", "logging", "telemetry"], otp_app = "glisten", source = "hex", outer_checksum = "912132751031473CB38F454120124FFC96AF6B0EA33D92C9C90DB16327A2A972" },
@@ -56,6 +57,7 @@ gleam_http = { version = ">= 3.7.0 and < 4.0.0" }
 gleam_json = { version = ">= 1.0.1 and < 2.0.0" }
 gleam_otp = { version = ">= 0.12.1 and < 1.0.0" }
 gleam_stdlib = { version = ">= 0.34.0 and < 2.0.0" }
+gleamy_structures = { version = ">= 1.0.0 and < 2.0.0" }
 gleeunit = { version = ">= 1.0.0 and < 2.0.0" }
 glesha = { version = ">= 0.1.4 and < 1.0.0" }
 immutype_lite = { path = "../immutype_lite" }

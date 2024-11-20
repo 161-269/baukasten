@@ -48,15 +48,22 @@ pub fn insert_new(
   path: String,
   now: Int,
 ) -> Result(PageRequest, Error) {
-  use path_id <- result.try(case
-    sqlight.query(
-      "
+  use _ <- result.try(sqlight.query(
+    "
 INSERT OR IGNORE INTO
   \"request_path\"
   (\"path\")
 VALUES
   (?);
+    ",
+    db,
+    [sqlight.text(path)],
+    dynamic.dynamic,
+  ))
 
+  use path_id <- result.try(case
+    sqlight.query(
+      "
 SELECT
   \"id\"
 FROM
@@ -65,7 +72,7 @@ WHERE
   \"path\" = ?;
         ",
       db,
-      [sqlight.text(path), sqlight.text(path)],
+      [sqlight.text(path)],
       dynamic.element(0, dynamic.int),
     )
   {
