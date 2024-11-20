@@ -1,8 +1,7 @@
 import backend/database.{type Db}
-import backend/database/page_request
 import backend/database/session
 import backend/database/user
-import backend/database/visitor_session
+import backend/middleware/page_request
 import backend/middleware/session.{type Session, Session} as middleware_session
 import birl
 import gleam/bit_array
@@ -30,8 +29,10 @@ const session_lifetime_second = 13_910_400
 pub type Handler =
   fn(Request, fn(Session) -> #(Response, Session)) -> Response
 
-pub fn handler(db: Db, dev_mode: Bool) -> Handler {
-  fn(req: Request, next: fn(Session) -> #(Response, Session)) -> Response {
+pub fn handler(db: Db, dev_mode: Bool) -> Result(Handler, Nil) {
+  use page_request <- result.try(page_request.new(db, 5000))
+
+  Ok(fn(req: Request, next: fn(Session) -> #(Response, Session)) -> Response {
     let session_id = case get_session_id(req) {
       Some(session_id) -> session_id
       None -> generate_session_id()
@@ -42,20 +43,7 @@ pub fn handler(db: Db, dev_mode: Bool) -> Handler {
         let now = birl.now() |> birl.to_unix_milli
 
         {
-          use visitor <- result.try(
-            visitor_session.get_by_session_key_or_insert_new(
-              connection,
-              session_id,
-              now,
-            ),
-          )
-
-          use _ <- result.try(page_request.insert_new(
-            connection,
-            visitor.visitor_id,
-            req.path,
-            now,
-          ))
+          page_request.log(page_request, now, session_id, req.path)
 
           use session <- result.try(session.get_by_key(
             connection,
@@ -108,7 +96,7 @@ pub fn handler(db: Db, dev_mode: Bool) -> Handler {
       dev_mode,
       new_session.user |> option.is_some,
     )
-  }
+  })
 }
 
 fn get_session_id(req: Request) -> Option(BitArray) {

@@ -42,12 +42,7 @@ WHERE
   })
 }
 
-pub fn insert_new(
-  db: Connection,
-  visitor_id: Int,
-  path: String,
-  now: Int,
-) -> Result(PageRequest, Error) {
+pub fn get_path_id(db: Connection, path: String) -> Result(Int, Error) {
   use _ <- result.try(sqlight.query(
     "
 INSERT OR IGNORE INTO
@@ -61,7 +56,7 @@ VALUES
     dynamic.dynamic,
   ))
 
-  use path_id <- result.try(case
+  case
     sqlight.query(
       "
 SELECT
@@ -87,8 +82,26 @@ WHERE
           ))
       }
     Error(error) -> Error(error)
-  })
+  }
+}
 
+pub fn insert_new(
+  db: Connection,
+  visitor_id: Int,
+  path: String,
+  now: Int,
+) -> Result(PageRequest, Error) {
+  use path_id <- result.try(get_path_id(db, path))
+
+  insert_new_with_path_id(db, visitor_id, path_id, now)
+}
+
+pub fn insert_new_with_path_id(
+  db: Connection,
+  visitor_id: Int,
+  path_id: Int,
+  now: Int,
+) -> Result(PageRequest, Error) {
   use id <- result.try(case
     sqlight.query(
       "

@@ -14,7 +14,7 @@ import sqlight.{type Connection}
 
 // https://www.powersync.com/blog/sqlite-optimizations-for-ultra-high-performance
 
-type Timer
+pub type Timer
 
 @external(erlang, "backend_ffi", "apply_after")
 fn do_apply_after(
@@ -39,7 +39,7 @@ fn apply_after(
   |> result.map_error(fn(_) { Nil })
 }
 
-fn apply_interval(
+pub fn apply_interval(
   timeout_millisecond: Int,
   callback: fn() -> a,
 ) -> Result(Timer, Nil) {
