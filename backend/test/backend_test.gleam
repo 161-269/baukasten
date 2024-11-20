@@ -1,35 +1,27 @@
+import backend/database
 import backend/database/configuration
 import backend/database/user
 import gleam/list
 import gleam/option.{None}
 import gleeunit
 import gleeunit/should
-import simplifile
 import sqlight.{type Connection}
 
 pub fn main() {
   gleeunit.main()
 }
 
-// gleeunit test functions end in `_test`
-pub fn hello_world_test() {
-  1
-  |> should.equal(1)
-}
-
-fn use_db(callback: fn(Connection) -> a) -> a {
-  let schema =
-    simplifile.read("./priv/migrations/1730062059_initial_schema_migration.sql")
-    |> should.be_ok
-
+fn use_db(callback: fn(Connection) -> a) -> Nil {
   let db =
-    sqlight.open("file::memory:")
+    database.connect("file::memory:", 1, 60_000)
     |> should.be_ok
 
-  sqlight.exec(schema, db)
+  database.connection(db, 200, fn(e) { e }, fn(connection) {
+    Ok(callback(connection))
+  })
   |> should.be_ok
 
-  callback(db)
+  database.disconnect(db, 2000)
 }
 
 pub fn database_configuration_test() {
