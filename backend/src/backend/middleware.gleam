@@ -6,7 +6,8 @@ import backend/database/visitor_session
 import backend/middleware/session.{type Session, Session} as middleware_session
 import birl
 import gleam/bit_array
-import gleam/crypto
+
+//import gleam/crypto
 import gleam/http
 import gleam/http/cookie
 import gleam/http/request
@@ -126,9 +127,10 @@ fn get_session_id(req: Request) -> Option(BitArray) {
 fn generate_session_id() -> BitArray {
   //let now = birl.now() |> birl.to_unix_micro |> int.to_string
 
-  crypto.strong_random_bytes(224 / 8)
+  //crypto.strong_random_bytes(224 / 8)
   //|> bit_array.append(<<now:utf8>>)
   //|> crypto.hash(crypto.Sha224, _)
+  <<"hallo":utf8>>
 }
 
 fn set_session_cookie(
