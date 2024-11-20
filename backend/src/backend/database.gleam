@@ -129,7 +129,7 @@ fn fold_until(accumulator: a, callback: fn(a) -> ContinueOrStop(a)) -> a {
 }
 
 fn update(msg: Msg, state: State) -> Next(Msg, State) {
-  case msg {
+  let state = case msg {
     Close(reply_to) -> {
       let sync_timer = case state.sync_timer {
         None -> None
@@ -262,7 +262,13 @@ fn update(msg: Msg, state: State) -> Next(Msg, State) {
   }
 
   case state.available_connections, state.used_connections {
-    [], 0 -> actor.Stop(process.Normal)
+    [], 0 -> {
+      case state.close_subject {
+        None -> Nil
+        Some(close_subject) -> process.send(close_subject, Nil)
+      }
+      actor.Stop(process.Normal)
+    }
     _, _ -> actor.Continue(state, None)
   }
 }
