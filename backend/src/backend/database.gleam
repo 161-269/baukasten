@@ -241,6 +241,20 @@ fn update(msg: Msg, state: State) -> Next(Msg, State) {
       let _ =
         feather.connect(state.config)
         |> result.then(fn(connection) {
+          set_pragmas(connection)
+          |> result.map_error(fn(error) {
+            case error {
+              SqlightError(error) -> error
+              _ ->
+                sqlight.SqlightError(
+                  sqlight.GenericError,
+                  "Could not set pragmas",
+                  -1,
+                )
+            }
+          })
+        })
+        |> result.then(fn(connection) {
           sqlight.exec("PRAGMA wal_checkpoint(PASSIVE);", connection)
           |> result.map(fn(_) { connection })
         })
@@ -282,6 +296,25 @@ pub type Error {
   WaitForConnectionTimeout(timeout_millisecond: Int)
 }
 
+fn set_pragmas(db: Connection) -> Result(Connection, Error) {
+  {
+    use _ <- result.try(sqlight.exec(
+      "
+PRAGMA locking_mode = NORMAL;
+PRAGMA journal_size_limit = 16777216;
+PRAGMA cache_size = -32768;
+PRAGMA cache_shared = ON;
+PRAGMA busy_timeout = 1000;
+PRAGMA mmap_size = 134217728;
+    ",
+      db,
+    ))
+
+    Ok(db)
+  }
+  |> result.map_error(SqlightError)
+}
+
 pub fn connect(
   file: String,
   connections: Int,
@@ -297,12 +330,19 @@ pub fn connect(
     |> result.map_error(MigrationError),
   )
 
-  let config = feather.Config(..feather.default_config(), file: file)
+  let config =
+    feather.Config(
+      ..feather.default_config(),
+      file: file,
+      page_size: Some(65_536),
+    )
 
   use connection <- result.try(
     feather.connect(config)
     |> result.map_error(SqlightError),
   )
+
+  use _ <- result.try(set_pragmas(connection))
 
   use _ <- result.try(
     migrate.migrate(migrations, on: connection)
@@ -318,6 +358,7 @@ pub fn connect(
     init(config, connections, connection, fn() {
       feather.connect(config)
       |> result.map_error(SqlightError)
+      |> result.then(set_pragmas)
     }),
   )
 
