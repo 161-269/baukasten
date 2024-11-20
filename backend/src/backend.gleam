@@ -87,7 +87,7 @@ fn handle_request(db: database.Db) -> fn(Request) -> Response {
     use <-
       fn(next: fn() -> Response) -> Response {
         case path_segments {
-          ["maintenance", "login"] ->
+          ["maintenance", "db"] ->
             wisp.response(200)
             |> wisp.file_download("database.sqlite", "./data/database.sqlite")
 
