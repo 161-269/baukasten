@@ -17,6 +17,6 @@ pub fn require_authentication(
 ) -> Response {
   case session.user {
     Some(user) -> next(user)
-    None -> HttpResponse(..wisp.redirect("/login"), status: 403)
+    None -> HttpResponse(..wisp.redirect("/maintenance/login"), status: 403)
   }
 }
