@@ -11,7 +11,8 @@ import gleam/http
 import gleam/http/cookie
 import gleam/http/request
 import gleam/http/response
-import gleam/int
+
+//import gleam/int
 import gleam/io
 import gleam/list
 import gleam/option.{type Option, None, Some}
@@ -102,7 +103,6 @@ pub fn handler(db: Db, dev_mode: Bool) -> Handler {
 
     response
     |> set_session_cookie(
-      req,
       session_id,
       dev_mode,
       new_session.user |> option.is_some,
@@ -115,7 +115,7 @@ fn get_session_id(req: Request) -> Option(BitArray) {
 
   let session_id =
     list.find(values, fn(value) { value.0 == session_query_key })
-    |> result.then(fn(value) { wisp.verify_signed_message(req, value.1) })
+    |> result.then(fn(value) { bit_array.base64_decode(value.1) })
 
   case session_id {
     Error(Nil) -> None
@@ -124,16 +124,15 @@ fn get_session_id(req: Request) -> Option(BitArray) {
 }
 
 fn generate_session_id() -> BitArray {
-  let now = birl.now() |> birl.to_unix_micro |> int.to_string
+  //let now = birl.now() |> birl.to_unix_micro |> int.to_string
 
   crypto.strong_random_bytes(224 / 8)
-  |> bit_array.append(<<now:utf8>>)
-  |> crypto.hash(crypto.Sha224, _)
+  //|> bit_array.append(<<now:utf8>>)
+  //|> crypto.hash(crypto.Sha224, _)
 }
 
 fn set_session_cookie(
   response: Response,
-  request: Request,
   id: BitArray,
   dev_mode: Bool,
   permanent: Bool,
@@ -151,7 +150,7 @@ fn set_session_cookie(
       same_site: Some(cookie.Strict),
     )
 
-  let cookie_value = wisp.sign_message(request, id, crypto.Sha224)
+  let cookie_value = bit_array.base64_encode(id, True)
 
   response.set_cookie(
     response,
