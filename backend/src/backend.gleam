@@ -29,7 +29,7 @@ pub fn main() {
     }
   }
 
-  let db = case database.connect("./data/database.sqlite", 161, 60_000) {
+  let db = case database.connect("./data/database.sqlite", 16, 60_000) {
     Ok(db) -> db
     Error(error) -> {
       io.println_error("Error connecting to database:")
