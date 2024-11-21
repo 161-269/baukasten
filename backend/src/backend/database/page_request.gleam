@@ -43,20 +43,7 @@ WHERE
 }
 
 pub fn get_path_id(db: Connection, path: String) -> Result(Int, Error) {
-  use _ <- result.try(sqlight.query(
-    "
-INSERT OR IGNORE INTO
-  \"request_path\"
-  (\"path\")
-VALUES
-  (?);
-    ",
-    db,
-    [sqlight.text(path)],
-    dynamic.dynamic,
-  ))
-
-  case
+  use page_id <- result.try(case
     sqlight.query(
       "
 SELECT
@@ -73,15 +60,56 @@ WHERE
   {
     Ok(path_id) ->
       case path_id {
-        [path_id] -> Ok(path_id)
-        _ ->
-          Error(sqlight.SqlightError(
-            sqlight.Notfound,
-            "Could not get newly created request path id",
-            -1,
-          ))
+        [path_id] -> Ok(Some(path_id))
+        _ -> Ok(None)
       }
     Error(error) -> Error(error)
+  })
+
+  case page_id {
+    Some(page_id) -> Ok(page_id)
+    None -> {
+      use _ <- result.try(sqlight.query(
+        "
+INSERT OR IGNORE INTO
+  \"request_path\"
+  (\"path\")
+VALUES
+  (?);
+    ",
+        db,
+        [sqlight.text(path)],
+        dynamic.dynamic,
+      ))
+
+      case
+        sqlight.query(
+          "
+SELECT
+  \"id\"
+FROM
+  \"request_path\"
+WHERE
+  \"path\" = ?;
+        ",
+          db,
+          [sqlight.text(path)],
+          dynamic.element(0, dynamic.int),
+        )
+      {
+        Ok(path_id) ->
+          case path_id {
+            [path_id] -> Ok(path_id)
+            _ ->
+              Error(sqlight.SqlightError(
+                sqlight.Notfound,
+                "Could not get newly created request path id",
+                -1,
+              ))
+          }
+        Error(error) -> Error(error)
+      }
+    }
   }
 }
 

@@ -12,8 +12,6 @@ import gleam/result
 import gleamy/priority_queue
 import sqlight.{type Connection}
 
-// https://www.powersync.com/blog/sqlite-optimizations-for-ultra-high-performance
-
 pub type Timer
 
 @external(erlang, "backend_ffi", "apply_after")
