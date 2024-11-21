@@ -21,9 +21,9 @@ import gleam/option.{type Option, None, Some}
 import gleam/result
 import wisp.{type Request, type Response}
 
-const session_query_key = "session-id"
+const session_query_cookie_key = "session-id"
 
-const session_cookie_name = "session-id"
+const user_authenticated_cookie_key = "authenticated"
 
 /// 60 * 60 * 24 * 161
 const session_lifetime_second = 13_910_400
@@ -35,56 +35,61 @@ pub fn handler(db: Db, dev_mode: Bool) -> Result(Handler, Nil) {
   use page_request <- result.try(page_request.new(db, 5000))
 
   Ok(fn(req: Request, next: fn(Session) -> #(Response, Session)) -> Response {
-    let session_id = case get_session_id(req) {
-      Some(session_id) -> session_id
-      None -> generate_session_id()
+    let #(session_id, should_be_authenticated) = case get_session_id(req) {
+      Some(#(session_id, authenticated)) -> #(session_id, authenticated)
+      None -> #(generate_session_id(), False)
     }
 
-    let user =
-      database.connection(db, 1000, fn(e) { e }, fn(connection) {
-        let now = birl.now() |> birl.to_unix_milli
+    let user = case should_be_authenticated {
+      True -> {
+        let user =
+          database.connection(db, 1000, fn(e) { e }, fn(connection) {
+            let now = birl.now() |> birl.to_unix_milli
 
-        {
-          page_request.log(page_request, now, session_id, req.path)
+            {
+              page_request.log(page_request, now, session_id, req.path)
 
-          use session <- result.try(session.get_by_key(
-            connection,
-            session_id,
-            now,
-          ))
-
-          case session {
-            Some(session) -> {
-              use _ <- result.try(session.update(
+              use session <- result.try(session.get_by_key(
                 connection,
-                session,
-                Some(session_lifetime_second * 1000),
-                case
-                  list.find(req.headers, fn(header) {
-                    let #(key, _) = header
-                    key == "user-agent"
-                  })
-                {
-                  Error(_) -> None
-                  Ok(#(_, value)) -> Some(value)
-                },
+                session_id,
                 now,
               ))
 
-              user.get(connection, session.user_id)
+              case session {
+                Some(session) -> {
+                  use _ <- result.try(session.update(
+                    connection,
+                    session,
+                    Some(session_lifetime_second * 1000),
+                    case
+                      list.find(req.headers, fn(header) {
+                        let #(key, _) = header
+                        key == "user-agent"
+                      })
+                    {
+                      Error(_) -> None
+                      Ok(#(_, value)) -> Some(value)
+                    },
+                    now,
+                  ))
+
+                  user.get(connection, session.user_id)
+                }
+                None -> Ok(None)
+              }
             }
-            None -> Ok(None)
+            |> result.map_error(fn(error) { database.SqlightError(error) })
+          })
+
+        case user {
+          Ok(user) -> user
+          Error(error) -> {
+            io.debug(error)
+            None
           }
         }
-        |> result.map_error(fn(error) { database.SqlightError(error) })
-      })
-
-    let user = case user {
-      Ok(user) -> user
-      Error(error) -> {
-        io.debug(error)
-        None
       }
+      False -> None
     }
 
     let session = middleware_session.new(session_id, user)
@@ -97,20 +102,33 @@ pub fn handler(db: Db, dev_mode: Bool) -> Result(Handler, Nil) {
       session_id,
       dev_mode,
       new_session.user |> option.is_some,
+      user |> option.is_some,
     )
   })
 }
 
-fn get_session_id(req: Request) -> Option(BitArray) {
-  let values = list.flatten([wisp.get_query(req), request.get_cookies(req)])
+fn get_session_id(req: Request) -> Option(#(BitArray, Bool)) {
+  let query = wisp.get_query(req)
+  let cookies = request.get_cookies(req)
+
+  let values = list.flatten([query, cookies])
 
   let session_id =
-    list.find(values, fn(value) { value.0 == session_query_key })
+    list.find(values, fn(value) { value.0 == session_query_cookie_key })
     |> result.then(fn(value) { bit_array.base64_decode(value.1) })
 
   case session_id {
     Error(Nil) -> None
-    Ok(session_id) -> Some(session_id)
+    Ok(session_id) ->
+      Some(#(
+        session_id,
+        list.find(cookies, fn(cookie) { cookie.0 == session_query_cookie_key })
+        |> result.is_ok
+          || list.find(cookies, fn(cookie) {
+          cookie.0 == user_authenticated_cookie_key && cookie.1 == "1"
+        })
+        |> result.is_ok,
+      ))
   }
 }
 
@@ -127,6 +145,7 @@ fn set_session_cookie(
   id: BitArray,
   dev_mode: Bool,
   permanent: Bool,
+  authenticated: Bool,
 ) -> Response {
   let cookie_attributes =
     cookie.Attributes(
@@ -145,8 +164,18 @@ fn set_session_cookie(
 
   response.set_cookie(
     response,
-    session_cookie_name,
+    session_query_cookie_key,
     cookie_value,
+    cookie_attributes,
+  )
+
+  response.set_cookie(
+    response,
+    user_authenticated_cookie_key,
+    case authenticated {
+      True -> "1"
+      False -> "0"
+    },
     cookie_attributes,
   )
 }
