@@ -33,7 +33,7 @@ pub fn decoder() -> fn(Dynamic) -> Result(Page, List(DecodeError)) {
     dynamic.element(6, dynamic.optional(dynamic.bit_array))
   let created_at_decoder = dynamic.element(7, dynamic.int)
   let updated_at_decoder = dynamic.element(8, dynamic.int)
-  let active_decoder = dynamic.element(9, dynamic.int)
+  let active_decoder = dynamic.element(9, sqlight.decode_bool)
 
   fn(value: Dynamic) -> Result(Page, List(DecodeError)) {
     let id = id_decoder(value)
@@ -80,7 +80,7 @@ pub fn decoder() -> fn(Dynamic) -> Result(Page, List(DecodeError)) {
           generated_css,
           created_at,
           updated_at,
-          active != 0,
+          active,
         ))
       _, _, _, _, _, _, _, _, _, _ -> {
         let err = fn(result: Result(a, List(b))) -> List(b) {

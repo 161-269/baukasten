@@ -8,6 +8,13 @@ pub type Configuration {
   Configuration(key: String, value: String, created_at: Int)
 }
 
+pub type Statements {
+  Statements(
+    get: fn(String) -> Result(Option(Configuration), Error),
+    set: fn(String, String, Int) -> Result(Nil, Error),
+  )
+}
+
 pub fn decoder() -> fn(Dynamic) -> Result(Configuration, List(DecodeError)) {
   dynamic.tuple3(dynamic.string, dynamic.string, dynamic.int)
   |> dynamic_helper.map(fn(value) {
@@ -16,9 +23,19 @@ pub fn decoder() -> fn(Dynamic) -> Result(Configuration, List(DecodeError)) {
   })
 }
 
-pub fn get(db: Connection, key: String) -> Result(Option(Configuration), Error) {
-  sqlight.query(
-    "
+pub fn statements(db: Connection) -> Result(Statements, Error) {
+  use get <- result.try(get(db))
+  use set <- result.try(set(db))
+
+  Ok(Statements(get:, set:))
+}
+
+fn get(
+  db: Connection,
+) -> Result(fn(String) -> Result(Option(Configuration), Error), Error) {
+  fn(key: String) -> Result(Option(Configuration), Error) {
+    sqlight.query(
+      "
 SELECT
   \"key\",
   \"value\",
@@ -31,35 +48,37 @@ ORDER BY
   \"created_at\" DESC
 LIMIT 1;
     ",
-    db,
-    [sqlight.text(key)],
-    decoder(),
-  )
-  |> result.map(fn(values) {
-    case values {
-      [] -> None
-      [value, ..] -> Some(value)
-    }
-  })
+      db,
+      [sqlight.text(key)],
+      decoder(),
+    )
+    |> result.map(fn(values) {
+      case values {
+        [] -> None
+        [value, ..] -> Some(value)
+      }
+    })
+  }
+  |> Ok
 }
 
-pub fn set(
+fn set(
   db: Connection,
-  key: String,
-  value: String,
-  now: Int,
-) -> Result(Nil, Error) {
-  sqlight.query(
-    "
+) -> Result(fn(String, String, Int) -> Result(Nil, Error), Error) {
+  fn(key: String, value: String, now: Int) {
+    sqlight.query(
+      "
 INSERT INTO
   \"configuration\"
   (\"key\", \"value\", \"created_at\")
 VALUES
   (?, ?, ?);
     ",
-    db,
-    [sqlight.text(key), sqlight.text(value), sqlight.int(now)],
-    dynamic.dynamic,
-  )
-  |> result.map(fn(_) { Nil })
+      db,
+      [sqlight.text(key), sqlight.text(value), sqlight.int(now)],
+      dynamic.dynamic,
+    )
+    |> result.map(fn(_) { Nil })
+  }
+  |> Ok
 }

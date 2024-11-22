@@ -1,6 +1,4 @@
 import backend/database.{type Db}
-import backend/database/session
-import backend/database/user
 import backend/middleware/page_request
 import backend/middleware/session.{type Session, Session} as middleware_session
 import birl
@@ -49,16 +47,14 @@ pub fn handler(db: Db, dev_mode: Bool) -> Result(Handler, Nil) {
             {
               page_request.log(page_request, now, session_id, req.path)
 
-              use session <- result.try(session.get_by_key(
-                connection,
+              use session <- result.try(connection.stmts.session.get_by_key(
                 session_id,
                 now,
               ))
 
               case session {
                 Some(session) -> {
-                  use _ <- result.try(session.update(
-                    connection,
+                  use _ <- result.try(connection.stmts.session.update(
                     session,
                     Some(session_lifetime_second * 1000),
                     case
@@ -73,7 +69,7 @@ pub fn handler(db: Db, dev_mode: Bool) -> Result(Handler, Nil) {
                     now,
                   ))
 
-                  user.get(connection, session.user_id)
+                  connection.stmts.user.get(session.user_id)
                 }
                 None -> Ok(None)
               }

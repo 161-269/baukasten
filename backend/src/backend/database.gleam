@@ -1,3 +1,9 @@
+import backend/database/configuration
+import backend/database/file
+import backend/database/page_request
+import backend/database/session
+import backend/database/user
+import backend/database/visitor_session
 import birl
 import feather
 import feather/migrate
@@ -10,7 +16,7 @@ import gleam/order
 import gleam/otp/actor.{type Next}
 import gleam/result
 import gleamy/priority_queue
-import sqlight.{type Connection}
+import sqlight
 
 pub type Timer
 
@@ -91,6 +97,66 @@ pub opaque type Db {
   Db(pool: Subject(Msg))
 }
 
+pub type Statements {
+  Statements(
+    config: configuration.Statements,
+    file: file.Statements,
+    user: user.Statements,
+    page_request: page_request.Statements,
+    visitor_session: visitor_session.Statements,
+    session: session.Statements,
+  )
+}
+
+fn new_statements(connection: sqlight.Connection) -> Result(Statements, Error) {
+  use configuration <- result.try(
+    configuration.statements(connection) |> result.map_error(SqlightError),
+  )
+
+  use file <- result.try(
+    file.statements(connection) |> result.map_error(SqlightError),
+  )
+
+  use user <- result.try(
+    user.statements(connection) |> result.map_error(SqlightError),
+  )
+
+  use page_request <- result.try(
+    page_request.statements(connection) |> result.map_error(SqlightError),
+  )
+
+  use visitor_session <- result.try(
+    visitor_session.statements(connection) |> result.map_error(SqlightError),
+  )
+
+  use session <- result.try(
+    session.statements(connection) |> result.map_error(SqlightError),
+  )
+
+  Ok(Statements(
+    config: configuration,
+    file:,
+    user:,
+    page_request:,
+    visitor_session:,
+    session:,
+  ))
+}
+
+pub type Connection {
+  Connection(
+    connection: sqlight.Connection,
+    config: feather.Config,
+    stmts: Statements,
+  )
+}
+
+fn new_connection(config: feather.Config, connection: sqlight.Connection) {
+  use statements <- result.try(new_statements(connection))
+
+  Ok(Connection(connection:, config:, stmts: statements))
+}
+
 fn waiting_compare(a: Waiting, b: Waiting) -> order.Order {
   int.compare(a.wait_until, b.wait_until)
 }
@@ -155,7 +221,9 @@ fn update(msg: Msg, state: State) -> Next(Msg, State) {
           }
         })
 
-      list.map(state.available_connections, feather.disconnect)
+      list.map(state.available_connections, fn(conn) {
+        feather.disconnect(conn.connection)
+      })
 
       State(
         ..state,
@@ -225,7 +293,7 @@ fn update(msg: Msg, state: State) -> Next(Msg, State) {
           }
 
         Some(_) -> {
-          let _ = feather.disconnect(connection)
+          let _ = feather.disconnect(connection.connection)
 
           State(..state, used_connections: state.used_connections - 1)
         }
@@ -238,25 +306,17 @@ fn update(msg: Msg, state: State) -> Next(Msg, State) {
     TimerTick -> {
       let _ =
         feather.connect(state.config)
+        |> result.map_error(SqlightError)
+        |> result.then(new_connection(state.config, _))
+        |> result.then(fn(connection) { set_pragmas(connection) })
         |> result.then(fn(connection) {
-          set_pragmas(connection)
-          |> result.map_error(fn(error) {
-            case error {
-              SqlightError(error) -> error
-              _ ->
-                sqlight.SqlightError(
-                  sqlight.GenericError,
-                  "Could not set pragmas",
-                  -1,
-                )
-            }
-          })
-        })
-        |> result.then(fn(connection) {
-          sqlight.exec("PRAGMA wal_checkpoint(PASSIVE);", connection)
+          sqlight.exec("PRAGMA wal_checkpoint(PASSIVE);", connection.connection)
+          |> result.map_error(SqlightError)
           |> result.map(fn(_) { connection })
         })
-        |> result.then(feather.disconnect)
+        |> result.then(fn(conn) {
+          feather.disconnect(conn.connection) |> result.map_error(SqlightError)
+        })
 
       state
     }
@@ -305,7 +365,7 @@ PRAGMA cache_shared = ON;
 PRAGMA busy_timeout = 1000;
 PRAGMA mmap_size = 134217728;
     ",
-      db,
+      db.connection,
     ))
 
     Ok(db)
@@ -339,16 +399,17 @@ pub fn connect(
     feather.connect(config)
     |> result.map_error(SqlightError),
   )
+  use connection <- result.try(new_connection(config, connection))
 
   use _ <- result.try(set_pragmas(connection))
 
   use _ <- result.try(
-    migrate.migrate(migrations, on: connection)
+    migrate.migrate(migrations, on: connection.connection)
     |> result.map_error(MigrationError),
   )
 
   use _ <- result.try(
-    feather.optimize(connection)
+    feather.optimize(connection.connection)
     |> result.map_error(SqlightError),
   )
 
@@ -356,6 +417,7 @@ pub fn connect(
     init(config, connections, connection, fn() {
       feather.connect(config)
       |> result.map_error(SqlightError)
+      |> result.then(new_connection(config, _))
       |> result.then(set_pragmas)
     }),
   )
@@ -431,7 +493,7 @@ fn transaction_block(
   }
 
   use _ <- result.then(
-    sqlight.exec("BEGIN TRANSACTION;", connection)
+    sqlight.exec("BEGIN TRANSACTION;", connection.connection)
     |> result.map_error(map(SqlightError)),
   )
 
@@ -440,7 +502,7 @@ fn transaction_block(
   case result {
     Ok(_) -> {
       use _ <- result.then(
-        sqlight.exec("COMMIT TRANSACTION;", connection)
+        sqlight.exec("COMMIT TRANSACTION;", connection.connection)
         |> result.map_error(map(SqlightError)),
       )
 
@@ -448,7 +510,7 @@ fn transaction_block(
     }
     Error(_) -> {
       let _ =
-        sqlight.exec("ROLLBACK TRANSACTION;", connection)
+        sqlight.exec("ROLLBACK TRANSACTION;", connection.connection)
         |> result.map_error(map(SqlightError))
 
       result

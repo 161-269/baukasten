@@ -1,11 +1,9 @@
-import backend/database
-import backend/database/configuration
+import backend/database.{type Connection}
 import backend/database/user
 import gleam/list
 import gleam/option.{None}
 import gleeunit
 import gleeunit/should
-import sqlight.{type Connection}
 
 pub fn main() {
   gleeunit.main()
@@ -28,12 +26,12 @@ pub fn database_configuration_test() {
   use db <- use_db
 
   list.map(["test", "a.test", "b.test", "a.test.a"], fn(key) {
-    configuration.get(db, key)
+    db.stmts.config.get(key)
     |> should.be_ok
     |> should.be_none
 
-    configuration.set(db, key, "1", 1) |> should.be_ok
-    configuration.get(db, key)
+    db.stmts.config.set(key, "1", 1) |> should.be_ok
+    db.stmts.config.get(key)
     |> should.be_ok
     |> option.map(fn(c) {
       should.equal(c.key, key)
@@ -42,8 +40,8 @@ pub fn database_configuration_test() {
     })
     |> should.be_some
 
-    configuration.set(db, key, "3", 3) |> should.be_ok
-    configuration.get(db, key)
+    db.stmts.config.set(key, "3", 3) |> should.be_ok
+    db.stmts.config.get(key)
     |> should.be_ok
     |> option.map(fn(c) {
       should.equal(c.key, key)
@@ -52,8 +50,8 @@ pub fn database_configuration_test() {
     })
     |> should.be_some
 
-    configuration.set(db, key, "2", 2) |> should.be_ok
-    configuration.get(db, key)
+    db.stmts.config.set(key, "2", 2) |> should.be_ok
+    db.stmts.config.get(key)
     |> should.be_ok
     |> option.map(fn(c) {
       should.equal(c.key, key)
@@ -62,8 +60,8 @@ pub fn database_configuration_test() {
     })
     |> should.be_some
 
-    configuration.set(db, key, "5", 5) |> should.be_ok
-    configuration.get(db, key)
+    db.stmts.config.set(key, "5", 5) |> should.be_ok
+    db.stmts.config.get(key)
     |> should.be_ok
     |> option.map(fn(c) {
       should.equal(c.key, key)
@@ -72,8 +70,8 @@ pub fn database_configuration_test() {
     })
     |> should.be_some
 
-    configuration.set(db, key, "0", 0) |> should.be_ok
-    configuration.get(db, key)
+    db.stmts.config.set(key, "0", 0) |> should.be_ok
+    db.stmts.config.get(key)
     |> should.be_ok
     |> option.map(fn(c) {
       should.equal(c.key, key)
@@ -82,99 +80,106 @@ pub fn database_configuration_test() {
     })
     |> should.be_some
 
-    configuration.set(db, key, "0", 0) |> should.be_error
+    db.stmts.config.set(key, "0", 0) |> should.be_error
   })
 }
 
 pub fn database_user_test() {
   use db <- use_db
 
-  user.count(db) |> should.be_ok |> should.equal(0)
-  user.search(db, "alice") |> should.be_ok |> should.be_none
-  user.search(db, "bob") |> should.be_ok |> should.be_none
+  db.stmts.user.count() |> should.be_ok |> should.equal(0)
+  db.stmts.user.search("alice") |> should.be_ok |> should.be_none
+  db.stmts.user.search("bob") |> should.be_ok |> should.be_none
 
-  user.search(db, "alice@example.com") |> should.be_ok |> should.be_none
-  user.search(db, "bob@example.com") |> should.be_ok |> should.be_none
+  db.stmts.user.search("alice@example.com") |> should.be_ok |> should.be_none
+  db.stmts.user.search("bob@example.com") |> should.be_ok |> should.be_none
 
-  user.insert_new(db, "alice", "alice@example.com", "123456789012345")
+  db.stmts.user.insert_new("alice", "alice@example.com", "123456789012345")
   |> should.be_error
-  user.count(db) |> should.be_ok |> should.equal(0)
+  db.stmts.user.count() |> should.be_ok |> should.equal(0)
 
   let alice =
-    user.insert_new(db, "alice", "alice@example.com", "1234567890123456")
+    db.stmts.user.insert_new("alice", "alice@example.com", "1234567890123456")
     |> should.be_ok
-  user.count(db) |> should.be_ok |> should.equal(1)
+  db.stmts.user.count() |> should.be_ok |> should.equal(1)
 
-  user.search(db, "alice")
+  db.stmts.user.search("alice")
   |> should.be_ok
   |> should.be_some
   |> should.equal(alice)
-  user.search(db, "alIcE")
+  db.stmts.user.search("alIcE")
   |> should.be_ok
   |> should.be_some
   |> should.equal(alice)
-  user.search(db, "alice@example.com")
+  db.stmts.user.search("alice@example.com")
   |> should.be_ok
   |> should.be_some
   |> should.equal(alice)
-  user.search(db, "alice@examplE.com")
+  db.stmts.user.search("alice@examplE.com")
   |> should.be_ok
   |> should.be_some
   |> should.equal(alice)
 
   let bob =
-    user.insert_new(
-      db,
+    db.stmts.user.insert_new(
       "bob",
       "bob@example.com",
       "Passwort with more than 16 chars.",
     )
     |> should.be_ok
-  user.count(db) |> should.be_ok |> should.equal(2)
+  db.stmts.user.count() |> should.be_ok |> should.equal(2)
 
   bob |> should.not_equal(alice)
   bob.id |> should.not_equal(alice.id)
 
-  user.search(db, "bOb")
+  db.stmts.user.search("bOb")
   |> should.be_ok
   |> should.be_some
   |> should.equal(bob)
 
-  user.search(db, "alice")
+  db.stmts.user.search("alice")
   |> should.be_ok
   |> should.be_some
   |> should.equal(alice)
 
-  user.insert_new(db, "alice", "fake@example.com", "1234567890123456")
+  db.stmts.user.insert_new("alice", "fake@example.com", "1234567890123456")
   |> should.be_error
-  user.insert_new(db, "fake", "alice@example.com", "1234567890123456")
+  db.stmts.user.insert_new("fake", "alice@example.com", "1234567890123456")
   |> should.be_error
-  user.insert_new(db, "charlie", "charlie(at)example.com", "1234567890123456")
+  db.stmts.user.insert_new(
+    "charlie",
+    "charlie(at)example.com",
+    "1234567890123456",
+  )
   |> should.be_error
-  user.insert_new(db, "cha@rlie", "charlie@example.com", "1234567890123456")
+  db.stmts.user.insert_new(
+    "cha@rlie",
+    "charlie@example.com",
+    "1234567890123456",
+  )
   |> should.be_error
 
-  user.sarch_and_verify(db, "alice", "1234567890123456")
+  db.stmts.user.search_and_verify("alice", "1234567890123456")
   |> should.be_ok
   |> should.equal(alice)
 
-  user.sarch_and_verify(db, "bob", "1234567890123456")
+  db.stmts.user.search_and_verify("bob", "1234567890123456")
   |> should.be_error
 
   let abby =
-    user.update(db, user.User(..alice, username: "abby"), None)
+    db.stmts.user.update(user.User(..alice, username: "abby"), None)
     |> should.be_ok
 
   abby |> should.not_equal(alice)
 
-  user.search(db, "abby")
+  db.stmts.user.search("abby")
   |> should.be_ok
   |> should.be_some
   |> should.equal(abby)
 
-  user.search(db, "alice")
+  db.stmts.user.search("alice")
   |> should.be_ok
   |> should.be_none
 
-  user.count(db) |> should.be_ok |> should.equal(2)
+  db.stmts.user.count() |> should.be_ok |> should.equal(2)
 }

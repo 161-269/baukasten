@@ -1,5 +1,4 @@
 import backend/database
-import backend/database/configuration
 import backend/middleware
 import backend/tailwind
 import birl
@@ -57,16 +56,15 @@ pub fn main() {
   process.sleep_forever()
 }
 
-fn secret_key_base(db: sqlight.Connection) -> Result(String, sqlight.Error) {
-  use value <- result.try(configuration.get(db, "general.secret_key_base"))
+fn secret_key_base(db: database.Connection) -> Result(String, sqlight.Error) {
+  use value <- result.try(db.stmts.config.get("general.secret_key_base"))
 
   case value {
     Some(value) -> Ok(value.value)
     None -> {
       let secret_key_base = wisp.random_string(128)
 
-      use _ <- result.try(configuration.set(
-        db,
+      use _ <- result.try(db.stmts.config.set(
         "general.secret_key_base",
         secret_key_base,
         birl.now() |> birl.to_unix_milli,

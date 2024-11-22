@@ -1,6 +1,4 @@
 import backend/database.{type Db}
-import backend/database/page_request
-import backend/database/visitor_session
 import gleam/dict
 import gleam/erlang/process.{type Subject}
 import gleam/io
@@ -71,8 +69,7 @@ fn update(msg: Msg, state: State) -> Next(Msg, State) {
                           {
                             Ok(id) -> Ok(#(sessions, id))
                             Error(Nil) ->
-                              visitor_session.get_by_session_key_or_insert_new(
-                                connection,
+                              connection.stmts.visitor_session.get_by_session_key_or_insert_new(
                                 log.session,
                                 log.time,
                               )
@@ -94,14 +91,15 @@ fn update(msg: Msg, state: State) -> Next(Msg, State) {
                           {
                             Ok(id) -> Ok(#(paths, id))
                             Error(Nil) ->
-                              page_request.get_path_id(connection, log.path)
+                              connection.stmts.page_request.get_path_id(
+                                log.path,
+                              )
                               |> result.map(fn(id) {
                                 #(dict.insert(paths, path, id), id)
                               })
                           })
 
-                          page_request.insert_new_with_path_id(
-                            connection,
+                          connection.stmts.page_request.insert_new_with_path_id(
                             visitor_id,
                             path_id,
                             log.time,

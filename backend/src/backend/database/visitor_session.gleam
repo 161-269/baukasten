@@ -8,6 +8,16 @@ pub type VisitorSession {
   VisitorSession(session_key: BitArray, visitor_id: Int, created_at: Int)
 }
 
+pub type Statements {
+  Statements(
+    get_by_session_key: fn(BitArray) -> Result(Option(VisitorSession), Error),
+    get_by_visitor_id: fn(Int) -> Result(Option(VisitorSession), Error),
+    insert_new: fn(BitArray, Int) -> Result(VisitorSession, Error),
+    get_by_session_key_or_insert_new: fn(BitArray, Int) ->
+      Result(VisitorSession, Error),
+  )
+}
+
 pub fn decoder() -> fn(Dynamic) -> Result(VisitorSession, List(DecodeError)) {
   dynamic.tuple3(dynamic.bit_array, dynamic.int, dynamic.int)
   |> dynamic_helper.map(fn(value) {
@@ -16,12 +26,28 @@ pub fn decoder() -> fn(Dynamic) -> Result(VisitorSession, List(DecodeError)) {
   })
 }
 
-pub fn get_by_session_key(
+pub fn statements(db: Connection) -> Result(Statements, Error) {
+  use get_by_session_key <- result.try(get_by_session_key(db))
+  use get_by_visitor_id <- result.try(get_by_visitor_id(db))
+  use insert_new <- result.try(insert_new(db))
+  use get_by_session_key_or_insert_new <- result.try(
+    get_by_session_key_or_insert_new(get_by_session_key, insert_new),
+  )
+
+  Ok(Statements(
+    get_by_session_key:,
+    get_by_visitor_id:,
+    insert_new:,
+    get_by_session_key_or_insert_new:,
+  ))
+}
+
+fn get_by_session_key(
   db: Connection,
-  session_key: BitArray,
-) -> Result(Option(VisitorSession), Error) {
-  sqlight.query(
-    "
+) -> Result(fn(BitArray) -> Result(Option(VisitorSession), Error), Error) {
+  fn(session_key: BitArray) -> Result(Option(VisitorSession), Error) {
+    sqlight.query(
+      "
 SELECT
   \"session_key\",
   \"visitor_id\",
@@ -31,24 +57,26 @@ FROM
 WHERE
   \"session_key\" = ?;
     ",
-    db,
-    [sqlight.blob(session_key)],
-    decoder(),
-  )
-  |> result.map(fn(values) {
-    case values {
-      [] -> None
-      [value, ..] -> Some(value)
-    }
-  })
+      db,
+      [sqlight.blob(session_key)],
+      decoder(),
+    )
+    |> result.map(fn(values) {
+      case values {
+        [] -> None
+        [value, ..] -> Some(value)
+      }
+    })
+  }
+  |> Ok
 }
 
-pub fn get_by_visitor_id(
+fn get_by_visitor_id(
   db: Connection,
-  visitor_id: Int,
-) -> Result(Option(VisitorSession), Error) {
-  sqlight.query(
-    "
+) -> Result(fn(Int) -> Result(Option(VisitorSession), Error), Error) {
+  fn(visitor_id: Int) -> Result(Option(VisitorSession), Error) {
+    sqlight.query(
+      "
 SELECT
   \"session_key\",
   \"visitor_id\",
@@ -58,52 +86,53 @@ FROM
 WHERE
   \"visitor_id\" = ?;
     ",
-    db,
-    [sqlight.int(visitor_id)],
-    decoder(),
-  )
-  |> result.map(fn(values) {
-    case values {
-      [] -> None
-      [value, ..] -> Some(value)
-    }
-  })
+      db,
+      [sqlight.int(visitor_id)],
+      decoder(),
+    )
+    |> result.map(fn(values) {
+      case values {
+        [] -> None
+        [value, ..] -> Some(value)
+      }
+    })
+  }
+  |> Ok
 }
 
-pub fn insert_new(
+fn insert_new(
   db: Connection,
-  session_key: BitArray,
-  now: Int,
-) -> Result(VisitorSession, Error) {
-  use visitor_id <- result.try(case
-    sqlight.query(
-      "
+) -> Result(fn(BitArray, Int) -> Result(VisitorSession, Error), Error) {
+  fn(session_key: BitArray, now: Int) -> Result(VisitorSession, Error) {
+    use visitor_id <- result.try(case
+      sqlight.query(
+        "
 INSERT INTO 
   \"visitor\"
   DEFAULT VALUES
 RETURNING
   \"id\";
       ",
-      db,
-      [],
-      dynamic.element(0, dynamic.int),
-    )
-  {
-    Ok(visitor_id) ->
-      case visitor_id {
-        [visitor_id] -> Ok(visitor_id)
-        _ ->
-          Error(sqlight.SqlightError(
-            sqlight.Notfound,
-            "Could not get newly created visitor id",
-            -1,
-          ))
-      }
-    Error(error) -> Error(error)
-  })
+        db,
+        [],
+        dynamic.element(0, dynamic.int),
+      )
+    {
+      Ok(visitor_id) ->
+        case visitor_id {
+          [visitor_id] -> Ok(visitor_id)
+          _ ->
+            Error(sqlight.SqlightError(
+              sqlight.Notfound,
+              "Could not get newly created visitor id",
+              -1,
+            ))
+        }
+      Error(error) -> Error(error)
+    })
 
-  use visitor_session <- result.try(sqlight.query(
-    "
+    use visitor_session <- result.try(sqlight.query(
+      "
 INSERT INTO
   \"visitor_session\"
   (\"session_key\", \"visitor_id\", \"created_at\")
@@ -114,31 +143,35 @@ RETURNING
   \"visitor_id\",
   \"created_at\";
         ",
-    db,
-    [sqlight.blob(session_key), sqlight.int(visitor_id), sqlight.int(now)],
-    decoder(),
-  ))
+      db,
+      [sqlight.blob(session_key), sqlight.int(visitor_id), sqlight.int(now)],
+      decoder(),
+    ))
 
-  case visitor_session {
-    [] ->
-      Error(sqlight.SqlightError(
-        sqlight.Notfound,
-        "Could not find inserted visitor session",
-        -1,
-      ))
-    [visitor_session, ..] -> Ok(visitor_session)
+    case visitor_session {
+      [] ->
+        Error(sqlight.SqlightError(
+          sqlight.Notfound,
+          "Could not find inserted visitor session",
+          -1,
+        ))
+      [visitor_session, ..] -> Ok(visitor_session)
+    }
   }
+  |> Ok
 }
 
-pub fn get_by_session_key_or_insert_new(
-  db: Connection,
-  session_key: BitArray,
-  now: Int,
-) -> Result(VisitorSession, Error) {
-  use visitor_session <- result.try(get_by_session_key(db, session_key))
+fn get_by_session_key_or_insert_new(
+  get_by_session_key: fn(BitArray) -> Result(Option(VisitorSession), Error),
+  insert_new: fn(BitArray, Int) -> Result(VisitorSession, Error),
+) -> Result(fn(BitArray, Int) -> Result(VisitorSession, Error), Error) {
+  fn(session_key: BitArray, now: Int) -> Result(VisitorSession, Error) {
+    use visitor_session <- result.try(get_by_session_key(session_key))
 
-  case visitor_session {
-    None -> insert_new(db, session_key, now)
-    Some(visitor_session) -> Ok(visitor_session)
+    case visitor_session {
+      None -> insert_new(session_key, now)
+      Some(visitor_session) -> Ok(visitor_session)
+    }
   }
+  |> Ok
 }

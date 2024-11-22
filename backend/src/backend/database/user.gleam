@@ -10,6 +10,17 @@ pub type User {
   User(id: Int, username: String, email: String, password: BitArray)
 }
 
+pub type Statements {
+  Statements(
+    get: fn(Int) -> Result(Option(User), Error),
+    search: fn(String) -> Result(Option(User), Error),
+    insert_new: fn(String, String, String) -> Result(User, Error),
+    search_and_verify: fn(String, String) -> Result(User, Error),
+    update: fn(User, Option(String)) -> Result(User, Error),
+    count: fn() -> Result(Int, Error),
+  )
+}
+
 pub fn decoder() -> fn(Dynamic) -> Result(User, List(DecodeError)) {
   dynamic.tuple4(dynamic.int, dynamic.string, dynamic.string, dynamic.bit_array)
   |> dynamic_helper.map(fn(value) {
@@ -18,9 +29,21 @@ pub fn decoder() -> fn(Dynamic) -> Result(User, List(DecodeError)) {
   })
 }
 
-pub fn get(db: Connection, id: Int) -> Result(Option(User), Error) {
-  sqlight.query(
-    "
+pub fn statements(db: Connection) -> Result(Statements, Error) {
+  use get <- result.try(get(db))
+  use search <- result.try(search(db))
+  use insert_new <- result.try(insert_new(db))
+  use search_and_verify <- result.try(search_and_verify(search))
+  use update <- result.try(update(db))
+  use count <- result.try(count(db))
+
+  Ok(Statements(get:, search:, insert_new:, search_and_verify:, update:, count:))
+}
+
+fn get(db: Connection) -> Result(fn(Int) -> Result(Option(User), Error), Error) {
+  fn(id: Int) -> Result(Option(User), Error) {
+    sqlight.query(
+      "
 SELECT
   \"id\",
   \"username\",
@@ -31,25 +54,27 @@ FROM
 WHERE
   \"id\" = ?;
     ",
-    db,
-    [sqlight.int(id)],
-    decoder(),
-  )
-  |> result.map(fn(values) {
-    case values {
-      [] -> None
-      [value, ..] -> Some(value)
-    }
-  })
+      db,
+      [sqlight.int(id)],
+      decoder(),
+    )
+    |> result.map(fn(values) {
+      case values {
+        [] -> None
+        [value, ..] -> Some(value)
+      }
+    })
+  }
+  |> Ok
 }
 
-pub fn search(
+fn search(
   db: Connection,
-  username_or_email: String,
-) -> Result(Option(User), Error) {
-  case
-    sqlight.query(
-      "
+) -> Result(fn(String) -> Result(Option(User), Error), Error) {
+  fn(username_or_email: String) -> Result(Option(User), Error) {
+    case
+      sqlight.query(
+        "
 SELECT
   \"id\",
   \"username\",
@@ -64,15 +89,17 @@ WHERE
     \"email\" = ?
   );
     ",
-      db,
-      [sqlight.text(username_or_email), sqlight.text(username_or_email)],
-      decoder(),
-    )
-  {
-    Ok([]) -> Ok(None)
-    Ok([user, ..]) -> Ok(Some(user))
-    Error(error) -> Error(error)
+        db,
+        [sqlight.text(username_or_email), sqlight.text(username_or_email)],
+        decoder(),
+      )
+    {
+      Ok([]) -> Ok(None)
+      Ok([user, ..]) -> Ok(Some(user))
+      Error(error) -> Error(error)
+    }
   }
+  |> Ok
 }
 
 fn hasher() -> aragorn2.Hasher {
@@ -100,16 +127,14 @@ fn hash_password(password: String) -> Result(BitArray, Error) {
   Ok(<<password:utf8>>)
 }
 
-pub fn insert_new(
+fn insert_new(
   db: Connection,
-  username: String,
-  email: String,
-  password: String,
-) -> Result(User, Error) {
-  use password <- result.try(hash_password(password))
+) -> Result(fn(String, String, String) -> Result(User, Error), Error) {
+  fn(username: String, email: String, password: String) -> Result(User, Error) {
+    use password <- result.try(hash_password(password))
 
-  use users <- result.try(sqlight.query(
-    "
+    use users <- result.try(sqlight.query(
+      "
 INSERT INTO
   \"user\"
   (\"username\", \"email\", \"password\")
@@ -121,70 +146,72 @@ RETURNING
   \"email\",
   \"password\";
       ",
-    db,
-    [sqlight.text(username), sqlight.text(email), sqlight.blob(password)],
-    decoder(),
-  ))
+      db,
+      [sqlight.text(username), sqlight.text(email), sqlight.blob(password)],
+      decoder(),
+    ))
 
-  case users {
-    [] ->
-      Error(sqlight.SqlightError(
-        sqlight.Notfound,
-        "Could not find inserted user",
-        -1,
-      ))
-    [user, ..] -> Ok(user)
+    case users {
+      [] ->
+        Error(sqlight.SqlightError(
+          sqlight.Notfound,
+          "Could not find inserted user",
+          -1,
+        ))
+      [user, ..] -> Ok(user)
+    }
   }
+  |> Ok
 }
 
-pub fn sarch_and_verify(
-  db: Connection,
-  username_or_email: String,
-  password: String,
-) -> Result(User, Error) {
-  use user <- result.try(search(db, username_or_email))
-  case user {
-    Some(user) -> {
-      case
-        aragorn2.verify_password(hasher(), <<password:utf8>>, user.password)
-      {
-        Ok(_) -> Ok(user)
-        Error(_) ->
-          Error(sqlight.SqlightError(
-            sqlight.GenericError,
-            "Could not verify password",
-            -1,
-          ))
+fn search_and_verify(
+  search: fn(String) -> Result(Option(User), Error),
+) -> Result(fn(String, String) -> Result(User, Error), Error) {
+  fn(username_or_email: String, password: String) -> Result(User, Error) {
+    use user <- result.try(search(username_or_email))
+    case user {
+      Some(user) -> {
+        case
+          aragorn2.verify_password(hasher(), <<password:utf8>>, user.password)
+        {
+          Ok(_) -> Ok(user)
+          Error(_) ->
+            Error(sqlight.SqlightError(
+              sqlight.GenericError,
+              "Could not verify password",
+              -1,
+            ))
+        }
+      }
+      None -> {
+        // Waste some time to prevent brute force and timing attacks
+        let _ = aragorn2.hash_password(hasher(), <<password:utf8>>)
+
+        Error(sqlight.SqlightError(sqlight.Notfound, "Could not find user", -1))
       }
     }
-    None -> {
-      // Waste some time to prevent brute force and timing attacks
-      let _ = aragorn2.hash_password(hasher(), <<password:utf8>>)
-
-      Error(sqlight.SqlightError(sqlight.Notfound, "Could not find user", -1))
-    }
   }
+  |> Ok
 }
 
-pub fn update(
+fn update(
   db: Connection,
-  user: User,
-  password: Option(String),
-) -> Result(User, Error) {
-  use password <- result.try(case option.map(password, hash_password) {
-    None -> Ok(None)
-    Some(password) -> {
-      result.map(password, Some)
+) -> Result(fn(User, Option(String)) -> Result(User, Error), Error) {
+  fn(user: User, password: Option(String)) -> Result(User, Error) {
+    use password <- result.try(case option.map(password, hash_password) {
+      None -> Ok(None)
+      Some(password) -> {
+        result.map(password, Some)
+      }
+    })
+
+    let user = case password {
+      None -> user
+      Some(password) -> User(..user, password:)
     }
-  })
 
-  let user = case password {
-    None -> user
-    Some(password) -> User(..user, password:)
-  }
-
-  use user <- result.try(sqlight.query(
-    "
+    use user <- result.try(sqlight.query(
+      "
 UPDATE
   \"user\"
 SET
@@ -199,52 +226,57 @@ RETURNING
   \"email\",
   \"password\";
     ",
-    db,
-    [
-      sqlight.text(user.username),
-      sqlight.text(user.email),
-      sqlight.blob(user.password),
-      sqlight.int(user.id),
-    ],
-    decoder(),
-  ))
+      db,
+      [
+        sqlight.text(user.username),
+        sqlight.text(user.email),
+        sqlight.blob(user.password),
+        sqlight.int(user.id),
+      ],
+      decoder(),
+    ))
 
-  case user {
-    [] ->
-      Error(sqlight.SqlightError(
-        sqlight.Notfound,
-        "Could not find updated user",
-        -1,
-      ))
-    [user, ..] -> Ok(user)
+    case user {
+      [] ->
+        Error(sqlight.SqlightError(
+          sqlight.Notfound,
+          "Could not find updated user",
+          -1,
+        ))
+      [user, ..] -> Ok(user)
+    }
   }
+  |> Ok
 }
 
-pub fn count(db: Connection) -> Result(Int, Error) {
-  let count =
-    sqlight.query(
-      "
+fn count(db: Connection) -> Result(fn() -> Result(Int, Error), Error) {
+  fn() -> Result(Int, Error) {
+    let count =
+      sqlight.query(
+        "
 SELECT
   COUNT(*)
 FROM
   \"user\";
     ",
-      db,
-      [],
-      dynamic.element(0, dynamic.int),
-    )
+        db,
+        [],
+        dynamic.element(0, dynamic.int),
+      )
 
-  case count {
-    Ok(count) ->
-      case count {
-        [count] -> Ok(count)
-        _ ->
-          Error(sqlight.SqlightError(
-            sqlight.GenericError,
-            "Could not get user count",
-            -1,
-          ))
-      }
-    Error(error) -> Error(error)
+    case count {
+      Ok(count) ->
+        case count {
+          [count] -> Ok(count)
+          _ ->
+            Error(sqlight.SqlightError(
+              sqlight.GenericError,
+              "Could not get user count",
+              -1,
+            ))
+        }
+      Error(error) -> Error(error)
+    }
   }
+  |> Ok
 }
