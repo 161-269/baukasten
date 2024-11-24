@@ -1,6 +1,6 @@
 name = "editor"
 version = "1.0.0"
-gleam = ">= 1.6.0"
+gleam = ">= 1.6.2"
 target = "javascript"
 
 # Fill out these fields if you intend to generate HTML documentation or publish
