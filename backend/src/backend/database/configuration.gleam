@@ -12,6 +12,8 @@ pub type Statements {
   Statements(
     get: fn(String) -> Result(Option(Configuration), Error),
     set: fn(String, String, Int) -> Result(Nil, Error),
+    get_or_set: fn(String, fn() -> #(String, Int)) ->
+      Result(Configuration, Error),
   )
 }
 
@@ -26,8 +28,9 @@ pub fn decoder() -> fn(Dynamic) -> Result(Configuration, List(DecodeError)) {
 pub fn statements(db: Connection) -> Result(Statements, Error) {
   use get <- result.try(get(db))
   use set <- result.try(set(db))
+  use get_or_set <- result.try(get_or_set(get, set))
 
-  Ok(Statements(get:, set:))
+  Ok(Statements(get:, set:, get_or_set:))
 }
 
 fn get(
@@ -79,6 +82,42 @@ VALUES
       dynamic.dynamic,
     )
     |> result.map(fn(_) { Nil })
+  }
+  |> Ok
+}
+
+fn get_or_set(
+  get: fn(String) -> Result(Option(Configuration), Error),
+  set: fn(String, String, Int) -> Result(Nil, Error),
+) -> Result(
+  fn(String, fn() -> #(String, Int)) -> Result(Configuration, Error),
+  Error,
+) {
+  fn(key: String, default: fn() -> #(String, Int)) -> Result(
+    Configuration,
+    Error,
+  ) {
+    use configuration <- result.try(get(key))
+
+    case configuration {
+      Some(configuration) -> Ok(configuration)
+      None -> {
+        let #(value, now) = default()
+
+        use _ <- result.try(set(key, value, now))
+        use configuration <- result.try(get(key))
+
+        case configuration {
+          Some(configuration) -> Ok(configuration)
+          None ->
+            Error(sqlight.SqlightError(
+              sqlight.Notfound,
+              "Could not get newly created configuration",
+              -1,
+            ))
+        }
+      }
+    }
   }
   |> Ok
 }

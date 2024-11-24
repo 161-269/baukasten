@@ -13,10 +13,13 @@ pub fn new(id: BitArray, user: Option(User)) {
 
 pub fn require_authentication(
   session: Session,
-  next: fn(User) -> Response,
-) -> Response {
+  next: fn(User) -> #(Response, Session),
+) -> #(Response, Session) {
   case session.user {
     Some(user) -> next(user)
-    None -> HttpResponse(..wisp.redirect("/maintenance/login"), status: 403)
+    None -> #(
+      HttpResponse(..wisp.redirect("/maintenance/login"), status: 403),
+      session,
+    )
   }
 }

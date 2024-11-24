@@ -35,7 +35,7 @@ fn do_apply_interval(
 @external(erlang, "backend_ffi", "cancel_timer")
 fn do_cancel_timer(timer: Timer) -> Result(a, b)
 
-fn apply_after(
+pub fn apply_after(
   timeout_millisecond: Int,
   callback: fn() -> a,
 ) -> Result(Timer, Nil) {
