@@ -171,8 +171,8 @@ fn start_server(self: Subject(Msg)) -> Result(Server, Nil) {
   process.start(
     fn() {
       use handler <- result.try(
-        router.Configuration(db:, dev_mode: False, restart: fn() {
-          actor.send(self, RestartServer)
+        router.Configuration(db:, dev_mode: False, restart: fn(timeout: Int) {
+          process.send_after(self, timeout, RestartServer)
         })
         |> router.handler,
       )

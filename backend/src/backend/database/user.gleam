@@ -113,7 +113,11 @@ fn hasher() -> aragorn2.Hasher {
 fn hash_password(password: String) -> Result(BitArray, Error) {
   use _ <- result.try(case string.length(password) < 16 {
     True ->
-      Error(sqlight.SqlightError(sqlight.GenericError, "Password too short", -1))
+      Error(sqlight.SqlightError(
+        sqlight.GenericError,
+        "Password too short (minimum 16 characters)",
+        -1,
+      ))
     False -> Ok(Nil)
   })
 

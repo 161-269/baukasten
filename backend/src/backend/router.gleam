@@ -3,18 +3,18 @@ import backend/database/user.{type User}
 import backend/middleware
 import backend/middleware/session.{type Session}
 import backend/page/default
+import backend/page/initial_user
 import birl
 import gleam/bit_array
 import gleam/crypto
+import gleam/erlang/process.{type Timer}
 import gleam/int
-import gleam/io
-import gleam/list
 import gleam/option.{None, Some}
 import gleam/result
 import wisp.{type Request, type Response}
 
 pub type Configuration {
-  Configuration(db: Db, dev_mode: Bool, restart: fn() -> Nil)
+  Configuration(db: Db, dev_mode: Bool, restart: fn(Int) -> Timer)
 }
 
 pub fn handler(cfg: Configuration) -> Result(fn(Request) -> Response, Nil) {
@@ -47,11 +47,11 @@ pub fn handler(cfg: Configuration) -> Result(fn(Request) -> Response, Nil) {
 }
 
 fn maintenance(
-  req: Request,
-  path: List(String),
+  _req: Request,
+  _path: List(String),
   session: Session,
-  user: User,
-  db: Db,
+  _user: User,
+  _db: Db,
 ) -> #(Response, Session) {
   #(wisp.not_found(), session)
 }
@@ -91,26 +91,8 @@ fn setup_check(
     |> result.map_error(fn(_) { Nil })
   })
 
-  let initial_password_message = [
-    "",
-    "==============================================================",
-    "",
-    "Hello and welcome to Baukasten!",
-    "",
-    "To get started, you need the initial password.",
-    "You can enter it in the web interface to create an admin user.",
-    "",
-    "The initial password is:",
-    initial_password.value,
-    "",
-    "==============================================================",
-    "",
-  ]
+  let initial_user_page =
+    initial_user.page(cfg.db, initial_password.value, cfg.restart)
 
-  list.map(initial_password_message, io.println)
-  list.map(initial_password_message, io.println_error)
-
-  let default_page = default.page()
-
-  fn(req: Request) -> Response { default_page(req) } |> Ok
+  fn(req: Request) -> Response { initial_user_page(req) } |> Ok
 }
