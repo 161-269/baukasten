@@ -7,6 +7,8 @@ import birl
 import gleam/bit_array
 import gleam/crypto
 import gleam/int
+import gleam/io
+import gleam/list
 import gleam/option.{None, Some}
 import gleam/result
 import wisp.{type Request, type Response}
@@ -82,12 +84,31 @@ fn setup_check(
         crypto.strong_random_bytes(224 / 8)
         |> bit_array.append(<<int.to_string(now):utf8>>)
         |> crypto.hash(crypto.Sha224, _)
-        |> bit_array.base64_url_encode(True)
+        |> bit_array.base16_encode
 
       #(value, now)
     }
     |> result.map_error(fn(_) { Nil })
   })
+
+  let initial_password_message = [
+    "",
+    "==============================================================",
+    "",
+    "Hello and welcome to Baukasten!",
+    "",
+    "To get started, you need the initial password.",
+    "You can enter it in the web interface to create an admin user.",
+    "",
+    "The initial password is:",
+    initial_password.value,
+    "",
+    "==============================================================",
+    "",
+  ]
+
+  list.map(initial_password_message, io.println)
+  list.map(initial_password_message, io.println_error)
 
   let default_page = default.page()
 
