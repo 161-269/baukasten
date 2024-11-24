@@ -8,6 +8,7 @@ import birl
 import gleam/bit_array
 import gleam/crypto
 import gleam/erlang/process.{type Timer}
+import gleam/http/response.{Response as HttpResponse}
 import gleam/int
 import gleam/option.{None, Some}
 import gleam/result
@@ -20,12 +21,31 @@ pub type Configuration {
 pub fn handler(cfg: Configuration) -> Result(fn(Request) -> Response, Nil) {
   use <- setup_check(cfg)
   use middleware <- result.try(middleware.handler(cfg.db, cfg.dev_mode))
+
+  use priv <- result.try(wisp.priv_directory("backend"))
+
   let default_page = default.page()
 
   fn(req: Request) -> Response {
     use session, path <- middleware(req)
 
     case path {
+      ["static", ..] -> {
+        case
+          wisp.serve_static(req, under: "/static", from: priv, next: fn() {
+            wisp.not_found()
+          })
+        {
+          HttpResponse(404, _, _) -> #(default_page(req), session)
+          response -> #(response, session)
+        }
+      }
+
+      ["favicon.ico"] -> #(
+        wisp.ok() |> wisp.set_body(wisp.File(priv <> "/favicon.ico")),
+        session,
+      )
+
       ["maintenance", ..rest] ->
         case rest {
           ["login"] -> {

@@ -8,8 +8,6 @@ import widgets/component
 import wisp.{type Request, type Response}
 
 pub fn page() -> fn(Request) -> Response {
-  let assert Ok(priv) = wisp.priv_directory("backend")
-
   let title = "Baukasten"
   let css = element.none()
   let mjs = "widgets.min.mjs"
@@ -25,11 +23,7 @@ pub fn page() -> fn(Request) -> Response {
         |> wisp.set_header("Content-Type", "text/css; charset=utf-8")
         |> wisp.set_body(wisp.Text(string_tree.from_string(tailwind_css)))
       }
-      ["static", ..] -> {
-        use <- wisp.serve_static(req, under: "/static", from: priv)
 
-        wisp.not_found()
-      }
       _ -> {
         let result =
           html.html([attribute.attribute("lang", "de")], [

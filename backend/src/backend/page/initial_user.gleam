@@ -53,6 +53,9 @@ pub fn page(
         wisp.not_found()
       }
 
+      ["favicon.ico"] ->
+        wisp.ok() |> wisp.set_body(wisp.File(priv <> "/favicon.ico"))
+
       ["create-admin"] -> {
         use form_data <- wisp.require_form(req)
 
