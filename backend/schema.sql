@@ -12,6 +12,7 @@ CREATE TABLE "user" (
 	"username"	TEXT NOT NULL UNIQUE COLLATE NOCASE,
 	"email"	TEXT NOT NULL UNIQUE COLLATE NOCASE,
 	"password"	BLOB NOT NULL,
+	"read_changelog_version" TEXT,
 	CHECK("username" LIKE '__%' AND "username" NOT LIKE '%@%' AND "email" LIKE '%_@_%'),
 	PRIMARY KEY("id" AUTOINCREMENT)
 );
@@ -101,7 +102,7 @@ CREATE TABLE "file_metadata" (
 
 CREATE TABLE "static_file" (
 	"id" INTEGER NOT NULL UNIQUE,
-	"path" TEXT NOT NULL UNIQUE COLLATE NOCASE,
+	"path" TEXT NOT NULL COLLATE NOCASE,
 	"file_metadata_id" INTEGER NOT NULL,
 	"deleted" INTEGER NOT NULL,
 	PRIMARY KEY("id" AUTOINCREMENT),
@@ -117,29 +118,173 @@ CREATE TABLE "generated_file" (
 	PRIMARY KEY("id" AUTOINCREMENT)
 );
 
-CREATE INDEX "configuration_key_created_at" ON "configuration" ("key", "created_at" DESC);
+CREATE TABLE "stat_page_request_10_minutes"(
+	"time" INTEGER NOT NULL,
+	"request_path_id" INTEGER NOT NULL,
+	"count" INTEGER NOT NULL,
+	PRIMARY KEY("time", "request_path_id"),
+	FOREIGN KEY("request_path_id") REFERENCES "request_path"("id")
+) WITHOUT ROWID;
 
-CREATE INDEX "user_username" ON "user" ("username");
+CREATE TABLE "stat_page_request_day"(
+	"time" INTEGER NOT NULL,
+	"request_path_id" INTEGER NOT NULL,
+	"count" INTEGER NOT NULL,
+	PRIMARY KEY("time", "request_path_id"),
+	FOREIGN KEY("request_path_id") REFERENCES "request_path"("id")
+) WITHOUT ROWID;
 
-CREATE INDEX "user_email" ON "user" ("email");
+CREATE TABLE "stat_page_request_month"(
+	"time" INTEGER NOT NULL,
+	"request_path_id" INTEGER NOT NULL,
+	"count" INTEGER NOT NULL,
+	PRIMARY KEY("time", "request_path_id"),
+	FOREIGN KEY("request_path_id") REFERENCES "request_path"("id")
+) WITHOUT ROWID;
 
-CREATE INDEX "session_key" ON "session" ("key");
+CREATE INDEX "session_user_id" ON "session" ("user_id");
 
-CREATE INDEX "request_path_path" ON "request_path" ("path");
+CREATE INDEX "visitor_session_created_at" ON "visitor_session" ("created_at");
 
-CREATE INDEX "page_request_visitor_id" ON "page_request" ("visitor_id");
+CREATE INDEX "page_request_visitor_id_time" ON "page_request" ("visitor_id", "time");
+
+CREATE INDEX "page_request_request_path_id_time" ON "page_request" ("request_path_id", "time");
 
 CREATE INDEX "page_deleted_updated_at" ON "page" ("deleted", "updated_at" ASC);
 
 CREATE INDEX "page_deleted_active_path_updated_at" ON "page" ("deleted", "active", "path", "updated_at" DESC);
 
-CREATE INDEX "file_hash" ON "file" ("hash");
-
-CREATE INDEX "file_metadata_key" ON "file_metadata" ("key");
-
 CREATE INDEX "static_file_path" ON "static_file" ("path");
 
 CREATE INDEX "static_file_deleted_path" ON "static_file" ("deleted", "path");
 
-CREATE INDEX "generated_file_key" ON "generated_file" ("key");
+CREATE TRIGGER "page_request_insert"
+AFTER INSERT ON "page_request"
+BEGIN
+	INSERT INTO "stat_page_request_10_minutes" (
+		"time",
+		"request_path_id",
+		"count"
+	) VALUES (
+		(CAST(NEW."time" / 600000 AS INTEGER) * 600000),
+		NEW."request_path_id",
+		1
+	) ON CONFLICT (
+		"time",
+		"request_path_id"
+	) DO UPDATE SET
+		"count" = "count" + 1;
+END;
+
+CREATE TRIGGER "stat_page_request_10_minutes_insert"
+AFTER INSERT ON "stat_page_request_10_minutes"
+BEGIN
+	INSERT INTO "stat_page_request_day" (
+		"time",
+		"request_path_id",
+		"count"
+	) VALUES (
+		strftime(
+            '%s',
+            datetime(
+                strftime(
+                    '%Y-%m-%d',
+                    datetime(NEW."time" / 1000, 'unixepoch'),
+                    'localtime'
+                ),
+                'utc'
+            )
+        ) * 1000,
+		NEW."request_path_id",
+		NEW."count"
+	) ON CONFLICT (
+		"time",
+		"request_path_id"
+	) DO UPDATE SET
+		"count" = "count" + NEW."count";
+END;
+
+CREATE TRIGGER "stat_page_request_10_minutes_update"
+AFTER UPDATE ON "stat_page_request_10_minutes"
+BEGIN
+	INSERT INTO "stat_page_request_day" (
+		"time",
+		"request_path_id",
+		"count"
+	) VALUES (
+		strftime(
+            '%s',
+            datetime(
+                strftime(
+                    '%Y-%m-%d',
+                    datetime(NEW."time" / 1000, 'unixepoch'),
+                    'localtime'
+                ),
+                'utc'
+            )
+        ) * 1000,
+		NEW."request_path_id",
+		NEW."count"
+	) ON CONFLICT (
+		"time",
+		"request_path_id"
+	) DO UPDATE SET
+		"count" = "count" + NEW."count" - OLD."count";
+END;
+
+CREATE TRIGGER "stat_page_request_day_insert"
+AFTER INSERT ON "stat_page_request_day"
+BEGIN
+	INSERT INTO "stat_page_request_month" (
+		"time",
+		"request_path_id",
+		"count"
+	) VALUES (
+		strftime(
+            '%s',
+            datetime(
+                strftime(
+                    '%Y-%m-01',
+                    datetime(NEW."time" / 1000, 'unixepoch'),
+                    'localtime'
+                ),
+                'utc'
+            )
+        ) * 1000,
+		NEW."request_path_id",
+		NEW."count"
+	) ON CONFLICT (
+		"time",
+		"request_path_id"
+	) DO UPDATE SET
+		"count" = "count" + NEW."count";
+END;
+
+CREATE TRIGGER "stat_page_request_day_update"
+AFTER UPDATE ON "stat_page_request_day"
+BEGIN
+	INSERT INTO "stat_page_request_month" (
+		"time",
+		"request_path_id",
+		"count"
+	) VALUES (
+		strftime(
+            '%s',
+            datetime(
+                strftime(
+                    '%Y-%m-01',
+                    datetime(NEW."time" / 1000, 'unixepoch'),
+                    'localtime'
+                ),
+                'utc'
+            )
+        ) * 1000,
+		NEW."request_path_id",
+		NEW."count"
+	) ON CONFLICT (
+		"time",
+		"request_path_id"
+	) DO UPDATE SET
+		"count" = "count" + NEW."count" - OLD."count";
+END;
 
