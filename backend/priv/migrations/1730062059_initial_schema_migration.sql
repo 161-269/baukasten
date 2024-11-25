@@ -125,6 +125,30 @@ CREATE TABLE "file_metadata" (
 	FOREIGN KEY("file_id") REFERENCES "file"("id")
 );
 
+-- This table is used to route static files.
+-- It enables to host and distribute static files.
+CREATE TABLE "static_file" (
+	"id" INTEGER NOT NULL UNIQUE,
+	"path" TEXT NOT NULL UNIQUE COLLATE NOCASE,
+	"file_metadata_id" INTEGER NOT NULL,
+	"deleted" INTEGER NOT NULL,
+	PRIMARY KEY("id" AUTOINCREMENT),
+	FOREIGN KEY("file_metadata_id") REFERENCES "file_metadata"("id")
+);
+
+-- This tables stores generated files.
+-- It can be used to cache css and js files.
+-- But it also is used to store gzipped files.
+-- Files in this table can be deleted at any time.
+CREATE TABLE "generated_file" (
+	"id" INTEGER NOT NULL UNIQUE,
+	"key" TEXT NOT NULL UNIQUE,
+	"size" INTEGER NOT NULL,
+	"created_at" INTEGER NOT NULL,
+	"data" BLOB NOT NULL,
+	PRIMARY KEY("id" AUTOINCREMENT)
+);
+
 ----------
 -- INDEXES
 ----------
@@ -146,3 +170,8 @@ CREATE INDEX "page_deleted_active_path_updated_at" ON "page" ("deleted", "active
 CREATE INDEX "file_hash" ON "file" ("hash");
 
 CREATE INDEX "file_metadata_key" ON "file_metadata" ("key");
+
+CREATE INDEX "static_file_path" ON "static_file" ("path");
+CREATE INDEX "static_file_deleted_path" ON "static_file" ("deleted", "path");
+
+CREATE INDEX "generated_file_key" ON "generated_file" ("key");

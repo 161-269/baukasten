@@ -99,6 +99,24 @@ CREATE TABLE "file_metadata" (
 	FOREIGN KEY("file_id") REFERENCES "file"("id")
 );
 
+CREATE TABLE "static_file" (
+	"id" INTEGER NOT NULL UNIQUE,
+	"path" TEXT NOT NULL UNIQUE COLLATE NOCASE,
+	"file_metadata_id" INTEGER NOT NULL,
+	"deleted" INTEGER NOT NULL,
+	PRIMARY KEY("id" AUTOINCREMENT),
+	FOREIGN KEY("file_metadata_id") REFERENCES "file_metadata"("id")
+);
+
+CREATE TABLE "generated_file" (
+	"id" INTEGER NOT NULL UNIQUE,
+	"key" TEXT NOT NULL UNIQUE,
+	"size" INTEGER NOT NULL,
+	"created_at" INTEGER NOT NULL,
+	"data" BLOB NOT NULL,
+	PRIMARY KEY("id" AUTOINCREMENT)
+);
+
 CREATE INDEX "configuration_key_created_at" ON "configuration" ("key", "created_at" DESC);
 
 CREATE INDEX "user_username" ON "user" ("username");
@@ -118,4 +136,10 @@ CREATE INDEX "page_deleted_active_path_updated_at" ON "page" ("deleted", "active
 CREATE INDEX "file_hash" ON "file" ("hash");
 
 CREATE INDEX "file_metadata_key" ON "file_metadata" ("key");
+
+CREATE INDEX "static_file_path" ON "static_file" ("path");
+
+CREATE INDEX "static_file_deleted_path" ON "static_file" ("deleted", "path");
+
+CREATE INDEX "generated_file_key" ON "generated_file" ("key");
 
