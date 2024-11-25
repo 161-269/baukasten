@@ -185,16 +185,15 @@ BEGIN
 		"count"
 	) VALUES (
 		strftime(
-            '%s',
-            datetime(
-                strftime(
-                    '%Y-%m-%d',
-                    datetime(NEW."time" / 1000, 'unixepoch'),
-                    'localtime'
-                ),
-                'utc'
-            )
-        ) * 1000,
+			'%s',
+			datetime(
+				NEW."time" / 1000,
+				'unixepoch',
+				'localtime',
+				'start of day',
+				'utc'
+			)
+		) * 1000,
 		NEW."request_path_id",
 		NEW."count"
 	) ON CONFLICT (
@@ -213,16 +212,15 @@ BEGIN
 		"count"
 	) VALUES (
 		strftime(
-            '%s',
-            datetime(
-                strftime(
-                    '%Y-%m-%d',
-                    datetime(NEW."time" / 1000, 'unixepoch'),
-                    'localtime'
-                ),
-                'utc'
-            )
-        ) * 1000,
+			'%s',
+			datetime(
+				NEW."time" / 1000,
+				'unixepoch',
+				'localtime',
+				'start of day',
+				'utc'
+			)
+		) * 1000,
 		NEW."request_path_id",
 		NEW."count"
 	) ON CONFLICT (
@@ -241,16 +239,15 @@ BEGIN
 		"count"
 	) VALUES (
 		strftime(
-            '%s',
-            datetime(
-                strftime(
-                    '%Y-%m-01',
-                    datetime(NEW."time" / 1000, 'unixepoch'),
-                    'localtime'
-                ),
-                'utc'
-            )
-        ) * 1000,
+			'%s',
+			datetime(
+				NEW."time" / 1000,
+				'unixepoch',
+				'localtime',
+				'start of month',
+				'utc'
+			)
+		) * 1000,
 		NEW."request_path_id",
 		NEW."count"
 	) ON CONFLICT (
@@ -269,16 +266,15 @@ BEGIN
 		"count"
 	) VALUES (
 		strftime(
-            '%s',
-            datetime(
-                strftime(
-                    '%Y-%m-01',
-                    datetime(NEW."time" / 1000, 'unixepoch'),
-                    'localtime'
-                ),
-                'utc'
-            )
-        ) * 1000,
+			'%s',
+			datetime(
+				NEW."time" / 1000,
+				'unixepoch',
+				'localtime',
+				'start of month',
+				'utc'
+			)
+		) * 1000,
 		NEW."request_path_id",
 		NEW."count"
 	) ON CONFLICT (
