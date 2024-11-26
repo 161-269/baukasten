@@ -1,6 +1,6 @@
 import backend/database.{type Db}
 import backend/middleware/page_request
-import backend/middleware/session.{type Session, Session} as middleware_session
+import backend/middleware/session.{type Session} as middleware_session
 import backend/page/error
 import birl
 import gleam/bit_array
@@ -25,88 +25,85 @@ const user_authenticated_cookie_key = "authenticated"
 const session_lifetime_second = 13_910_400
 
 pub type Handler =
-  fn(Request, fn(Session, List(String)) -> #(Response, Session)) -> Response
+  fn(Request, fn(Session, List(String)) -> Response) -> Response
 
 pub fn handler(db: Db, dev_mode: Bool) -> Result(Handler, Nil) {
   use page_request <- result.try(page_request.new(db, 5000))
 
-  Ok(
-    fn(req: Request, next: fn(Session, List(String)) -> #(Response, Session)) -> Response {
-      use <- wisp.rescue_crashes
-      let segments = path_segments(req)
-      let req = wisp.method_override(req)
-      use req <- wisp.handle_head(req)
+  Ok(fn(req: Request, next: fn(Session, List(String)) -> Response) -> Response {
+    use <- wisp.rescue_crashes
+    let segments = path_segments(req)
+    let req = wisp.method_override(req)
+    use req <- wisp.handle_head(req)
 
-      let #(session_id, should_be_authenticated) = case get_session_id(req) {
-        Some(#(session_id, authenticated)) -> #(session_id, authenticated)
-        None -> #(generate_session_id(), False)
-      }
+    let #(session_id, should_be_authenticated) = case get_session_id(req) {
+      Some(#(session_id, authenticated)) -> #(session_id, authenticated)
+      None -> #(generate_session_id(), False)
+    }
 
-      let user = case should_be_authenticated {
-        True -> {
-          let user =
-            database.connection(db, 1000, fn(e) { e }, fn(connection) {
-              let now = birl.now() |> birl.to_unix_milli
+    let user = case should_be_authenticated {
+      True -> {
+        let user =
+          database.connection(db, 1000, fn(e) { e }, fn(connection) {
+            let now = birl.now() |> birl.to_unix_milli
 
-              {
-                page_request.log(page_request, now, session_id, req.path)
+            {
+              page_request.log(page_request, now, session_id, req.path)
 
-                use session <- result.try(connection.stmts.session.get_by_key(
-                  session_id,
-                  now,
-                ))
+              use session <- result.try(connection.stmts.session.get_by_key(
+                session_id,
+                now,
+              ))
 
-                case session {
-                  Some(session) -> {
-                    use _ <- result.try(connection.stmts.session.update(
-                      session,
-                      Some(session_lifetime_second * 1000),
-                      case
-                        list.find(req.headers, fn(header) {
-                          let #(key, _) = header
-                          key == "user-agent"
-                        })
-                      {
-                        Error(_) -> None
-                        Ok(#(_, value)) -> Some(value)
-                      },
-                      now,
-                    ))
+              case session {
+                Some(session) -> {
+                  use _ <- result.try(connection.stmts.session.update(
+                    session,
+                    Some(session_lifetime_second * 1000),
+                    case
+                      list.find(req.headers, fn(header) {
+                        let #(key, _) = header
+                        key == "user-agent"
+                      })
+                    {
+                      Error(_) -> None
+                      Ok(#(_, value)) -> Some(value)
+                    },
+                    now,
+                  ))
 
-                    connection.stmts.user.get(session.user_id)
-                  }
-                  None -> Ok(None)
+                  connection.stmts.user.get(session.user_id)
                 }
+                None -> Ok(None)
               }
-              |> result.map_error(fn(error) { database.SqlightError(error) })
-            })
-
-          case user {
-            Ok(user) -> user
-            Error(error) -> {
-              io.debug(error)
-              None
             }
+            |> result.map_error(fn(error) { database.SqlightError(error) })
+          })
+
+        case user {
+          Ok(user) -> user
+          Error(error) -> {
+            io.debug(error)
+            None
           }
         }
-        False -> None
       }
+      False -> None
+    }
 
-      let session = middleware_session.new(session_id, user)
+    use session <- middleware_session.new(session_id, user, fn(error) {
+      io.println_error("Error creating session:")
+      io.debug(error)
+      error.internal_sever_error(db)
+    })
 
-      let #(response, new_session) = next(session, segments)
-      let new_session = Session(..new_session, id: session_id)
+    let response = next(session, segments)
+    let user = middleware_session.user(session)
 
-      response
-      |> set_session_cookie(
-        req,
-        session_id,
-        dev_mode,
-        new_session.user |> option.is_some,
-      )
-      |> error.handle(db)
-    },
-  )
+    response
+    |> set_session_cookie(req, session_id, dev_mode, user |> option.is_some)
+    |> error.handle(db)
+  })
 }
 
 fn get_session_id(req: Request) -> Option(#(BitArray, Bool)) {

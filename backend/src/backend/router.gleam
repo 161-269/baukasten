@@ -1,16 +1,13 @@
 import backend/database.{type Db}
-import backend/database/user.{type User}
 import backend/middleware
-import backend/middleware/session.{type Session}
 import backend/page/default
 import backend/page/initial_user
+import backend/router/internal
 import birl
 import gleam/bit_array
 import gleam/crypto
 import gleam/erlang/process.{type Timer}
-import gleam/http/response.{Response as HttpResponse}
 import gleam/int
-import gleam/option.{None, Some}
 import gleam/result
 import wisp.{type Request, type Response}
 
@@ -31,49 +28,19 @@ pub fn handler(cfg: Configuration) -> Result(fn(Request) -> Response, Nil) {
 
     case path {
       ["static", ..] -> {
-        case
-          wisp.serve_static(req, under: "/static", from: priv, next: fn() {
-            wisp.not_found()
-          })
-        {
-          HttpResponse(404, _, _) -> #(default_page(req), session)
-          response -> #(response, session)
-        }
+        use <- wisp.serve_static(req, under: "/static", from: priv)
+        default_page(req)
       }
 
-      ["favicon.ico"] -> #(
-        wisp.ok() |> wisp.set_body(wisp.File(priv <> "/favicon.ico")),
-        session,
-      )
+      ["favicon.ico"] ->
+        wisp.ok() |> wisp.set_body(wisp.File(priv <> "/favicon.ico"))
 
-      ["_", ..rest] ->
-        case rest {
-          ["login"] -> {
-            case session.user {
-              Some(_) -> #(wisp.redirect("/_"), session)
-              None -> #(wisp.not_found(), session)
-            }
-          }
-          _ -> {
-            use user <- session.require_authentication(session)
+      ["_", ..rest] -> internal.route(req, rest, session, cfg.db)
 
-            internal(req, path, session, user, cfg.db)
-          }
-        }
-      _ -> #(default_page(req), session)
+      _ -> default_page(req)
     }
   }
   |> Ok
-}
-
-fn internal(
-  _req: Request,
-  _path: List(String),
-  session: Session,
-  _user: User,
-  _db: Db,
-) -> #(Response, Session) {
-  #(wisp.not_found(), session)
 }
 
 fn setup_check(
