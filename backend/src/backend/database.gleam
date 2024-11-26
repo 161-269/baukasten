@@ -1,7 +1,9 @@
 import backend/database/configuration
 import backend/database/file
+import backend/database/generated_file
 import backend/database/page_request
 import backend/database/session
+import backend/database/static_file
 import backend/database/user
 import backend/database/visitor_session
 import birl
@@ -105,6 +107,8 @@ pub type Statements {
     page_request: page_request.Statements,
     visitor_session: visitor_session.Statements,
     session: session.Statements,
+    generated_file: generated_file.Statements,
+    static_file: static_file.Statements,
   )
 }
 
@@ -133,6 +137,14 @@ fn new_statements(connection: sqlight.Connection) -> Result(Statements, Error) {
     session.statements(connection) |> result.map_error(SqlightError),
   )
 
+  use generated_file <- result.try(
+    generated_file.statements(connection) |> result.map_error(SqlightError),
+  )
+
+  use static_file <- result.try(
+    static_file.statements(connection) |> result.map_error(SqlightError),
+  )
+
   Ok(Statements(
     config: configuration,
     file:,
@@ -140,6 +152,8 @@ fn new_statements(connection: sqlight.Connection) -> Result(Statements, Error) {
     page_request:,
     visitor_session:,
     session:,
+    generated_file:,
+    static_file:,
   ))
 }
 
@@ -364,6 +378,14 @@ PRAGMA cache_size = -32768;
 PRAGMA cache_shared = ON;
 PRAGMA busy_timeout = 1000;
 PRAGMA mmap_size = 134217728;
+PRAGMA recursive_triggers = 1;
+PRAGMA defer_foreign_keys = 0;
+PRAGMA encoding = 'UTF-8';
+PRAGMA ignore_check_constraints = 0;
+PRAGMA legacy_alter_table = 0;
+PRAGMA analysis_limit = 0;
+PRAGMA auto_vacuum = 0;
+PRAGMA automatic_index = 1;
     ",
       db.connection,
     ))

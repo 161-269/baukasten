@@ -132,6 +132,7 @@ CREATE TABLE "static_file" (
 	"id" INTEGER NOT NULL UNIQUE,
 	"path" TEXT NOT NULL COLLATE NOCASE,
 	"file_metadata_id" INTEGER NOT NULL,
+	"created_at" INTEGER NOT NULL,
 	"deleted" INTEGER NOT NULL,
 	PRIMARY KEY("id" AUTOINCREMENT),
 	FOREIGN KEY("file_metadata_id") REFERENCES "file_metadata"("id")
@@ -195,7 +196,7 @@ CREATE INDEX "page_deleted_updated_at" ON "page" ("deleted", "updated_at" ASC);
 CREATE INDEX "page_deleted_active_path_updated_at" ON "page" ("deleted", "active", "path", "updated_at" DESC);
 
 CREATE INDEX "static_file_path" ON "static_file" ("path");
-CREATE INDEX "static_file_deleted_path" ON "static_file" ("deleted", "path");
+CREATE INDEX "static_file_deleted_path_created_at" ON "static_file" ("deleted", "path", "created_at" DESC);
 
 -----------
 -- TRIGGERS

@@ -7,7 +7,13 @@ import sqlight.{type Connection, type Error}
 import widgets/helper/dynamic_helper
 
 pub type User {
-  User(id: Int, username: String, email: String, password: BitArray)
+  User(
+    id: Int,
+    username: String,
+    email: String,
+    password: BitArray,
+    read_changelog_version: Option(String),
+  )
 }
 
 pub type Statements {
@@ -22,10 +28,16 @@ pub type Statements {
 }
 
 pub fn decoder() -> fn(Dynamic) -> Result(User, List(DecodeError)) {
-  dynamic.tuple4(dynamic.int, dynamic.string, dynamic.string, dynamic.bit_array)
+  dynamic.tuple5(
+    dynamic.int,
+    dynamic.string,
+    dynamic.string,
+    dynamic.bit_array,
+    dynamic.optional(dynamic.string),
+  )
   |> dynamic_helper.map(fn(value) {
-    let #(id, username, email, password) = value
-    Ok(User(id:, username:, email:, password:))
+    let #(id, username, email, password, read_changelog_version) = value
+    Ok(User(id:, username:, email:, password:, read_changelog_version:))
   })
 }
 
@@ -48,7 +60,8 @@ SELECT
   \"id\",
   \"username\",
   \"email\",
-  \"password\"
+  \"password\",
+  \"read_changelog_version\"
 FROM
   \"user\"
 WHERE
@@ -79,7 +92,8 @@ SELECT
   \"id\",
   \"username\",
   \"email\",
-  \"password\"
+  \"password\",
+  \"read_changelog_version\"
 FROM
   \"user\"
 WHERE
@@ -148,7 +162,8 @@ RETURNING
   \"id\",
   \"username\",
   \"email\",
-  \"password\";
+  \"password\",
+  \"read_changelog_version\";
       ",
       db,
       [sqlight.text(username), sqlight.text(email), sqlight.blob(password)],
@@ -221,20 +236,23 @@ UPDATE
 SET
   \"username\" = ?,
   \"email\" = ?,
-  \"password\" = ?
+  \"password\" = ?,
+  \"read_changelog_version\" = ?
 WHERE
   \"id\" = ?
 RETURNING
   \"id\",
   \"username\",
   \"email\",
-  \"password\";
+  \"password\",
+  \"read_changelog_version\";
     ",
       db,
       [
         sqlight.text(user.username),
         sqlight.text(user.email),
         sqlight.blob(user.password),
+        sqlight.nullable(sqlight.text, user.read_changelog_version),
         sqlight.int(user.id),
       ],
       decoder(),
