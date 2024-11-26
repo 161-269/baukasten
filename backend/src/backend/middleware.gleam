@@ -5,20 +5,16 @@ import backend/page/error
 import birl
 import gleam/bit_array
 import gleam/crypto
-import gleam/int
-import gleam/string
-
-//import gleam/crypto
 import gleam/http
 import gleam/http/cookie
 import gleam/http/request
 import gleam/http/response
-
-//import gleam/int
+import gleam/int
 import gleam/io
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
+import gleam/string
 import wisp.{type Request, type Response}
 
 const session_query_cookie_key = "session-id"
@@ -135,7 +131,7 @@ fn get_session_id(req: Request) -> Option(#(BitArray, Bool)) {
         session_id,
         result.is_ok(query_session_id)
           || list.find(cookies, fn(cookie) {
-          cookie.0 == user_authenticated_cookie_key && cookie.1 == "1"
+          cookie.0 == user_authenticated_cookie_key && cookie.1 == "161"
         })
         |> result.is_ok,
       ))
@@ -189,7 +185,7 @@ fn set_session_cookie(
     response,
     user_authenticated_cookie_key,
     case authenticated {
-      True -> "1"
+      True -> "161"
       False -> "0"
     },
     cookie_attributes,
