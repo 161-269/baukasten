@@ -45,9 +45,8 @@ pub fn statements(db: Connection) -> Result(Statements, Error) {
 fn get_by_session_key(
   db: Connection,
 ) -> Result(fn(BitArray) -> Result(Option(VisitorSession), Error), Error) {
-  fn(session_key: BitArray) -> Result(Option(VisitorSession), Error) {
-    sqlight.query(
-      "
+  use select <- result.try(sqlight.prepare(
+    "
 SELECT
   \"session_key\",
   \"visitor_id\",
@@ -57,10 +56,11 @@ FROM
 WHERE
   \"session_key\" = ?;
     ",
-      db,
-      [sqlight.blob(session_key)],
-      decoder(),
-    )
+    db,
+    decoder(),
+  ))
+  fn(session_key: BitArray) -> Result(Option(VisitorSession), Error) {
+    sqlight.query_prepared(select, [sqlight.blob(session_key)])
     |> result.map(fn(values) {
       case values {
         [] -> None
@@ -74,9 +74,8 @@ WHERE
 fn get_by_visitor_id(
   db: Connection,
 ) -> Result(fn(Int) -> Result(Option(VisitorSession), Error), Error) {
-  fn(visitor_id: Int) -> Result(Option(VisitorSession), Error) {
-    sqlight.query(
-      "
+  use select <- result.try(sqlight.prepare(
+    "
 SELECT
   \"session_key\",
   \"visitor_id\",
@@ -86,10 +85,11 @@ FROM
 WHERE
   \"visitor_id\" = ?;
     ",
-      db,
-      [sqlight.int(visitor_id)],
-      decoder(),
-    )
+    db,
+    decoder(),
+  ))
+  fn(visitor_id: Int) -> Result(Option(VisitorSession), Error) {
+    sqlight.query_prepared(select, [sqlight.int(visitor_id)])
     |> result.map(fn(values) {
       case values {
         [] -> None
@@ -103,20 +103,36 @@ WHERE
 fn insert_new(
   db: Connection,
 ) -> Result(fn(BitArray, Int) -> Result(VisitorSession, Error), Error) {
-  fn(session_key: BitArray, now: Int) -> Result(VisitorSession, Error) {
-    use visitor_id <- result.try(case
-      sqlight.query(
-        "
+  use insert_visitor <- result.try(sqlight.prepare(
+    "
 INSERT INTO 
   \"visitor\"
   DEFAULT VALUES
 RETURNING
   \"id\";
       ",
-        db,
-        [],
-        dynamic.element(0, dynamic.int),
-      )
+    db,
+    dynamic.element(0, dynamic.int),
+  ))
+  use insert_session <- result.try(sqlight.prepare(
+    "
+INSERT INTO
+  \"visitor_session\"
+  (\"session_key\", \"visitor_id\", \"created_at\")
+VALUES
+  (?, ?, ?)
+RETURNING
+  \"session_key\",
+  \"visitor_id\",
+  \"created_at\";
+        ",
+    db,
+    decoder(),
+  ))
+
+  fn(session_key: BitArray, now: Int) -> Result(VisitorSession, Error) {
+    use visitor_id <- result.try(case
+      sqlight.query_prepared(insert_visitor, [])
     {
       Ok(visitor_id) ->
         case visitor_id {
@@ -131,22 +147,13 @@ RETURNING
       Error(error) -> Error(error)
     })
 
-    use visitor_session <- result.try(sqlight.query(
-      "
-INSERT INTO
-  \"visitor_session\"
-  (\"session_key\", \"visitor_id\", \"created_at\")
-VALUES
-  (?, ?, ?)
-RETURNING
-  \"session_key\",
-  \"visitor_id\",
-  \"created_at\";
-        ",
-      db,
-      [sqlight.blob(session_key), sqlight.int(visitor_id), sqlight.int(now)],
-      decoder(),
-    ))
+    use visitor_session <- result.try(
+      sqlight.query_prepared(insert_session, [
+        sqlight.blob(session_key),
+        sqlight.int(visitor_id),
+        sqlight.int(now),
+      ]),
+    )
 
     case visitor_session {
       [] ->

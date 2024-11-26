@@ -53,9 +53,8 @@ pub fn statements(db: Connection) -> Result(Statements, Error) {
 }
 
 fn get(db: Connection) -> Result(fn(Int) -> Result(Option(User), Error), Error) {
-  fn(id: Int) -> Result(Option(User), Error) {
-    sqlight.query(
-      "
+  use select <- result.try(sqlight.prepare(
+    "
 SELECT
   \"id\",
   \"username\",
@@ -67,10 +66,11 @@ FROM
 WHERE
   \"id\" = ?;
     ",
-      db,
-      [sqlight.int(id)],
-      decoder(),
-    )
+    db,
+    decoder(),
+  ))
+  fn(id: Int) -> Result(Option(User), Error) {
+    sqlight.query_prepared(select, [sqlight.int(id)])
     |> result.map(fn(values) {
       case values {
         [] -> None
@@ -84,10 +84,8 @@ WHERE
 fn search(
   db: Connection,
 ) -> Result(fn(String) -> Result(Option(User), Error), Error) {
-  fn(username_or_email: String) -> Result(Option(User), Error) {
-    case
-      sqlight.query(
-        "
+  use select <- result.try(sqlight.prepare(
+    "
 SELECT
   \"id\",
   \"username\",
@@ -103,10 +101,15 @@ WHERE
     \"email\" = ?
   );
     ",
-        db,
-        [sqlight.text(username_or_email), sqlight.text(username_or_email)],
-        decoder(),
-      )
+    db,
+    decoder(),
+  ))
+  fn(username_or_email: String) -> Result(Option(User), Error) {
+    case
+      sqlight.query_prepared(select, [
+        sqlight.text(username_or_email),
+        sqlight.text(username_or_email),
+      ])
     {
       Ok([]) -> Ok(None)
       Ok([user, ..]) -> Ok(Some(user))
@@ -148,11 +151,8 @@ fn hash_password(password: String) -> Result(BitArray, Error) {
 fn insert_new(
   db: Connection,
 ) -> Result(fn(String, String, String) -> Result(User, Error), Error) {
-  fn(username: String, email: String, password: String) -> Result(User, Error) {
-    use password <- result.try(hash_password(password))
-
-    use users <- result.try(sqlight.query(
-      "
+  use insert <- result.try(sqlight.prepare(
+    "
 INSERT INTO
   \"user\"
   (\"username\", \"email\", \"password\")
@@ -165,10 +165,19 @@ RETURNING
   \"password\",
   \"read_changelog_version\";
       ",
-      db,
-      [sqlight.text(username), sqlight.text(email), sqlight.blob(password)],
-      decoder(),
-    ))
+    db,
+    decoder(),
+  ))
+  fn(username: String, email: String, password: String) -> Result(User, Error) {
+    use password <- result.try(hash_password(password))
+
+    use users <- result.try(
+      sqlight.query_prepared(insert, [
+        sqlight.text(username),
+        sqlight.text(email),
+        sqlight.blob(password),
+      ]),
+    )
 
     case users {
       [] ->
@@ -216,21 +225,8 @@ fn search_and_verify(
 fn update(
   db: Connection,
 ) -> Result(fn(User, Option(String)) -> Result(User, Error), Error) {
-  fn(user: User, password: Option(String)) -> Result(User, Error) {
-    use password <- result.try(case option.map(password, hash_password) {
-      None -> Ok(None)
-      Some(password) -> {
-        result.map(password, Some)
-      }
-    })
-
-    let user = case password {
-      None -> user
-      Some(password) -> User(..user, password:)
-    }
-
-    use user <- result.try(sqlight.query(
-      "
+  use update <- result.try(sqlight.prepare(
+    "
 UPDATE
   \"user\"
 SET
@@ -247,16 +243,31 @@ RETURNING
   \"password\",
   \"read_changelog_version\";
     ",
-      db,
-      [
+    db,
+    decoder(),
+  ))
+  fn(user: User, password: Option(String)) -> Result(User, Error) {
+    use password <- result.try(case option.map(password, hash_password) {
+      None -> Ok(None)
+      Some(password) -> {
+        result.map(password, Some)
+      }
+    })
+
+    let user = case password {
+      None -> user
+      Some(password) -> User(..user, password:)
+    }
+
+    use user <- result.try(
+      sqlight.query_prepared(update, [
         sqlight.text(user.username),
         sqlight.text(user.email),
         sqlight.blob(user.password),
         sqlight.nullable(sqlight.text, user.read_changelog_version),
         sqlight.int(user.id),
-      ],
-      decoder(),
-    ))
+      ]),
+    )
 
     case user {
       [] ->
@@ -272,19 +283,18 @@ RETURNING
 }
 
 fn count(db: Connection) -> Result(fn() -> Result(Int, Error), Error) {
-  fn() -> Result(Int, Error) {
-    let count =
-      sqlight.query(
-        "
+  use select <- result.try(sqlight.prepare(
+    "
 SELECT
   COUNT(*)
 FROM
   \"user\";
     ",
-        db,
-        [],
-        dynamic.element(0, dynamic.int),
-      )
+    db,
+    dynamic.element(0, dynamic.int),
+  ))
+  fn() -> Result(Int, Error) {
+    let count = sqlight.query_prepared(select, [])
 
     case count {
       Ok(count) ->

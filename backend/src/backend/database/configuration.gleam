@@ -36,9 +36,8 @@ pub fn statements(db: Connection) -> Result(Statements, Error) {
 fn get(
   db: Connection,
 ) -> Result(fn(String) -> Result(Option(Configuration), Error), Error) {
-  fn(key: String) -> Result(Option(Configuration), Error) {
-    sqlight.query(
-      "
+  use select <- result.try(sqlight.prepare(
+    "
 SELECT
   \"key\",
   \"value\",
@@ -51,10 +50,12 @@ ORDER BY
   \"created_at\" DESC
 LIMIT 1;
     ",
-      db,
-      [sqlight.text(key)],
-      decoder(),
-    )
+    db,
+    decoder(),
+  ))
+
+  fn(key: String) -> Result(Option(Configuration), Error) {
+    sqlight.query_prepared(select, [sqlight.text(key)])
     |> result.map(fn(values) {
       case values {
         [] -> None
@@ -68,19 +69,24 @@ LIMIT 1;
 fn set(
   db: Connection,
 ) -> Result(fn(String, String, Int) -> Result(Nil, Error), Error) {
-  fn(key: String, value: String, now: Int) {
-    sqlight.query(
-      "
+  use insert <- result.try(sqlight.prepare(
+    "
 INSERT INTO
   \"configuration\"
   (\"key\", \"value\", \"created_at\")
 VALUES
   (?, ?, ?);
     ",
-      db,
-      [sqlight.text(key), sqlight.text(value), sqlight.int(now)],
-      dynamic.dynamic,
-    )
+    db,
+    dynamic.dynamic,
+  ))
+
+  fn(key: String, value: String, now: Int) {
+    sqlight.query_prepared(insert, [
+      sqlight.text(key),
+      sqlight.text(value),
+      sqlight.int(now),
+    ])
     |> result.map(fn(_) { Nil })
   }
   |> Ok

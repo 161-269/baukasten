@@ -57,9 +57,8 @@ pub fn statements(db: Connection) -> Result(Statements, Error) {
 }
 
 fn get(db: Connection) -> Result(fn(Int) -> Result(Option(File), Error), Error) {
-  fn(id: Int) -> Result(Option(File), Error) {
-    sqlight.query(
-      "
+  use select <- result.try(sqlight.prepare(
+    "
 SELECT
   \"m\".\"id\",
   \"m\".\"key\",
@@ -80,10 +79,11 @@ WHERE
   AND
   \"m\".\"deleted\" = 0;
         ",
-      db,
-      [sqlight.int(id)],
-      decoder(),
-    )
+    db,
+    decoder(),
+  ))
+  fn(id: Int) -> Result(Option(File), Error) {
+    sqlight.query_prepared(select, [sqlight.int(id)])
     |> result.map(fn(values) {
       case values {
         [] -> None
@@ -97,9 +97,8 @@ WHERE
 fn get_by_key(
   db: Connection,
 ) -> Result(fn(BitArray) -> Result(Option(File), Error), Error) {
-  fn(key: BitArray) -> Result(Option(File), Error) {
-    sqlight.query(
-      "
+  use select <- result.try(sqlight.prepare(
+    "
 SELECT
   \"m\".\"id\",
   \"m\".\"key\",
@@ -120,10 +119,11 @@ WHERE
   AND
   \"m\".\"deleted\" = 0;
         ",
-      db,
-      [sqlight.blob(key)],
-      decoder(),
-    )
+    db,
+    decoder(),
+  ))
+  fn(key: BitArray) -> Result(Option(File), Error) {
+    sqlight.query_prepared(select, [sqlight.blob(key)])
     |> result.map(fn(values) {
       case values {
         [] -> None
@@ -135,9 +135,8 @@ WHERE
 }
 
 fn delete(db: Connection) -> Result(fn(Int) -> Result(Nil, Error), Error) {
-  fn(id: Int) -> Result(Nil, Error) {
-    sqlight.query(
-      "
+  use update <- result.try(sqlight.prepare(
+    "
 UPDATE
   \"file\"
 SET
@@ -145,10 +144,11 @@ SET
 WHERE
   \"id\" = ?;
     ",
-      db,
-      [sqlight.int(id)],
-      dynamic.dynamic,
-    )
+    db,
+    dynamic.dynamic,
+  ))
+  fn(id: Int) -> Result(Nil, Error) {
+    sqlight.query_prepared(update, [sqlight.int(id)])
     |> result.map(fn(_) { Nil })
   }
   |> Ok
@@ -157,13 +157,8 @@ WHERE
 fn insert_file_data(
   db: Connection,
 ) -> Result(fn(BitArray) -> Result(Int, Error), Error) {
-  fn(data: BitArray) -> Result(Int, Error) {
-    let size = bit_array.byte_size(data)
-    let hash = crypto.hash(crypto.Sha512, data)
-
-    use file_id <- result.try(
-      sqlight.query(
-        "
+  use select <- result.try(sqlight.prepare(
+    "
 SELECT
   \"id\"
 FROM
@@ -171,10 +166,28 @@ FROM
 WHERE
   \"hash\" = ?;
       ",
-        db,
-        [sqlight.blob(hash)],
-        dynamic.element(0, dynamic.int),
-      )
+    db,
+    dynamic.element(0, dynamic.int),
+  ))
+  use insert <- result.try(sqlight.prepare(
+    "
+INSERT INTO
+  \"file\"
+  (\"hash\", \"data\", \"size\")
+VALUES
+  (?, ?, ?)
+RETURNING
+  \"id\";
+        ",
+    db,
+    dynamic.element(0, dynamic.int),
+  ))
+  fn(data: BitArray) -> Result(Int, Error) {
+    let size = bit_array.byte_size(data)
+    let hash = crypto.hash(crypto.Sha512, data)
+
+    use file_id <- result.try(
+      sqlight.query_prepared(select, [sqlight.blob(hash)])
       |> result.map(fn(values) {
         case values {
           [] -> None
@@ -187,20 +200,11 @@ WHERE
       Some(file_id) -> Ok(file_id)
       None -> {
         case
-          sqlight.query(
-            "
-INSERT INTO
-  \"file\"
-  (\"hash\", \"data\", \"size\")
-VALUES
-  (?, ?, ?)
-RETURNING
-  \"id\";
-        ",
-            db,
-            [sqlight.blob(hash), sqlight.blob(data), sqlight.int(size)],
-            dynamic.element(0, dynamic.int),
-          )
+          sqlight.query_prepared(insert, [
+            sqlight.blob(hash),
+            sqlight.blob(data),
+            sqlight.int(size),
+          ])
         {
           Ok([]) ->
             Error(sqlight.SqlightError(
@@ -225,6 +229,19 @@ fn insert_new(
   fn(String, Option(String), BitArray, Int) -> Result(File, Error),
   Error,
 ) {
+  use insert <- result.try(sqlight.prepare(
+    "
+INSERT INTO
+  \"file_metadata\"
+  (\"file_id\", \"key\", \"name\", \"content_type\", \"created_at\", \"updated_at\", \"deleted\")
+VALUES
+  (?, ?, ?, ?, ?, ?, 0)
+RETURNING
+  \"id\";
+        ",
+    db,
+    dynamic.element(0, dynamic.int),
+  ))
   fn(name: String, content_type: Option(String), data: BitArray, now: Int) -> Result(
     File,
     Error,
@@ -238,27 +255,14 @@ fn insert_new(
       |> crypto.hash(crypto.Sha224, _)
 
     use id <- result.try(case
-      sqlight.query(
-        "
-INSERT INTO
-  \"file_metadata\"
-  (\"file_id\", \"key\", \"name\", \"content_type\", \"created_at\", \"updated_at\", \"deleted\")
-VALUES
-  (?, ?, ?, ?, ?, ?, 0)
-RETURNING
-  \"id\";
-        ",
-        db,
-        [
-          sqlight.int(file_id),
-          sqlight.blob(key),
-          sqlight.text(name),
-          sqlight.nullable(sqlight.text, content_type),
-          sqlight.int(now),
-          sqlight.int(now),
-        ],
-        dynamic.element(0, dynamic.int),
-      )
+      sqlight.query_prepared(insert, [
+        sqlight.int(file_id),
+        sqlight.blob(key),
+        sqlight.text(name),
+        sqlight.nullable(sqlight.text, content_type),
+        sqlight.int(now),
+        sqlight.int(now),
+      ])
     {
       Ok([]) ->
         Error(sqlight.SqlightError(
@@ -285,12 +289,8 @@ fn update(
   insert_file_data: fn(BitArray) -> Result(Int, Error),
   get: fn(Int) -> Result(Option(File), Error),
 ) -> Result(fn(File, Option(BitArray), Int) -> Result(File, Error), Error) {
-  fn(file: File, data: Option(BitArray), now: Int) -> Result(File, Error) {
-    use file_id <- result.try(case data {
-      None ->
-        case
-          sqlight.query(
-            "
+  use select <- result.try(sqlight.prepare(
+    "
 SELECT
   \"f\".\"id\"
 FROM
@@ -302,25 +302,11 @@ ON
 WHERE
   \"m\".\"id\" = ?;
         ",
-            db,
-            [sqlight.int(file.id)],
-            dynamic.element(0, dynamic.int),
-          )
-        {
-          Ok([]) ->
-            Error(sqlight.SqlightError(
-              sqlight.Notfound,
-              "Could not find existing file",
-              -1,
-            ))
-          Ok([id, ..]) -> Ok(id)
-          Error(error) -> Error(error)
-        }
-      Some(data) -> insert_file_data(data)
-    })
-
-    use _ <- result.try(sqlight.query(
-      "
+    db,
+    dynamic.element(0, dynamic.int),
+  ))
+  use update <- result.try(sqlight.prepare(
+    "
 UPDATE
   \"file\"
 SET
@@ -335,8 +321,27 @@ WHERE
   AND
   \"deleted\" = 0;
     ",
-      db,
-      [
+    db,
+    dynamic.dynamic,
+  ))
+  fn(file: File, data: Option(BitArray), now: Int) -> Result(File, Error) {
+    use file_id <- result.try(case data {
+      None ->
+        case sqlight.query_prepared(select, [sqlight.int(file.id)]) {
+          Ok([]) ->
+            Error(sqlight.SqlightError(
+              sqlight.Notfound,
+              "Could not find existing file",
+              -1,
+            ))
+          Ok([id, ..]) -> Ok(id)
+          Error(error) -> Error(error)
+        }
+      Some(data) -> insert_file_data(data)
+    })
+
+    use _ <- result.try(
+      sqlight.query_prepared(update, [
         sqlight.int(file_id),
         sqlight.blob(file.key),
         sqlight.text(file.name),
@@ -344,9 +349,8 @@ WHERE
         sqlight.int(file.created_at),
         sqlight.int(now),
         sqlight.int(file.id),
-      ],
-      dynamic.dynamic,
-    ))
+      ]),
+    )
 
     case get(file.id) {
       Ok(Some(file)) -> Ok(file)
@@ -363,10 +367,8 @@ WHERE
 }
 
 fn data(db: Connection) -> Result(fn(File) -> Result(BitArray, Error), Error) {
-  fn(file: File) -> Result(BitArray, Error) {
-    case
-      sqlight.query(
-        "
+  use select <- result.try(sqlight.prepare(
+    "
 SELECT
   \"f\".\"data\"
 FROM
@@ -381,11 +383,11 @@ WHERE
   \"m\".\"deleted\" = 0
 LIMIT 1;
         ",
-        db,
-        [sqlight.int(file.id)],
-        dynamic.element(0, dynamic.bit_array),
-      )
-    {
+    db,
+    dynamic.element(0, dynamic.bit_array),
+  ))
+  fn(file: File) -> Result(BitArray, Error) {
+    case sqlight.query_prepared(select, [sqlight.int(file.id)]) {
       Ok([]) ->
         Error(sqlight.SqlightError(
           sqlight.Notfound,

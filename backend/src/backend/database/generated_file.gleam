@@ -51,9 +51,8 @@ pub fn statements(db: Connection) -> Result(Statements, Error) {
 fn get(
   db: Connection,
 ) -> Result(fn(Int) -> Result(Option(GeneratedFile), Error), Error) {
-  fn(id: Int) -> Result(Option(GeneratedFile), Error) {
-    sqlight.query(
-      "
+  use select <- result.try(sqlight.prepare(
+    "
 SELECT
   \"id\",
   \"key\",
@@ -65,10 +64,11 @@ FROM
 WHERE
   \"id\" = ?;
         ",
-      db,
-      [sqlight.int(id)],
-      decoder(),
-    )
+    db,
+    decoder(),
+  ))
+  fn(id: Int) -> Result(Option(GeneratedFile), Error) {
+    sqlight.query_prepared(select, [sqlight.int(id)])
     |> result.map(fn(values) {
       case values {
         [] -> None
@@ -82,9 +82,8 @@ WHERE
 fn get_by_key(
   db: Connection,
 ) -> Result(fn(String) -> Result(Option(GeneratedFile), Error), Error) {
-  fn(key: String) -> Result(Option(GeneratedFile), Error) {
-    sqlight.query(
-      "
+  use select <- result.try(sqlight.prepare(
+    "
     SELECT
       \"id\",
       \"key\",
@@ -96,10 +95,11 @@ fn get_by_key(
     WHERE
       \"key\" = ?;
         ",
-      db,
-      [sqlight.text(key)],
-      decoder(),
-    )
+    db,
+    decoder(),
+  ))
+  fn(key: String) -> Result(Option(GeneratedFile), Error) {
+    sqlight.query_prepared(select, [sqlight.text(key)])
     |> result.map(fn(values) {
       case values {
         [] -> None
@@ -113,9 +113,8 @@ fn get_by_key(
 fn set(
   db: Connection,
 ) -> Result(fn(String, Int, BitArray) -> Result(GeneratedFile, Error), Error) {
-  fn(key: String, now: Int, data: BitArray) -> Result(GeneratedFile, Error) {
-    sqlight.query(
-      "
+  use insert <- result.try(sqlight.prepare(
+    "
 INSERT INTO
   \"generated_file\"
   (\"key\", \"size\", \"created_at\", \"data\")
@@ -132,15 +131,16 @@ RETURNING
   \"created_at\",
   \"data\";
         ",
-      db,
-      [
-        sqlight.text(key),
-        sqlight.int(bit_array.byte_size(data)),
-        sqlight.int(now),
-        sqlight.blob(data),
-      ],
-      decoder(),
-    )
+    db,
+    decoder(),
+  ))
+  fn(key: String, now: Int, data: BitArray) -> Result(GeneratedFile, Error) {
+    sqlight.query_prepared(insert, [
+      sqlight.text(key),
+      sqlight.int(bit_array.byte_size(data)),
+      sqlight.int(now),
+      sqlight.blob(data),
+    ])
     |> result.map(fn(values) {
       case values {
         [] ->

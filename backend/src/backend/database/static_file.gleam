@@ -39,9 +39,8 @@ pub fn statements(db: Connection) -> Result(Statements, Error) {
 fn get(
   db: Connection,
 ) -> Result(fn(Int) -> Result(Option(StaticFile), Error), Error) {
-  fn(id: Int) -> Result(Option(StaticFile), Error) {
-    sqlight.query(
-      "
+  use select <- result.try(sqlight.prepare(
+    "
 SELECT
   \"id\",
   \"path\",
@@ -54,10 +53,11 @@ WHERE
   AND
   \"deleted\" = 0;
         ",
-      db,
-      [sqlight.int(id)],
-      decoder(),
-    )
+    db,
+    decoder(),
+  ))
+  fn(id: Int) -> Result(Option(StaticFile), Error) {
+    sqlight.query_prepared(select, [sqlight.int(id)])
     |> result.map(fn(values) {
       case values {
         [] -> None
@@ -71,9 +71,8 @@ WHERE
 fn get_by_path(
   db: Connection,
 ) -> Result(fn(String) -> Result(Option(StaticFile), Error), Error) {
-  fn(path: String) -> Result(Option(StaticFile), Error) {
-    sqlight.query(
-      "
+  use select <- result.try(sqlight.prepare(
+    "
 SELECT
   \"id\",
   \"path\",
@@ -88,10 +87,11 @@ WHERE
 ORDER BY
   \"created_at\" DESC;
         ",
-      db,
-      [sqlight.text(path)],
-      decoder(),
-    )
+    db,
+    decoder(),
+  ))
+  fn(path: String) -> Result(Option(StaticFile), Error) {
+    sqlight.query_prepared(select, [sqlight.text(path)])
     |> result.map(fn(values) {
       case values {
         [] -> None
@@ -105,9 +105,8 @@ ORDER BY
 fn insert_new(
   db: Connection,
 ) -> Result(fn(String, Int, Int) -> Result(Int, Error), Error) {
-  fn(path: String, file_id: Int, now: Int) -> Result(Int, Error) {
-    sqlight.query(
-      "
+  use insert <- result.try(sqlight.prepare(
+    "
 INSERT INTO
   \"static_file\"
   (\"path\", \"file_metadata_id\", \"created_at\", \"deleted\")
@@ -119,10 +118,15 @@ RETURNING
   \"file_metadata_id\",
   \"created_at\";
         ",
-      db,
-      [sqlight.text(path), sqlight.int(file_id), sqlight.int(now)],
-      dynamic.element(0, dynamic.int),
-    )
+    db,
+    dynamic.element(0, dynamic.int),
+  ))
+  fn(path: String, file_id: Int, now: Int) -> Result(Int, Error) {
+    sqlight.query_prepared(insert, [
+      sqlight.text(path),
+      sqlight.int(file_id),
+      sqlight.int(now),
+    ])
     |> result.map(fn(values) {
       case values {
         [] ->
@@ -140,9 +144,8 @@ RETURNING
 }
 
 fn delete(db: Connection) -> Result(fn(Int) -> Result(Nil, Error), Error) {
-  fn(id: Int) -> Result(Nil, Error) {
-    sqlight.query(
-      "
+  use update <- result.try(sqlight.prepare(
+    "
 UPDATE
   \"static_file\"
 SET
@@ -150,10 +153,11 @@ SET
 WHERE
   \"id\" = ?;
     ",
-      db,
-      [sqlight.int(id)],
-      dynamic.dynamic,
-    )
+    db,
+    dynamic.dynamic,
+  ))
+  fn(id: Int) -> Result(Nil, Error) {
+    sqlight.query_prepared(update, [sqlight.int(id)])
     |> result.map(fn(_) { Nil })
   }
   |> Ok
@@ -162,9 +166,8 @@ WHERE
 fn update(
   db: Connection,
 ) -> Result(fn(StaticFile) -> Result(StaticFile, Error), Error) {
-  fn(file: StaticFile) -> Result(StaticFile, Error) {
-    sqlight.query(
-      "
+  use update <- result.try(sqlight.prepare(
+    "
 UPDATE
   \"static_file\"
 SET
@@ -181,15 +184,16 @@ RETURNING
   \"file_metadata_id\",
   \"created_at\";
         ",
-      db,
-      [
-        sqlight.text(file.path),
-        sqlight.int(file.file_id),
-        sqlight.int(file.created_at),
-        sqlight.int(file.id),
-      ],
-      decoder(),
-    )
+    db,
+    decoder(),
+  ))
+  fn(file: StaticFile) -> Result(StaticFile, Error) {
+    sqlight.query_prepared(update, [
+      sqlight.text(file.path),
+      sqlight.int(file.file_id),
+      sqlight.int(file.created_at),
+      sqlight.int(file.id),
+    ])
     |> result.map(fn(values) {
       case values {
         [] ->

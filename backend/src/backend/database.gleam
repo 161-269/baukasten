@@ -1,6 +1,7 @@
 import backend/database/configuration
 import backend/database/file
 import backend/database/generated_file
+import backend/database/page
 import backend/database/page_request
 import backend/database/session
 import backend/database/static_file
@@ -110,6 +111,7 @@ pub type Statements {
     session: session.Statements,
     generated_file: generated_file.Statements,
     static_file: static_file.Statements,
+    page: page.Statements,
   )
 }
 
@@ -146,6 +148,10 @@ fn new_statements(connection: sqlight.Connection) -> Result(Statements, Error) {
     static_file.statements(connection) |> result.map_error(SqlightError),
   )
 
+  use page <- result.try(
+    page.statements(connection) |> result.map_error(SqlightError),
+  )
+
   Ok(Statements(
     config: configuration,
     file:,
@@ -155,6 +161,7 @@ fn new_statements(connection: sqlight.Connection) -> Result(Statements, Error) {
     session:,
     generated_file:,
     static_file:,
+    page:,
   ))
 }
 
@@ -323,7 +330,9 @@ fn update(msg: Msg, state: State) -> Next(Msg, State) {
         feather.connect(state.config)
         |> result.map_error(SqlightError)
         |> result.then(new_connection(state.config, _))
-        |> result.then(fn(connection) { set_pragmas(connection) })
+        |> result.then(fn(connection) {
+          set_pragmas(connection.connection, connection)
+        })
         |> result.then(fn(connection) {
           sqlight.exec("PRAGMA wal_checkpoint(PASSIVE);", connection.connection)
           |> result.map_error(SqlightError)
@@ -369,7 +378,7 @@ pub type Error {
   WaitForConnectionTimeout(timeout_millisecond: Int)
 }
 
-fn set_pragmas(db: Connection) -> Result(Connection, Error) {
+fn set_pragmas(db: sqlight.Connection, ok: a) -> Result(a, Error) {
   {
     use _ <- result.try(sqlight.exec(
       "
@@ -388,10 +397,10 @@ PRAGMA analysis_limit = 0;
 PRAGMA auto_vacuum = 0;
 PRAGMA automatic_index = 1;
     ",
-      db.connection,
+      db,
     ))
 
-    Ok(db)
+    Ok(ok)
   }
   |> result.map_error(SqlightError)
 }
@@ -422,14 +431,15 @@ pub fn connect(
     feather.connect(config)
     |> result.map_error(SqlightError),
   )
-  use connection <- result.try(new_connection(config, connection))
 
-  use _ <- result.try(set_pragmas(connection))
+  use _ <- result.try(set_pragmas(connection, Nil))
 
   use _ <- result.try(
-    migrate.migrate(migrations, on: connection.connection)
+    migrate.migrate(migrations, on: connection)
     |> result.map_error(MigrationError),
   )
+
+  use connection <- result.try(new_connection(config, connection))
 
   use _ <- result.try(
     feather.optimize(connection.connection)
@@ -441,7 +451,7 @@ pub fn connect(
       feather.connect(config)
       |> result.map_error(SqlightError)
       |> result.then(new_connection(config, _))
-      |> result.then(set_pragmas)
+      |> result.then(fn(db) { set_pragmas(db.connection, db) })
     }),
   )
 

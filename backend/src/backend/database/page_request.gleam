@@ -37,9 +37,8 @@ pub fn statements(db: Connection) -> Result(Statements, Error) {
 fn get(
   db: Connection,
 ) -> Result(fn(Int) -> Result(Option(PageRequest), Error), Error) {
-  fn(id: Int) -> Result(Option(PageRequest), Error) {
-    sqlight.query(
-      "
+  use select <- result.try(sqlight.prepare(
+    "
 SELECT
   \"r\".\"id\",
   \"r\".\"visitor_id\",
@@ -51,10 +50,11 @@ FROM
 WHERE
   \"r\".\"id\" = ?;
     ",
-      db,
-      [sqlight.int(id)],
-      decoder(),
-    )
+    db,
+    decoder(),
+  ))
+  fn(id: Int) -> Result(Option(PageRequest), Error) {
+    sqlight.query_prepared(select, [sqlight.int(id)])
     |> result.map(fn(values) {
       case values {
         [] -> None
@@ -68,10 +68,8 @@ WHERE
 fn get_path_id(
   db: Connection,
 ) -> Result(fn(String) -> Result(Int, Error), Error) {
-  fn(path: String) -> Result(Int, Error) {
-    use page_id <- result.try(case
-      sqlight.query(
-        "
+  use select <- result.try(sqlight.prepare(
+    "
 SELECT
   \"id\"
 FROM
@@ -79,10 +77,23 @@ FROM
 WHERE
   \"path\" = ?;
         ",
-        db,
-        [sqlight.text(path)],
-        dynamic.element(0, dynamic.int),
-      )
+    db,
+    dynamic.element(0, dynamic.int),
+  ))
+  use insert <- result.try(sqlight.prepare(
+    "
+INSERT OR IGNORE INTO
+  \"request_path\"
+  (\"path\")
+VALUES
+  (?);
+    ",
+    db,
+    dynamic.dynamic,
+  ))
+  fn(path: String) -> Result(Int, Error) {
+    use page_id <- result.try(case
+      sqlight.query_prepared(select, [sqlight.text(path)])
     {
       Ok(path_id) ->
         case path_id {
@@ -95,34 +106,11 @@ WHERE
     case page_id {
       Some(page_id) -> Ok(page_id)
       None -> {
-        use _ <- result.try(sqlight.query(
-          "
-INSERT OR IGNORE INTO
-  \"request_path\"
-  (\"path\")
-VALUES
-  (?);
-    ",
-          db,
-          [sqlight.text(path)],
-          dynamic.dynamic,
-        ))
+        use _ <- result.try(
+          sqlight.query_prepared(insert, [sqlight.text(path)]),
+        )
 
-        case
-          sqlight.query(
-            "
-SELECT
-  \"id\"
-FROM
-  \"request_path\"
-WHERE
-  \"path\" = ?;
-        ",
-            db,
-            [sqlight.text(path)],
-            dynamic.element(0, dynamic.int),
-          )
-        {
+        case sqlight.query_prepared(select, [sqlight.text(path)]) {
           Ok(path_id) ->
             case path_id {
               [path_id] -> Ok(path_id)
@@ -157,10 +145,8 @@ fn insert_new_with_path_id(
   db: Connection,
   get: fn(Int) -> Result(Option(PageRequest), Error),
 ) -> Result(fn(Int, Int, Int) -> Result(PageRequest, Error), Error) {
-  fn(visitor_id: Int, path_id: Int, now: Int) -> Result(PageRequest, Error) {
-    use id <- result.try(case
-      sqlight.query(
-        "
+  use insert <- result.try(sqlight.prepare(
+    "
 INSERT INTO
   \"page_request\"
   (\"visitor_id\", \"request_path_id\", \"time\")
@@ -168,10 +154,16 @@ VALUES
   (?, ?, ?)
 RETURNING id;
       ",
-        db,
-        [sqlight.int(visitor_id), sqlight.int(path_id), sqlight.int(now)],
-        dynamic.element(0, dynamic.int),
-      )
+    db,
+    dynamic.element(0, dynamic.int),
+  ))
+  fn(visitor_id: Int, path_id: Int, now: Int) -> Result(PageRequest, Error) {
+    use id <- result.try(case
+      sqlight.query_prepared(insert, [
+        sqlight.int(visitor_id),
+        sqlight.int(path_id),
+        sqlight.int(now),
+      ])
     {
       Ok(id) ->
         case id {

@@ -53,9 +53,8 @@ pub fn decoder() -> fn(Dynamic) -> Result(Session, List(DecodeError)) {
 fn get(
   db: Connection,
 ) -> Result(fn(Int, Int) -> Result(Option(Session), Error), Error) {
-  fn(id: Int, now: Int) -> Result(Option(Session), Error) {
-    sqlight.query(
-      "
+  use select <- result.try(sqlight.prepare(
+    "
 SELECT
   \"id\",
   \"key\",
@@ -70,10 +69,11 @@ WHERE
   AND
   \"expires_at\" >= ?;
     ",
-      db,
-      [sqlight.int(id), sqlight.int(now)],
-      decoder(),
-    )
+    db,
+    decoder(),
+  ))
+  fn(id: Int, now: Int) -> Result(Option(Session), Error) {
+    sqlight.query_prepared(select, [sqlight.int(id), sqlight.int(now)])
     |> result.map(fn(values) {
       case values {
         [] -> None
@@ -87,9 +87,8 @@ WHERE
 fn get_by_key(
   db: Connection,
 ) -> Result(fn(BitArray, Int) -> Result(Option(Session), Error), Error) {
-  fn(key: BitArray, now: Int) -> Result(Option(Session), Error) {
-    sqlight.query(
-      "
+  use select <- result.try(sqlight.prepare(
+    "
 SELECT
   \"id\",
   \"key\",
@@ -104,10 +103,11 @@ WHERE
   AND
   \"expires_at\" >= ?;
     ",
-      db,
-      [sqlight.blob(key), sqlight.int(now)],
-      decoder(),
-    )
+    db,
+    decoder(),
+  ))
+  fn(key: BitArray, now: Int) -> Result(Option(Session), Error) {
+    sqlight.query_prepared(select, [sqlight.blob(key), sqlight.int(now)])
     |> result.map(fn(values) {
       case values {
         [] -> None
@@ -124,17 +124,8 @@ fn insert_new(
   fn(BitArray, Int, Int, Option(String), Int) -> Result(Session, Error),
   Error,
 ) {
-  fn(
-    key: BitArray,
-    user_id: Int,
-    lifetime_milliseconds: Int,
-    user_agent: Option(String),
-    now: Int,
-  ) -> Result(Session, Error) {
-    let expires_at = now + lifetime_milliseconds
-
-    use session <- result.try(sqlight.query(
-      "
+  use insert <- result.try(sqlight.prepare(
+    "
 INSERT INTO
   \"session\"
   (\"key\", \"user_id\", \"created_at\", \"expires_at\", \"user_agent\")
@@ -148,16 +139,27 @@ RETURNING
   \"expires_at\",
   \"user_agent\";
         ",
-      db,
-      [
+    db,
+    decoder(),
+  ))
+  fn(
+    key: BitArray,
+    user_id: Int,
+    lifetime_milliseconds: Int,
+    user_agent: Option(String),
+    now: Int,
+  ) -> Result(Session, Error) {
+    let expires_at = now + lifetime_milliseconds
+
+    use session <- result.try(
+      sqlight.query_prepared(insert, [
         sqlight.blob(key),
         sqlight.int(user_id),
         sqlight.int(now),
         sqlight.int(expires_at),
         sqlight.nullable(sqlight.text, user_agent),
-      ],
-      decoder(),
-    ))
+      ]),
+    )
 
     case session {
       [] ->
@@ -178,25 +180,8 @@ fn update(
   fn(Session, Option(Int), Option(String), Int) -> Result(Session, Error),
   Error,
 ) {
-  fn(
-    session: Session,
-    lifetime_milliseconds: Option(Int),
-    user_agent: Option(String),
-    now: Int,
-  ) -> Result(Session, Error) {
-    let session = case lifetime_milliseconds {
-      None -> session
-      Some(lifetime_milliseconds) ->
-        Session(..session, expires_at: lifetime_milliseconds + now)
-    }
-
-    let session = case user_agent {
-      None -> session
-      Some(user_agent) -> Session(..session, user_agent: Some(user_agent))
-    }
-
-    use session <- result.try(sqlight.query(
-      "
+  use update <- result.try(sqlight.prepare(
+    "
 UPDATE
   \"session\"
 SET
@@ -215,17 +200,36 @@ RETURNING
   \"expires_at\",
   \"user_agent\";
         ",
-      db,
-      [
+    db,
+    decoder(),
+  ))
+  fn(
+    session: Session,
+    lifetime_milliseconds: Option(Int),
+    user_agent: Option(String),
+    now: Int,
+  ) -> Result(Session, Error) {
+    let session = case lifetime_milliseconds {
+      None -> session
+      Some(lifetime_milliseconds) ->
+        Session(..session, expires_at: lifetime_milliseconds + now)
+    }
+
+    let session = case user_agent {
+      None -> session
+      Some(user_agent) -> Session(..session, user_agent: Some(user_agent))
+    }
+
+    use session <- result.try(
+      sqlight.query_prepared(update, [
         sqlight.blob(session.key),
         sqlight.int(session.user_id),
         sqlight.int(session.created_at),
         sqlight.int(session.expires_at),
         sqlight.nullable(sqlight.text, session.user_agent),
         sqlight.int(session.id),
-      ],
-      decoder(),
-    ))
+      ]),
+    )
 
     case session {
       [] ->

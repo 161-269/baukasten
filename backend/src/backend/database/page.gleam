@@ -21,6 +21,21 @@ pub type Page {
   )
 }
 
+pub type Statements {
+  Statements(
+    get: fn(Int) -> Result(Option(Page), Error),
+    get_active_by_path: fn(String) -> Result(Option(Page), Error),
+    get_all: fn() -> Result(Dict(String, List(Page)), Error),
+    delete: fn(Int) -> Result(Nil, Error),
+    insert_new: fn(String, String, Option(String), BitArray, Int) ->
+      Result(Page, Error),
+    update: fn(Page, Int) -> Result(Page, Error),
+    set_widgets_json: fn(Int, BitArray, Int) -> Result(Page, Error),
+    set_generated_html: fn(Int, Option(BitArray), Int) -> Result(Page, Error),
+    set_generated_css: fn(Int, Option(BitArray), Int) -> Result(Page, Error),
+  )
+}
+
 pub fn decoder() -> fn(Dynamic) -> Result(Page, List(DecodeError)) {
   let id_decoder = dynamic.element(0, dynamic.int)
   let path_decoder = dynamic.element(1, dynamic.string)
@@ -109,8 +124,32 @@ pub fn decoder() -> fn(Dynamic) -> Result(Page, List(DecodeError)) {
   }
 }
 
-pub fn get(db: Connection, id: Int) -> Result(Option(Page), Error) {
-  sqlight.query(
+pub fn statements(db: Connection) -> Result(Statements, Error) {
+  use get <- result.try(get(db))
+  use get_active_by_path <- result.try(get_active_by_path(db))
+  use get_all <- result.try(get_all(db))
+  use delete <- result.try(delete(db))
+  use insert_new <- result.try(insert_new(db))
+  use update <- result.try(update(db))
+  use set_widgets_json <- result.try(set_widgets_json(db))
+  use set_generated_html <- result.try(set_generated_html(db))
+  use set_generated_css <- result.try(set_generated_css(db))
+
+  Ok(Statements(
+    get:,
+    get_active_by_path:,
+    get_all:,
+    delete:,
+    insert_new:,
+    update:,
+    set_widgets_json:,
+    set_generated_html:,
+    set_generated_css:,
+  ))
+}
+
+fn get(db: Connection) -> Result(fn(Int) -> Result(Option(Page), Error), Error) {
+  use select <- result.try(sqlight.prepare(
     "
 SELECT
   \"id\",
@@ -131,23 +170,26 @@ WHERE
   \"deleted\" = 0;
     ",
     db,
-    [sqlight.int(id)],
     decoder(),
-  )
-  |> result.map(fn(values) {
-    case values {
-      [] -> None
-      [value, ..] -> Some(value)
-    }
-  })
+  ))
+  fn(id: Int) -> Result(Option(Page), Error) {
+    sqlight.query_prepared(select, [sqlight.int(id)])
+    |> result.map(fn(values) {
+      case values {
+        [] -> None
+        [value, ..] -> Some(value)
+      }
+    })
+  }
+  |> Ok
 }
 
-pub fn get_active_by_path(
+fn get_active_by_path(
   db: Connection,
-  path: String,
-) -> Result(Option(Page), Error) {
-  sqlight.query(
-    "
+) -> Result(fn(String) -> Result(Option(Page), Error), Error) {
+  fn(path: String) -> Result(Option(Page), Error) {
+    sqlight.query(
+      "
 SELECT
   \"id\",
   \"path\",
@@ -171,20 +213,24 @@ ORDER BY
   \"updated_at\" DESC
 LIMIT 1;
     ",
-    db,
-    [sqlight.text(path)],
-    decoder(),
-  )
-  |> result.map(fn(values) {
-    case values {
-      [] -> None
-      [value, ..] -> Some(value)
-    }
-  })
+      db,
+      [sqlight.text(path)],
+      decoder(),
+    )
+    |> result.map(fn(values) {
+      case values {
+        [] -> None
+        [value, ..] -> Some(value)
+      }
+    })
+  }
+  |> Ok
 }
 
-pub fn get_all(db: Connection) -> Result(Dict(String, List(Page)), Error) {
-  use pages <- result.try(sqlight.query(
+fn get_all(
+  db: Connection,
+) -> Result(fn() -> Result(Dict(String, List(Page)), Error), Error) {
+  use select <- result.try(sqlight.prepare(
     "
 SELECT
   \"id\",
@@ -205,35 +251,38 @@ ORDER BY
   \"updated_at\" ASC;
     ",
     db,
-    [],
     decoder(),
   ))
+  fn() {
+    use pages <- result.try(sqlight.query_prepared(select, []))
 
-  let pages =
-    list.fold(pages, dict.new(), fn(acc, page) {
-      let key = string.lowercase(page.path)
+    let pages =
+      list.fold(pages, dict.new(), fn(acc, page) {
+        let key = string.lowercase(page.path)
 
-      let pages = case dict.get(acc, key) {
-        Error(_) -> [page]
-        Ok(pages) -> [page, ..pages]
-      }
+        let pages = case dict.get(acc, key) {
+          Error(_) -> [page]
+          Ok(pages) -> [page, ..pages]
+        }
 
-      dict.insert(acc, key, pages)
-    })
+        dict.insert(acc, key, pages)
+      })
 
-  let pages =
-    dict.fold(pages, dict.new(), fn(acc, _, pages) {
-      case pages {
-        [] -> acc
-        [page, ..] -> dict.insert(acc, page.path, pages)
-      }
-    })
+    let pages =
+      dict.fold(pages, dict.new(), fn(acc, _, pages) {
+        case pages {
+          [] -> acc
+          [page, ..] -> dict.insert(acc, page.path, pages)
+        }
+      })
 
-  Ok(pages)
+    Ok(pages)
+  }
+  |> Ok
 }
 
-pub fn delete(db: Connection, id: Int) -> Result(Nil, Error) {
-  sqlight.query(
+fn delete(db: Connection) -> Result(fn(Int) -> Result(Nil, Error), Error) {
+  use update <- result.try(sqlight.prepare(
     "
 UPDATE
   \"page\"
@@ -243,21 +292,22 @@ WHERE
   \"id\" = ?;
     ",
     db,
-    [sqlight.int(id)],
     dynamic.dynamic,
-  )
-  |> result.map(fn(_) { Nil })
+  ))
+  fn(id: Int) -> Result(Nil, Error) {
+    sqlight.query_prepared(update, [sqlight.int(id)])
+    |> result.map(fn(_) { Nil })
+  }
+  |> Ok
 }
 
-pub fn insert_new(
+fn insert_new(
   db: Connection,
-  path: String,
-  title: String,
-  description: Option(String),
-  widgets_json: BitArray,
-  now: Int,
-) -> Result(Page, Error) {
-  use page <- result.try(sqlight.query(
+) -> Result(
+  fn(String, String, Option(String), BitArray, Int) -> Result(Page, Error),
+  Error,
+) {
+  use insert <- result.try(sqlight.prepare(
     "
 INSERT INTO
   \"page\"
@@ -277,30 +327,42 @@ RETURNING
   \"active\";
       ",
     db,
-    [
-      sqlight.text(path),
-      sqlight.text(title),
-      sqlight.nullable(sqlight.text, description),
-      sqlight.blob(widgets_json),
-      sqlight.int(now),
-      sqlight.int(now),
-    ],
     decoder(),
   ))
 
-  case page {
-    [] ->
-      Error(sqlight.SqlightError(
-        sqlight.Notfound,
-        "Could not find inserted page",
-        -1,
-      ))
-    [page, ..] -> Ok(page)
+  fn(
+    path: String,
+    title: String,
+    description: Option(String),
+    widgets_json: BitArray,
+    now: Int,
+  ) -> Result(Page, Error) {
+    use page <- result.try(
+      sqlight.query_prepared(insert, [
+        sqlight.text(path),
+        sqlight.text(title),
+        sqlight.nullable(sqlight.text, description),
+        sqlight.blob(widgets_json),
+        sqlight.int(now),
+        sqlight.int(now),
+      ]),
+    )
+
+    case page {
+      [] ->
+        Error(sqlight.SqlightError(
+          sqlight.Notfound,
+          "Could not find inserted page",
+          -1,
+        ))
+      [page, ..] -> Ok(page)
+    }
   }
+  |> Ok
 }
 
-pub fn update(db: Connection, page: Page, now: Int) -> Result(Page, Error) {
-  use page <- result.try(sqlight.query(
+fn update(db: Connection) -> Result(fn(Page, Int) -> Result(Page, Error), Error) {
+  use update <- result.try(sqlight.prepare(
     "
 UPDATE
   \"page\"
@@ -329,39 +391,41 @@ RETURNING
   \"active\";
         ",
     db,
-    [
-      sqlight.text(page.path),
-      sqlight.text(page.title),
-      sqlight.nullable(sqlight.text, page.description),
-      sqlight.blob(page.widgets_json),
-      sqlight.nullable(sqlight.blob, page.generated_html),
-      sqlight.nullable(sqlight.blob, page.generated_css),
-      sqlight.int(page.created_at),
-      sqlight.int(now),
-      sqlight.bool(page.active),
-      sqlight.int(page.id),
-    ],
     decoder(),
   ))
+  fn(page: Page, now: Int) -> Result(Page, Error) {
+    use page <- result.try(
+      sqlight.query_prepared(update, [
+        sqlight.text(page.path),
+        sqlight.text(page.title),
+        sqlight.nullable(sqlight.text, page.description),
+        sqlight.blob(page.widgets_json),
+        sqlight.nullable(sqlight.blob, page.generated_html),
+        sqlight.nullable(sqlight.blob, page.generated_css),
+        sqlight.int(page.created_at),
+        sqlight.int(now),
+        sqlight.bool(page.active),
+        sqlight.int(page.id),
+      ]),
+    )
 
-  case page {
-    [] ->
-      Error(sqlight.SqlightError(
-        sqlight.Notfound,
-        "Could not find updated page",
-        -1,
-      ))
-    [page, ..] -> Ok(page)
+    case page {
+      [] ->
+        Error(sqlight.SqlightError(
+          sqlight.Notfound,
+          "Could not find updated page",
+          -1,
+        ))
+      [page, ..] -> Ok(page)
+    }
   }
+  |> Ok
 }
 
-pub fn set_widgets_json(
+fn set_widgets_json(
   db: Connection,
-  id: Int,
-  widgets_json: BitArray,
-  now: Int,
-) -> Result(Page, Error) {
-  use page <- result.try(sqlight.query(
+) -> Result(fn(Int, BitArray, Int) -> Result(Page, Error), Error) {
+  use update <- result.try(sqlight.prepare(
     "
 UPDATE
   \"page\"
@@ -383,28 +447,34 @@ RETURNING
   \"active\";
     ",
     db,
-    [sqlight.blob(widgets_json), sqlight.int(now), sqlight.int(id)],
     decoder(),
   ))
+  fn(id: Int, widgets_json: BitArray, now: Int) -> Result(Page, Error) {
+    use page <- result.try(
+      sqlight.query_prepared(update, [
+        sqlight.blob(widgets_json),
+        sqlight.int(now),
+        sqlight.int(id),
+      ]),
+    )
 
-  case page {
-    [] ->
-      Error(sqlight.SqlightError(
-        sqlight.Notfound,
-        "Could not find updated page",
-        -1,
-      ))
-    [page, ..] -> Ok(page)
+    case page {
+      [] ->
+        Error(sqlight.SqlightError(
+          sqlight.Notfound,
+          "Could not find updated page",
+          -1,
+        ))
+      [page, ..] -> Ok(page)
+    }
   }
+  |> Ok
 }
 
-pub fn set_generated_html(
+fn set_generated_html(
   db: Connection,
-  id: Int,
-  generated_html: Option(BitArray),
-  now: Int,
-) -> Result(Page, Error) {
-  use page <- result.try(sqlight.query(
+) -> Result(fn(Int, Option(BitArray), Int) -> Result(Page, Error), Error) {
+  use update <- result.try(sqlight.prepare(
     "
 UPDATE
   \"page\"
@@ -426,32 +496,34 @@ RETURNING
   \"active\";
     ",
     db,
-    [
-      sqlight.nullable(sqlight.blob, generated_html),
-      sqlight.int(now),
-      sqlight.int(id),
-    ],
     decoder(),
   ))
+  fn(id: Int, generated_html: Option(BitArray), now: Int) -> Result(Page, Error) {
+    use page <- result.try(
+      sqlight.query_prepared(update, [
+        sqlight.nullable(sqlight.blob, generated_html),
+        sqlight.int(now),
+        sqlight.int(id),
+      ]),
+    )
 
-  case page {
-    [] ->
-      Error(sqlight.SqlightError(
-        sqlight.Notfound,
-        "Could not find updated page",
-        -1,
-      ))
-    [page, ..] -> Ok(page)
+    case page {
+      [] ->
+        Error(sqlight.SqlightError(
+          sqlight.Notfound,
+          "Could not find updated page",
+          -1,
+        ))
+      [page, ..] -> Ok(page)
+    }
   }
+  |> Ok
 }
 
-pub fn set_generated_css(
+fn set_generated_css(
   db: Connection,
-  id: Int,
-  generated_css: Option(BitArray),
-  now: Int,
-) -> Result(Page, Error) {
-  use page <- result.try(sqlight.query(
+) -> Result(fn(Int, Option(BitArray), Int) -> Result(Page, Error), Error) {
+  use update <- result.try(sqlight.prepare(
     "
 UPDATE
   \"page\"
@@ -473,21 +545,26 @@ RETURNING
   \"active\";
     ",
     db,
-    [
-      sqlight.nullable(sqlight.blob, generated_css),
-      sqlight.int(now),
-      sqlight.int(id),
-    ],
     decoder(),
   ))
+  fn(id: Int, generated_css: Option(BitArray), now: Int) -> Result(Page, Error) {
+    use page <- result.try(
+      sqlight.query_prepared(update, [
+        sqlight.nullable(sqlight.blob, generated_css),
+        sqlight.int(now),
+        sqlight.int(id),
+      ]),
+    )
 
-  case page {
-    [] ->
-      Error(sqlight.SqlightError(
-        sqlight.Notfound,
-        "Could not find updated page",
-        -1,
-      ))
-    [page, ..] -> Ok(page)
+    case page {
+      [] ->
+        Error(sqlight.SqlightError(
+          sqlight.Notfound,
+          "Could not find updated page",
+          -1,
+        ))
+      [page, ..] -> Ok(page)
+    }
   }
+  |> Ok
 }
