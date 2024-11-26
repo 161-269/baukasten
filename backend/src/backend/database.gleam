@@ -7,6 +7,7 @@ import backend/database/static_file
 import backend/database/user
 import backend/database/visitor_session
 import birl
+import exception
 import feather
 import feather/migrate
 import gleam/erlang
@@ -480,11 +481,9 @@ pub fn connection(
     Error(error) -> Error(WaitForConnectionError(error) |> map_error)
   })
 
-  let result = context(connection)
+  use <- exception.defer(fn() { process.send(db.pool, PutBack(connection)) })
 
-  process.send(db.pool, PutBack(connection))
-
-  result
+  context(connection)
 }
 
 pub fn transaction(
