@@ -46,18 +46,18 @@ pub fn handler(cfg: Configuration) -> Result(fn(Request) -> Response, Nil) {
         session,
       )
 
-      ["maintenance", ..rest] ->
+      ["_", ..rest] ->
         case rest {
           ["login"] -> {
             case session.user {
-              Some(_) -> #(wisp.redirect("/maintenance"), session)
+              Some(_) -> #(wisp.redirect("/_"), session)
               None -> #(wisp.not_found(), session)
             }
           }
           _ -> {
             use user <- session.require_authentication(session)
 
-            maintenance(req, path, session, user, cfg.db)
+            internal(req, path, session, user, cfg.db)
           }
         }
       _ -> #(default_page(req), session)
@@ -66,7 +66,7 @@ pub fn handler(cfg: Configuration) -> Result(fn(Request) -> Response, Nil) {
   |> Ok
 }
 
-fn maintenance(
+fn internal(
   _req: Request,
   _path: List(String),
   session: Session,

@@ -193,7 +193,7 @@ fn form_page() -> #(fn(String, Int, Form) -> Response, String) {
               attribute.attribute("http-equiv", "refresh"),
               attribute.attribute(
                 "content",
-                int.to_string(redirect) <> "; url=/maintenance/login",
+                int.to_string(redirect) <> "; url=/_/login",
               ),
             ])
           False -> element.none()
