@@ -311,9 +311,9 @@ fn insert_new(
     "
 INSERT INTO
   \"page\"
-  (\"path\", \"title\", \"description\", \"widgets_json\", \"created_at\", \"updated_at\", \"active\")
+  (\"path\", \"title\", \"description\", \"widgets_json\", \"created_at\", \"updated_at\", \"active\", \"deleted\")
 VALUES
-  (?, ?, ?, ?, ?, ?, 0)
+  (?, ?, ?, ?, ?, ?, 0, 0)
 RETURNING
   \"id\",
   \"path\",

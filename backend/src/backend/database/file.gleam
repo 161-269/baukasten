@@ -138,7 +138,7 @@ fn delete(db: Connection) -> Result(fn(Int) -> Result(Nil, Error), Error) {
   use update <- result.try(sqlight.prepare(
     "
 UPDATE
-  \"file\"
+  \"file_metadata\"
 SET
   \"deleted\" = 1
 WHERE
@@ -308,7 +308,7 @@ WHERE
   use update <- result.try(sqlight.prepare(
     "
 UPDATE
-  \"file\"
+  \"file_metadata\"
 SET
   \"file_id\" = ?,
   \"key\" = ?,

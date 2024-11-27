@@ -136,7 +136,7 @@ fn start_server(self: Subject(Msg)) -> Result(Server, Nil) {
   )
 
   use db <- result.try(
-    database.connect("./data/database.sqlite", 16, 60_000)
+    database.connect(Some("./data/database.sqlite"), 16, 60_000)
     |> result.map_error(fn(error) {
       io.println_error("Error connecting to database:")
       io.debug(error)
