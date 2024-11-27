@@ -39,6 +39,9 @@ fn do_apply_interval(
 @external(erlang, "backend_ffi", "cancel_timer")
 fn do_cancel_timer(timer: Timer) -> Result(a, b)
 
+@external(erlang, "backend_ffi", "unique_int")
+fn unique_int() -> Int
+
 pub fn apply_after(
   timeout_millisecond: Int,
   callback: fn() -> a,
@@ -87,7 +90,7 @@ type Waiting {
 
 type State {
   State(
-    config: feather.Config,
+    config: Config,
     waiting_id: Int,
     available_connections: List(Connection),
     used_connections: Int,
@@ -165,18 +168,96 @@ fn new_statements(connection: sqlight.Connection) -> Result(Statements, Error) {
   ))
 }
 
+pub type Config {
+  Config(
+    feather: feather.Config,
+    file: Option(String),
+    migrations: List(migrate.Migration),
+    pool_size: Int,
+  )
+}
+
 pub type Connection {
   Connection(
     connection: sqlight.Connection,
-    config: feather.Config,
+    number: Int,
+    config: Config,
     stmts: Statements,
   )
 }
 
-fn new_connection(config: feather.Config, connection: sqlight.Connection) {
-  use statements <- result.try(new_statements(connection))
+fn set_pragmas_file(db: sqlight.Connection) -> Result(Nil, Error) {
+  {
+    use _ <- result.try(sqlight.exec(
+      "
+PRAGMA locking_mode = NORMAL;
+PRAGMA journal_size_limit = 67108864;
+PRAGMA cache_size = -32768;
+PRAGMA cache_shared = 1;
 
-  Ok(Connection(connection:, config:, stmts: statements))
+PRAGMA busy_timeout = 5000;
+PRAGMA recursive_triggers = 1;
+PRAGMA defer_foreign_keys = 0;
+PRAGMA encoding = 'UTF-8';
+PRAGMA ignore_check_constraints = 0;
+PRAGMA legacy_alter_table = 0;
+PRAGMA analysis_limit = 0;
+PRAGMA auto_vacuum = 0;
+PRAGMA automatic_index = 1;
+    ",
+      db,
+    ))
+
+    Ok(Nil)
+  }
+  |> result.map_error(SqlightError)
+}
+
+fn set_pragmas_memory(db: sqlight.Connection) -> Result(Nil, Error) {
+  {
+    use _ <- result.try(sqlight.exec(
+      "
+PRAGMA cache_size = -32768;
+
+PRAGMA busy_timeout = 1000;
+PRAGMA recursive_triggers = 1;
+PRAGMA defer_foreign_keys = 0;
+PRAGMA encoding = 'UTF-8';
+PRAGMA ignore_check_constraints = 0;
+PRAGMA legacy_alter_table = 0;
+PRAGMA analysis_limit = 0;
+PRAGMA auto_vacuum = 0;
+PRAGMA automatic_index = 1;
+    ",
+      db,
+    ))
+
+    Ok(Nil)
+  }
+  |> result.map_error(SqlightError)
+}
+
+fn new_connection(config: Config, number: Int) -> Result(Connection, Error) {
+  use connection <- result.try(
+    feather.connect(config.feather)
+    |> result.map_error(SqlightError),
+  )
+
+  use _ <- result.try(case config.file {
+    Some(_) -> set_pragmas_file(connection)
+    None -> set_pragmas_memory(connection)
+  })
+
+  use _ <- result.try(case number {
+    1 ->
+      migrate.migrate(config.migrations, on: connection)
+      |> result.map_error(MigrationError)
+    _ -> Ok(Nil)
+  })
+
+  use stmts <- result.try(new_statements(connection))
+
+  Ok(Connection(connection:, number:, config:, stmts:))
 }
 
 fn waiting_compare(a: Waiting, b: Waiting) -> order.Order {
@@ -184,13 +265,17 @@ fn waiting_compare(a: Waiting, b: Waiting) -> order.Order {
 }
 
 fn init(
-  config: feather.Config,
+  config: Config,
   pool_size: Int,
   connection: Connection,
-  create_connection: fn() -> Result(Connection, Error),
+  create_connection: fn(Int) -> Result(Connection, Error),
 ) -> Result(State, Error) {
   let connections =
-    list.try_map(list.repeat(Nil, pool_size - 1), fn(_) { create_connection() })
+    case pool_size > 1 {
+      True -> list.range(2, pool_size)
+      False -> []
+    }
+    |> list.try_map(fn(number) { create_connection(number) })
 
   case connections {
     Ok(connections) ->
@@ -327,12 +412,7 @@ fn update(msg: Msg, state: State) -> Next(Msg, State) {
     }
     TimerTick -> {
       let _ =
-        feather.connect(state.config)
-        |> result.map_error(SqlightError)
-        |> result.then(new_connection(state.config, _))
-        |> result.then(fn(connection) {
-          set_pragmas(connection.connection, connection)
-        })
+        new_connection(state.config, -1)
         |> result.then(fn(connection) {
           sqlight.exec("PRAGMA wal_checkpoint(PASSIVE);", connection.connection)
           |> result.map_error(SqlightError)
@@ -378,35 +458,8 @@ pub type Error {
   WaitForConnectionTimeout(timeout_millisecond: Int)
 }
 
-fn set_pragmas(db: sqlight.Connection, ok: a) -> Result(a, Error) {
-  {
-    use _ <- result.try(sqlight.exec(
-      "
-PRAGMA locking_mode = NORMAL;
-PRAGMA journal_size_limit = 16777216;
-PRAGMA cache_size = -32768;
-PRAGMA cache_shared = ON;
-PRAGMA busy_timeout = 1000;
-PRAGMA mmap_size = 134217728;
-PRAGMA recursive_triggers = 1;
-PRAGMA defer_foreign_keys = 0;
-PRAGMA encoding = 'UTF-8';
-PRAGMA ignore_check_constraints = 0;
-PRAGMA legacy_alter_table = 0;
-PRAGMA analysis_limit = 0;
-PRAGMA auto_vacuum = 0;
-PRAGMA automatic_index = 1;
-    ",
-      db,
-    ))
-
-    Ok(ok)
-  }
-  |> result.map_error(SqlightError)
-}
-
 pub fn connect(
-  file: String,
+  file: Option(String),
   connections: Int,
   sync_interval_millisecond: Int,
 ) -> Result(Db, Error) {
@@ -420,26 +473,39 @@ pub fn connect(
     |> result.map_error(MigrationError),
   )
 
+  let connections = case connections < 1 {
+    True -> 1
+    False -> connections
+  }
+
   let config =
-    feather.Config(
-      ..feather.default_config(),
-      file: file,
-      page_size: Some(65_536),
+    Config(
+      feather: feather.Config(
+        ..feather.default_config(),
+        file: option.unwrap(
+          file,
+          "file:memdb"
+            <> int.to_string(unique_int())
+            <> "?mode=memory&cache=shared",
+        ),
+        page_size: Some(65_536),
+        mmap_size: case file {
+          Some(_) -> Some(536_870_912)
+          None -> None
+        },
+        journal_mode: case file {
+          Some(_) -> feather.JournalWal
+          None -> feather.JournalOff
+        },
+        synchronous: feather.SyncOff,
+        temp_store: feather.TempStoreMemory,
+      ),
+      file:,
+      migrations:,
+      pool_size: connections,
     )
 
-  use connection <- result.try(
-    feather.connect(config)
-    |> result.map_error(SqlightError),
-  )
-
-  use _ <- result.try(set_pragmas(connection, Nil))
-
-  use _ <- result.try(
-    migrate.migrate(migrations, on: connection)
-    |> result.map_error(MigrationError),
-  )
-
-  use connection <- result.try(new_connection(config, connection))
+  use connection <- result.try(new_connection(config, 1))
 
   use _ <- result.try(
     feather.optimize(connection.connection)
@@ -447,11 +513,8 @@ pub fn connect(
   )
 
   use state <- result.try(
-    init(config, connections, connection, fn() {
-      feather.connect(config)
-      |> result.map_error(SqlightError)
-      |> result.then(new_connection(config, _))
-      |> result.then(fn(db) { set_pragmas(db.connection, db) })
+    init(config, connections, connection, fn(number) {
+      new_connection(config, number)
     }),
   )
 
