@@ -45,11 +45,9 @@ pub fn new(
         Error(error) -> on_error(error)
       }
     }
-  use <- exception.defer(fn() { process.kill(process.subject_owner(actor)) })
+  use <- exception.defer(fn() { process.send(actor, Close) })
 
-  let result = next(Session(actor: actor))
-  process.send(actor, Close)
-  result
+  next(Session(actor: actor))
 }
 
 pub fn user(session: Session) -> Option(User) {

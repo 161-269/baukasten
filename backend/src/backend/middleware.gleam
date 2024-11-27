@@ -3,6 +3,7 @@ import backend/middleware/page_request
 import backend/middleware/session.{type Session} as middleware_session
 import backend/page/error
 import birl
+import exception
 import gleam/bit_array
 import gleam/crypto
 import gleam/http
@@ -32,7 +33,26 @@ pub fn handler(db: Db, dev_mode: Bool) -> Result(Handler, Nil) {
 
   Ok(fn(req: Request, next: fn(Session, List(String)) -> Response) -> Response {
     use <- wisp.rescue_crashes
-    let segments = path_segments(req)
+
+    use <-
+      fn(next) {
+        case dev_mode {
+          True -> {
+            wisp.configure_logger()
+
+            case exception.rescue(next) {
+              Ok(value) -> value
+              Error(error) -> {
+                io.println_error("Error handling request:")
+                io.debug(error)
+                error.internal_sever_error(db)
+              }
+            }
+          }
+          False -> next()
+        }
+      }
+
     let req = wisp.method_override(req)
     use req <- wisp.handle_head(req)
 
@@ -97,6 +117,7 @@ pub fn handler(db: Db, dev_mode: Bool) -> Result(Handler, Nil) {
       error.internal_sever_error(db)
     })
 
+    let segments = path_segments(req)
     let response = next(session, segments)
     let user = middleware_session.user(session)
 
