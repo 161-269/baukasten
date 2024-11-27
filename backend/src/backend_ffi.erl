@@ -1,6 +1,6 @@
 -module(backend_ffi).
 -include_lib("kernel/include/file.hrl").
--export([generate_css/4, unique_int/0, apply_after/2, apply_interval/2, cancel_timer/1]).
+-export([generate_css/4, unique_int/0]).
 
 unique_int() ->
     erlang:unique_integer([monotonic, positive]).
@@ -105,12 +105,3 @@ kill_process(OSPid) ->
         _ ->
             ok
     end.
-
-apply_after(Timeout, Callback) ->
-    timer:apply_after(Timeout, Callback).
-
-apply_interval(Timeout, Callback) ->
-    timer:apply_interval(Timeout, Callback).
-
-cancel_timer(TimerRef) ->
-    timer:cancel(TimerRef).

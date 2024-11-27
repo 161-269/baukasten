@@ -22,47 +22,8 @@ import gleam/result
 import gleamy/priority_queue
 import sqlight
 
-pub type Timer
-
-@external(erlang, "backend_ffi", "apply_after")
-fn do_apply_after(
-  timeout_millisecond: Int,
-  callback: fn() -> a,
-) -> Result(Timer, b)
-
-@external(erlang, "backend_ffi", "apply_interval")
-fn do_apply_interval(
-  timeout_millisecond: Int,
-  callback: fn() -> a,
-) -> Result(Timer, b)
-
-@external(erlang, "backend_ffi", "cancel_timer")
-fn do_cancel_timer(timer: Timer) -> Result(a, b)
-
 @external(erlang, "backend_ffi", "unique_int")
 fn unique_int() -> Int
-
-pub fn apply_after(
-  timeout_millisecond: Int,
-  callback: fn() -> a,
-) -> Result(Timer, Nil) {
-  do_apply_after(timeout_millisecond, callback)
-  |> result.map_error(fn(_) { Nil })
-}
-
-pub fn apply_interval(
-  timeout_millisecond: Int,
-  callback: fn() -> a,
-) -> Result(Timer, Nil) {
-  do_apply_interval(timeout_millisecond, callback)
-  |> result.map_error(fn(_) { Nil })
-}
-
-fn cancel_timer(timer: Timer) -> Result(Nil, Nil) {
-  do_cancel_timer(timer)
-  |> result.map(fn(_) { Nil })
-  |> result.map_error(fn(_) { Nil })
-}
 
 type Msg {
   Close(reply_to: Subject(Nil))
@@ -73,8 +34,7 @@ type Msg {
     reply_to: Subject(Option(Connection)),
   )
   PutBack(Connection)
-  StartTimer(pool: Subject(Msg), interval_millisecond: Int)
-  TimerTick
+  TimerTick(pool: Subject(Msg), interval_millisecond: Int)
   RemoveWaiting(waiting_id: Int, reply_to: Subject(Option(Connection)))
 }
 
@@ -84,7 +44,7 @@ type Waiting {
     timeout: Int,
     wait_until: Int,
     reply_to: Subject(Option(Connection)),
-    timer: Result(Timer, Nil),
+    timer: process.Timer,
   )
 }
 
@@ -95,7 +55,6 @@ type State {
     available_connections: List(Connection),
     used_connections: Int,
     waiting: priority_queue.Queue(Waiting),
-    sync_timer: Option(Timer),
     close_subject: Option(Subject(Nil)),
   )
 }
@@ -285,7 +244,6 @@ fn init(
         available_connections: [connection, ..connections],
         used_connections: 0,
         waiting: priority_queue.new(waiting_compare),
-        sync_timer: None,
         close_subject: None,
       ))
     Error(error) -> Error(error)
@@ -302,25 +260,11 @@ fn fold_until(accumulator: a, callback: fn(a) -> ContinueOrStop(a)) -> a {
 fn update(msg: Msg, state: State) -> Next(Msg, State) {
   let state = case msg {
     Close(reply_to) -> {
-      let sync_timer = case state.sync_timer {
-        None -> None
-        Some(timer) -> {
-          let _ = cancel_timer(timer)
-          None
-        }
-      }
-
       let waiting =
         fold_until(state.waiting, fn(waiting) {
           case priority_queue.pop(waiting) {
             Ok(#(waiting, accumulator)) -> {
-              case waiting.timer {
-                Ok(timer) -> {
-                  let _ = cancel_timer(timer)
-                  Nil
-                }
-                Error(Nil) -> Nil
-              }
+              process.cancel_timer(waiting.timer)
               process.send(waiting.reply_to, None)
               Continue(accumulator)
             }
@@ -337,7 +281,6 @@ fn update(msg: Msg, state: State) -> Next(Msg, State) {
         close_subject: Some(reply_to),
         available_connections: [],
         waiting:,
-        sync_timer:,
       )
     }
     GetConnection(pool, timeout, wait_until, reply_to) -> {
@@ -355,9 +298,11 @@ fn update(msg: Msg, state: State) -> Next(Msg, State) {
           let waiting_id = state.waiting_id + 1
 
           let timer =
-            apply_after(timeout, fn() {
-              process.send(pool, RemoveWaiting(waiting_id, reply_to))
-            })
+            process.send_after(
+              pool,
+              timeout,
+              RemoveWaiting(waiting_id, reply_to),
+            )
 
           State(
             ..state,
@@ -375,14 +320,7 @@ fn update(msg: Msg, state: State) -> Next(Msg, State) {
         None ->
           case priority_queue.pop(state.waiting) {
             Ok(#(waiting, rest)) -> {
-              case waiting.timer {
-                Ok(timer) -> {
-                  let _ = cancel_timer(timer)
-                  Nil
-                }
-                Error(Nil) -> Nil
-              }
-
+              process.cancel_timer(waiting.timer)
               process.send(waiting.reply_to, Some(connection))
 
               State(..state, waiting: rest)
@@ -406,23 +344,29 @@ fn update(msg: Msg, state: State) -> Next(Msg, State) {
         }
       }
 
-    StartTimer(pool, interval) -> {
-      let _ = apply_interval(interval, fn() { process.send(pool, TimerTick) })
-      state
-    }
-    TimerTick -> {
-      let _ =
-        new_connection(state.config, -1)
-        |> result.then(fn(connection) {
-          sqlight.exec("PRAGMA wal_checkpoint(PASSIVE);", connection.connection)
-          |> result.map_error(SqlightError)
-          |> result.map(fn(_) { connection })
-        })
-        |> result.then(fn(conn) {
-          feather.disconnect(conn.connection) |> result.map_error(SqlightError)
-        })
+    TimerTick(pool, interval) -> {
+      case state.close_subject {
+        Some(_) -> state
+        None -> {
+          let _ =
+            new_connection(state.config, -1)
+            |> result.then(fn(connection) {
+              sqlight.exec(
+                "PRAGMA wal_checkpoint(PASSIVE);",
+                connection.connection,
+              )
+              |> result.map_error(SqlightError)
+              |> result.map(fn(_) { connection })
+            })
+            |> result.then(fn(conn) {
+              feather.disconnect(conn.connection)
+              |> result.map_error(SqlightError)
+            })
 
-      state
+          process.send_after(pool, interval, TimerTick(pool, interval))
+          state
+        }
+      }
     }
     RemoveWaiting(waiting_id, reply_to) -> {
       process.send(reply_to, None)
@@ -523,7 +467,14 @@ pub fn connect(
   )
 
   case sync_interval_millisecond > 0 {
-    True -> process.send(pool, StartTimer(pool, sync_interval_millisecond))
+    True -> {
+      process.send_after(
+        pool,
+        sync_interval_millisecond,
+        TimerTick(pool, sync_interval_millisecond),
+      )
+      Nil
+    }
     False -> Nil
   }
 
