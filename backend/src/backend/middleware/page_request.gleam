@@ -3,7 +3,6 @@ import gleam/dict
 import gleam/erlang/process.{type Subject}
 import gleam/io
 import gleam/list.{Continue, Stop}
-import gleam/option.{None}
 import gleam/otp/actor.{type Next}
 import gleam/result
 import gleam/string
@@ -14,14 +13,11 @@ pub opaque type PageRequest {
 
 pub fn new(db: Db, interval_millisecond: Int) -> Result(PageRequest, Nil) {
   use worker <- result.try(
-    actor.start(State(db:, logs: []), update) |> result.map_error(fn(_) { Nil }),
+    actor.start(State(db:, logs: [], interval_millisecond:), update)
+    |> result.map_error(fn(_) { Nil }),
   )
 
-  use _ <- result.try(
-    database.apply_interval(interval_millisecond, fn() {
-      process.send(worker, Write)
-    }),
-  )
+  process.send_after(worker, interval_millisecond, Write(worker))
 
   Ok(PageRequest(worker:))
 }
@@ -31,19 +27,22 @@ type Request {
 }
 
 type Msg {
-  Write
+  Write(worker: Subject(Msg))
   Log(Request)
+  Close
 }
 
 type State {
-  State(db: Db, logs: List(Request))
+  State(db: Db, logs: List(Request), interval_millisecond: Int)
 }
 
 fn update(msg: Msg, state: State) -> Next(Msg, State) {
-  let state = case msg {
-    Log(request) -> State(..state, logs: [request, ..state.logs])
-    Write ->
-      case state.logs {
+  case msg {
+    Close -> actor.Stop(process.Normal)
+    Log(request) ->
+      State(..state, logs: [request, ..state.logs]) |> actor.continue
+    Write(worker) -> {
+      let result = case state.logs {
         [] -> state
         logs -> {
           let sessions = dict.new()
@@ -132,9 +131,11 @@ fn update(msg: Msg, state: State) -> Next(Msg, State) {
           State(..state, logs: logs)
         }
       }
-  }
 
-  actor.Continue(state, None)
+      process.send_after(worker, state.interval_millisecond, Write(worker))
+      result |> actor.continue
+    }
+  }
 }
 
 pub fn log(

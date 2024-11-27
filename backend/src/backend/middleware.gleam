@@ -61,15 +61,14 @@ pub fn handler(db: Db, dev_mode: Bool) -> Result(Handler, Nil) {
       None -> #(generate_session_id(), False)
     }
 
+    let now = birl.now() |> birl.to_unix_milli
+    page_request.log(page_request, now, session_id, req.path)
+
     let user = case should_be_authenticated {
       True -> {
         let user =
           database.connection(db, 1000, fn(e) { e }, fn(connection) {
-            let now = birl.now() |> birl.to_unix_milli
-
             {
-              page_request.log(page_request, now, session_id, req.path)
-
               use session <- result.try(connection.stmts.session.get_by_key(
                 session_id,
                 now,
