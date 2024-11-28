@@ -19,9 +19,11 @@ pub type Statements {
   Statements(
     get: fn(Int, Int) -> Result(Option(Session), Error),
     get_by_key: fn(BitArray, Int) -> Result(Option(Session), Error),
-    insert_new: fn(BitArray, Int, Int, Option(String), Int) ->
+    insert_new_or_update: fn(BitArray, Int, Int, Option(String), Int) ->
       Result(Session, Error),
     update: fn(Session, Option(Int), Option(String), Int) ->
+      Result(Session, Error),
+    update_by_key: fn(BitArray, Option(Int), Option(String), Int) ->
       Result(Session, Error),
   )
 }
@@ -29,10 +31,17 @@ pub type Statements {
 pub fn statements(db: Connection) -> Result(Statements, Error) {
   use get <- result.try(get(db))
   use get_by_key <- result.try(get_by_key(db))
-  use insert_new <- result.try(insert_new(db))
+  use insert_new_or_update <- result.try(insert_new_or_update(db))
   use update <- result.try(update(db))
+  use update_by_key <- result.try(update_by_key(db))
 
-  Ok(Statements(get:, get_by_key:, insert_new:, update:))
+  Ok(Statements(
+    get:,
+    get_by_key:,
+    insert_new_or_update:,
+    update:,
+    update_by_key:,
+  ))
 }
 
 pub fn decoder() -> fn(Dynamic) -> Result(Session, List(DecodeError)) {
@@ -118,7 +127,7 @@ WHERE
   |> Ok
 }
 
-fn insert_new(
+fn insert_new_or_update(
   db: Connection,
 ) -> Result(
   fn(BitArray, Int, Int, Option(String), Int) -> Result(Session, Error),
@@ -131,6 +140,10 @@ INSERT INTO
   (\"key\", \"user_id\", \"created_at\", \"expires_at\", \"user_agent\")
 VALUES
   (?, ?, ?, ?, ?)
+ON CONFLICT (\"key\") DO UPDATE SET
+  \"user_id\" = EXCLUDED.\"user_id\",
+  \"expires_at\" = EXCLUDED.\"expires_at\",
+  \"user_agent\" = EXCLUDED.\"user_agent\"
 RETURNING
   \"id\",
   \"key\",
@@ -192,6 +205,8 @@ SET
   \"user_agent\" = ?
 WHERE
   \"id\" = ?
+  AND
+  \"expires_at\" >= ?
 RETURNING
   \"id\",
   \"key\",
@@ -228,6 +243,7 @@ RETURNING
         sqlight.int(session.expires_at),
         sqlight.nullable(sqlight.text, session.user_agent),
         sqlight.int(session.id),
+        sqlight.int(now),
       ]),
     )
 
@@ -235,10 +251,111 @@ RETURNING
       [] ->
         Error(sqlight.SqlightError(
           sqlight.Notfound,
-          "Could not find updated session",
+          "Could not find session",
           -1,
         ))
       [session, ..] -> Ok(session)
+    }
+  }
+  |> Ok
+}
+
+fn update_by_key(
+  db: Connection,
+) -> Result(
+  fn(BitArray, Option(Int), Option(String), Int) -> Result(Session, Error),
+  Error,
+) {
+  use update_user_agent <- result.try(sqlight.prepare(
+    "
+UPDATE
+  \"session\"
+SET
+  \"user_agent\" = ?
+WHERE
+  \"key\" = ?
+  AND
+  \"expires_at\" >= ?
+RETURNING
+  \"id\",
+  \"key\",
+  \"user_id\",
+  \"created_at\",
+  \"expires_at\",
+  \"user_agent\";
+        ",
+    db,
+    decoder(),
+  ))
+
+  use update_lifetime_and_user_agent <- result.try(sqlight.prepare(
+    "
+UPDATE
+  \"session\"
+SET
+  \"expires_at\" = ?,
+  \"user_agent\" = ?
+WHERE
+  \"key\" = ?
+  AND
+  \"expires_at\" >= ?
+RETURNING
+  \"id\",
+  \"key\",
+  \"user_id\",
+  \"created_at\",
+  \"expires_at\",
+  \"user_agent\";
+        ",
+    db,
+    decoder(),
+  ))
+  fn(
+    key: BitArray,
+    lifetime_milliseconds: Option(Int),
+    user_agent: Option(String),
+    now: Int,
+  ) -> Result(Session, Error) {
+    case lifetime_milliseconds {
+      None -> {
+        use session <- result.try(
+          sqlight.query_prepared(update_user_agent, [
+            sqlight.nullable(sqlight.text, user_agent),
+            sqlight.blob(key),
+            sqlight.int(now),
+          ]),
+        )
+
+        case session {
+          [] ->
+            Error(sqlight.SqlightError(
+              sqlight.Notfound,
+              "Could not find session",
+              -1,
+            ))
+          [session, ..] -> Ok(session)
+        }
+      }
+      Some(lifetime_milliseconds) -> {
+        use session <- result.try(
+          sqlight.query_prepared(update_lifetime_and_user_agent, [
+            sqlight.int(now + lifetime_milliseconds),
+            sqlight.nullable(sqlight.text, user_agent),
+            sqlight.blob(key),
+            sqlight.int(now),
+          ]),
+        )
+
+        case session {
+          [] ->
+            Error(sqlight.SqlightError(
+              sqlight.Notfound,
+              "Could not find session",
+              -1,
+            ))
+          [session, ..] -> Ok(session)
+        }
+      }
     }
   }
   |> Ok
