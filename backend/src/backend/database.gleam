@@ -352,7 +352,10 @@ fn update(msg: Msg, state: State) -> Next(Msg, State) {
             new_connection(state.config, -1)
             |> result.then(fn(connection) {
               sqlight.exec(
-                "PRAGMA wal_checkpoint(PASSIVE);",
+                "
+ANALYZE;
+PRAGMA wal_checkpoint(PASSIVE);
+",
                 connection.connection,
               )
               |> result.map_error(SqlightError)
