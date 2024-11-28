@@ -1,5 +1,5 @@
 {
-  "devDependencies": {
+  "dependencies": {
     "daisyui": "^4.12.14",
     "tailwindcss-motion": "^0.4.3-beta"
   }
