@@ -8,6 +8,7 @@ import gleam/bit_array
 import gleam/crypto
 import gleam/erlang/process.{type Timer}
 import gleam/int
+import gleam/io
 import gleam/result
 import wisp.{type Request, type Response}
 
@@ -17,9 +18,28 @@ pub type Configuration {
 
 pub fn handler(cfg: Configuration) -> Result(fn(Request) -> Response, Nil) {
   use <- setup_check(cfg)
-  use middleware <- result.try(middleware.handler(cfg.db, cfg.dev_mode))
+  use middleware <- result.try(
+    middleware.handler(cfg.db, cfg.dev_mode)
+    |> result.map_error(fn(_) {
+      io.println_error("Could not create middleware handler")
+    }),
+  )
 
-  use priv <- result.try(wisp.priv_directory("backend"))
+  use priv <- result.try(
+    wisp.priv_directory("backend")
+    |> result.map_error(fn(_) {
+      io.println_error("Could not get priv directory")
+    }),
+  )
+
+  use internal_router <- result.try(
+    internal.route(cfg.db)
+    |> result.map_error(fn(error) {
+      io.println_error("Could not create internal router:")
+      io.debug(error)
+      Nil
+    }),
+  )
 
   let default_page = default.page()
 
@@ -35,7 +55,7 @@ pub fn handler(cfg: Configuration) -> Result(fn(Request) -> Response, Nil) {
       ["favicon.ico"] ->
         wisp.ok() |> wisp.set_body(wisp.File(priv <> "/favicon.ico"))
 
-      ["_", ..rest] -> internal.route(req, rest, session, cfg.db)
+      ["_", ..rest] -> internal_router(req, rest, session)
 
       _ -> default_page(req)
     }

@@ -7,11 +7,11 @@ import gleam/otp/actor.{type Next, continue}
 import wisp.{type Response}
 
 pub opaque type Session {
-  Session(actor: Subject(Msg))
+  Session(id: BitArray, actor: Subject(Msg))
 }
 
 type State {
-  State(id: BitArray, user: Option(User))
+  State(user: Option(User))
 }
 
 type Msg {
@@ -22,7 +22,7 @@ type Msg {
 
 fn update(msg: Msg, state: State) -> Next(Msg, State) {
   case msg {
-    SetUser(user) -> continue(State(..state, user: user))
+    SetUser(user) -> continue(State(user: user))
     CurrentState(reply_to) -> {
       process.send(reply_to, state)
       actor.Continue(state, None)
@@ -37,7 +37,7 @@ pub fn new(
   on_error: fn(actor.StartError) -> a,
   next: fn(Session) -> a,
 ) -> a {
-  let state = State(id:, user:)
+  let state = State(user:)
   use actor <-
     fn(next) {
       case actor.start(state, update) {
@@ -47,15 +47,26 @@ pub fn new(
     }
   use <- exception.defer(fn() { process.send(actor, Close) })
 
-  next(Session(actor: actor))
+  next(Session(id:, actor:))
 }
 
 pub fn user(session: Session) -> Option(User) {
   process.call_forever(session.actor, CurrentState).user
 }
 
+pub fn id(session: Session) -> BitArray {
+  session.id
+}
+
 pub fn set_user(session: Session, user: Option(User)) {
   process.send(session.actor, SetUser(user))
+}
+
+pub fn authenticated(session: Session) -> Bool {
+  case user(session) {
+    Some(_) -> True
+    None -> False
+  }
 }
 
 pub fn require_authentication(

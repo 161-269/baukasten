@@ -23,7 +23,7 @@ const session_query_cookie_key = "session-id"
 const user_authenticated_cookie_key = "authenticated"
 
 /// 60 * 60 * 24 * 161
-const session_lifetime_second = 13_910_400
+pub const session_lifetime_second = 13_910_400
 
 pub type Handler =
   fn(Request, fn(Session, List(String)) -> Response) -> Response
@@ -191,15 +191,14 @@ fn set_session_cookie(
     )
 
   let cookie_value = wisp.sign_message(req, id, crypto.Sha224)
-  response.set_cookie(
-    response,
+
+  response
+  |> response.set_cookie(
     session_query_cookie_key,
     cookie_value,
     cookie_attributes,
   )
-
-  response.set_cookie(
-    response,
+  |> response.set_cookie(
     user_authenticated_cookie_key,
     case authenticated {
       True -> "161"

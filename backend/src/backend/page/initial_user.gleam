@@ -44,7 +44,7 @@ pub fn page(
     case wisp.path_segments(req) {
       ["style.css"] -> {
         wisp.response(200)
-        |> wisp.set_header("Content-Type", "text/css; charset=utf-8")
+        |> wisp.set_header("content-type", "text/css; charset=utf-8")
         |> wisp.set_body(wisp.Text(string_tree.from_string(css)))
       }
       ["static", ..] -> {
