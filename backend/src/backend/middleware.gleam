@@ -2,6 +2,7 @@ import backend/database.{type Db}
 import backend/middleware/page_request
 import backend/middleware/session.{type Session} as middleware_session
 import backend/page/error
+import backend/tailwind_new.{type Tailwind}
 import birl
 import exception
 import gleam/bit_array
@@ -28,7 +29,11 @@ pub const session_lifetime_second = 13_910_400
 pub type Handler =
   fn(Request, fn(Session, List(String)) -> Response) -> Response
 
-pub fn handler(db: Db, dev_mode: Bool) -> Result(Handler, Nil) {
+pub fn handler(
+  db: Db,
+  tailwind: Tailwind,
+  dev_mode: Bool,
+) -> Result(Handler, Nil) {
   use page_request <- result.try(page_request.new(db, 5000))
 
   Ok(fn(req: Request, next: fn(Session, List(String)) -> Response) -> Response {
@@ -110,11 +115,17 @@ pub fn handler(db: Db, dev_mode: Bool) -> Result(Handler, Nil) {
       False -> None
     }
 
-    use session <- middleware_session.new(session_id, user, fn(error) {
-      io.println_error("Error creating session:")
-      io.debug(error)
-      error.internal_sever_error(db)
-    })
+    use session <- middleware_session.new(
+      db,
+      tailwind,
+      session_id,
+      user,
+      fn(error) {
+        io.println_error("Error creating session:")
+        io.debug(error)
+        error.internal_sever_error(db)
+      },
+    )
 
     let segments = path_segments(req)
     let response = next(session, segments)

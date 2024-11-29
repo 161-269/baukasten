@@ -10,7 +10,7 @@ import simplifile
 
 @external(erlang, "backend_ffi", "generate_css")
 fn generate_css(
-  cailwind_css_cli_path: List(String),
+  tailwind_css_cli_path: List(String),
   config_path: String,
   output_css_path: String,
   timeout_ms: Int,

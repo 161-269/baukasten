@@ -1,6 +1,7 @@
 import backend/database.{type Db}
 import backend/router
 import backend/tailwind
+import backend/tailwind_new.{type Tailwind}
 import birl
 import gleam/erlang/process.{type Pid, type Subject}
 import gleam/io
@@ -23,7 +24,12 @@ type Msg {
 }
 
 type Server {
-  Server(db: Db, secret_key_base: String, wisp_server: Option(Pid))
+  Server(
+    db: Db,
+    tailwind: Tailwind,
+    secret_key_base: String,
+    wisp_server: Option(Pid),
+  )
 }
 
 type State {
@@ -80,7 +86,7 @@ fn update(msg: Msg, state: State) -> Next(Msg, State) {
         fn(next) {
           case state.server {
             None -> next()
-            Some(Server(_, _, None)) -> update(RestartServer, state)
+            Some(Server(_, _, _, None)) -> update(RestartServer, state)
             Some(_) -> state |> actor.continue
           }
         }
@@ -156,6 +162,21 @@ fn start_server(self: Subject(Msg)) -> Result(Server, Nil) {
     }),
   )
 
+  use tailwind <- result.try(
+    tailwind_new.new()
+    |> result.map_error(fn(error) {
+      io.println_error("Error creating tailwind:")
+      io.debug(error)
+
+      stop()
+    }),
+  )
+
+  let stop = fn() {
+    tailwind_new.close(tailwind)
+    stop()
+  }
+
   use secret_key_base <- result.try(
     database.connection(db, 100, fn(error) { error }, fn(connection) {
       secret_key_base(connection) |> result.map_error(database.SqlightError)
@@ -171,9 +192,14 @@ fn start_server(self: Subject(Msg)) -> Result(Server, Nil) {
   process.start(
     fn() {
       use handler <- result.try(
-        router.Configuration(db:, dev_mode: True, restart: fn(timeout: Int) {
-          process.send_after(self, timeout, RestartServer)
-        })
+        router.Configuration(
+          db:,
+          tailwind:,
+          dev_mode: True,
+          restart: fn(timeout: Int) {
+            process.send_after(self, timeout, RestartServer)
+          },
+        )
         |> router.handler,
       )
 
@@ -197,7 +223,7 @@ fn start_server(self: Subject(Msg)) -> Result(Server, Nil) {
     False,
   )
 
-  Server(db:, secret_key_base:, wisp_server: None) |> Ok
+  Server(db:, tailwind:, secret_key_base:, wisp_server: None) |> Ok
 }
 
 pub fn main() {

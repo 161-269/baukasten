@@ -3,6 +3,7 @@ import backend/middleware
 import backend/page/default
 import backend/page/initial_user
 import backend/router/internal
+import backend/tailwind_new.{type Tailwind}
 import birl
 import gleam/bit_array
 import gleam/crypto
@@ -13,13 +14,18 @@ import gleam/result
 import wisp.{type Request, type Response}
 
 pub type Configuration {
-  Configuration(db: Db, dev_mode: Bool, restart: fn(Int) -> Timer)
+  Configuration(
+    db: Db,
+    tailwind: Tailwind,
+    dev_mode: Bool,
+    restart: fn(Int) -> Timer,
+  )
 }
 
 pub fn handler(cfg: Configuration) -> Result(fn(Request) -> Response, Nil) {
   use <- setup_check(cfg)
   use middleware <- result.try(
-    middleware.handler(cfg.db, cfg.dev_mode)
+    middleware.handler(cfg.db, cfg.tailwind, cfg.dev_mode)
     |> result.map_error(fn(_) {
       io.println_error("Could not create middleware handler")
     }),

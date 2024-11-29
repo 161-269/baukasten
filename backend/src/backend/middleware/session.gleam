@@ -1,4 +1,6 @@
+import backend/database.{type Db}
 import backend/database/user.{type User}
+import backend/tailwind_new.{type Tailwind}
 import exception
 import gleam/erlang/process.{type Subject}
 import gleam/http/response.{Response as HttpResponse}
@@ -7,7 +9,7 @@ import gleam/otp/actor.{type Next, continue}
 import wisp.{type Response}
 
 pub opaque type Session {
-  Session(id: BitArray, actor: Subject(Msg))
+  Session(db: Db, tailwind: Tailwind, id: BitArray, actor: Subject(Msg))
 }
 
 type State {
@@ -32,6 +34,8 @@ fn update(msg: Msg, state: State) -> Next(Msg, State) {
 }
 
 pub fn new(
+  db: Db,
+  tailwind: Tailwind,
   id: BitArray,
   user: Option(User),
   on_error: fn(actor.StartError) -> a,
@@ -47,11 +51,19 @@ pub fn new(
     }
   use <- exception.defer(fn() { process.send(actor, Close) })
 
-  next(Session(id:, actor:))
+  next(Session(db: db, tailwind: tailwind, id:, actor: actor))
 }
 
 pub fn user(session: Session) -> Option(User) {
   process.call_forever(session.actor, CurrentState).user
+}
+
+pub fn db(session: Session) -> Db {
+  session.db
+}
+
+pub fn tailwind(session: Session) -> Tailwind {
+  session.tailwind
 }
 
 pub fn id(session: Session) -> BitArray {
