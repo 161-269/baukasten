@@ -1,4 +1,4 @@
-import backend/tailwind
+import backend/tailwind_new.{type Tailwind}
 import lustre/element
 import lustre/element/html
 import widgets/component.{type Component}
@@ -7,7 +7,7 @@ import widgets/component/container
 import widgets/tailwind/class/typography
 import wisp.{type Request}
 
-pub fn content() -> fn(Request) -> #(List(Component(a, d)), String) {
+pub fn content(tailwind: Tailwind) -> fn(Request) -> List(Component(a, d)) {
   let components = [
     component.br(),
     component.br(),
@@ -302,14 +302,13 @@ und kann direkt in das Baukasten CMS integriert werden.
     ),
   ]
 
-  let assert Ok(tailwind_css) =
-    tailwind.generate_css_for()([
-      html.html([], [
-        html.head([], []),
-        html.body([], components |> component.render),
-      ])
-      |> element.to_document_string,
+  tailwind_new.add_html(
+    tailwind,
+    html.html([], [
+      html.head([], []),
+      html.body([], components |> component.render),
     ])
-
-  fn(_req: Request) { #(components, tailwind_css) }
+      |> element.to_document_string,
+  )
+  fn(_req: Request) { components }
 }

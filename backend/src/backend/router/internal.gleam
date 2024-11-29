@@ -2,7 +2,7 @@ import backend/database.{type Db}
 import backend/middleware
 import backend/middleware/session.{type Session}
 import backend/page/internal/login
-import backend/tailwind
+import backend/tailwind_new.{type Tailwind}
 import birl
 import gleam/http.{Get, Post}
 import gleam/io
@@ -10,26 +10,11 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
-import gleam/string_tree
 import wisp.{type Request, type Response}
 
-fn login(
-  db: Db,
-) -> Result(fn(Request, Session) -> Response, tailwind.TailwindError) {
-  use #(style, login_page) <- result.try(login.page("", "@Baukasten 🛠️"))
-
-  fn(req: Request, session: Session) {
-    use <-
-      fn(next) {
-        case string.ends_with(req.path, ".css") {
-          True ->
-            wisp.response(200)
-            |> wisp.set_header("content-type", "text/css; charset=utf-8")
-            |> wisp.set_body(wisp.Text(string_tree.from_string(style)))
-          False -> next()
-        }
-      }
-
+fn login(db: Db, tailwind: Tailwind) -> fn(Request, Session) -> Response {
+  let login_page = login.page(tailwind, "", "@Baukasten 🛠️")
+  fn(req: Request, sn: Session) {
     use form: Option(wisp.FormData) <-
       fn(next) {
         case req.method {
@@ -84,7 +69,7 @@ fn login(
 
             use _ <- result.try(
               conn.stmts.session.insert_new_or_update(
-                session.id(session),
+                session.id(sn),
                 user.id,
                 middleware.session_lifetime_second * 1000,
                 case
@@ -114,18 +99,17 @@ fn login(
     case result {
       Error(error) -> login_page(req.path, error)
       Ok(user) -> {
-        session.set_user(session, Some(user))
+        session.set_user(sn, Some(user))
         wisp.redirect("/_")
       }
     }
   }
-  |> Ok
 }
 
-fn logout(db: Db, req: Request, session: Session) -> Response {
+fn logout(db: Db, req: Request, sn: Session) -> Response {
   case
     {
-      case session.authenticated(session) {
+      case session.authenticated(sn) {
         False -> Ok(Nil)
         True -> {
           use conn <- database.connection(db, 1000, fn(error) {
@@ -137,7 +121,7 @@ fn logout(db: Db, req: Request, session: Session) -> Response {
 
           use _ <- result.try(
             conn.stmts.session.update_by_key(
-              session.id(session),
+              session.id(sn),
               Some(0),
               case
                 list.find(req.headers, fn(header) {
@@ -157,7 +141,7 @@ fn logout(db: Db, req: Request, session: Session) -> Response {
             }),
           )
 
-          session.set_user(session, None)
+          session.set_user(sn, None)
           Ok(Nil)
         }
       }
@@ -172,11 +156,9 @@ fn logout(db: Db, req: Request, session: Session) -> Response {
 
 pub fn route(
   db: Db,
-) -> Result(
-  fn(Request, List(String), Session) -> Response,
-  tailwind.TailwindError,
-) {
-  use login <- result.try(login(db))
+  tailwind: Tailwind,
+) -> fn(Request, List(String), Session) -> Response {
+  let login = login(db, tailwind)
 
   fn(req: Request, path: List(String), session: Session) {
     case path {
@@ -195,5 +177,4 @@ pub fn route(
       }
     }
   }
-  |> Ok
 }

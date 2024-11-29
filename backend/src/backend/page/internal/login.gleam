@@ -1,32 +1,30 @@
 import backend/page/layout
-import backend/tailwind
-import gleam/result
+import backend/tailwind_new.{type Tailwind}
 import lustre/attribute
 import lustre/element.{type Element}
 import lustre/element/html
 import wisp.{type Response}
 
 pub fn page(
+  tailwind: Tailwind,
   title_prefix: String,
   title_suffix: String,
-) -> Result(#(String, fn(String, String) -> Response), tailwind.TailwindError) {
+) -> fn(String, String) -> Response {
   let title = title_prefix <> "Login" <> title_suffix
 
   let layout = layout.minimal()
 
   let default_body = body("/login", "")
-  let html =
-    layout(title, "style.css", [], default_body) |> element.to_document_string()
+  let html = layout(title, [], default_body) |> element.to_document_string()
 
-  use style <- result.try(tailwind.generate_css_for()([html]))
+  tailwind_new.add_html(tailwind, html)
 
-  #(style, fn(path: String, error: String) -> Response {
+  fn(path: String, error: String) -> Response {
     body(path, error)
-    |> layout(title, path <> ".css", [], _)
+    |> layout(title, [], _)
     |> element.to_document_string_builder()
     |> wisp.html_response(200)
-  })
-  |> Ok
+  }
 }
 
 fn body(path: String, error: String) -> List(Element(a)) {

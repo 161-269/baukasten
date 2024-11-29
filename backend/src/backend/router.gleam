@@ -11,6 +11,7 @@ import gleam/erlang/process.{type Timer}
 import gleam/int
 import gleam/io
 import gleam/result
+import gleam/string_tree
 import wisp.{type Request, type Response}
 
 pub type Configuration {
@@ -38,16 +39,9 @@ pub fn handler(cfg: Configuration) -> Result(fn(Request) -> Response, Nil) {
     }),
   )
 
-  use internal_router <- result.try(
-    internal.route(cfg.db)
-    |> result.map_error(fn(error) {
-      io.println_error("Could not create internal router:")
-      io.debug(error)
-      Nil
-    }),
-  )
+  let internal_router = internal.route(cfg.db, cfg.tailwind)
 
-  let default_page = default.page()
+  let default_page = default.page(cfg.tailwind)
 
   fn(req: Request) -> Response {
     use session, path <- middleware(req)
@@ -57,6 +51,13 @@ pub fn handler(cfg: Configuration) -> Result(fn(Request) -> Response, Nil) {
         use <- wisp.serve_static(req, under: "/static", from: priv)
         default_page(req)
       }
+
+      ["style.css"] ->
+        wisp.response(200)
+        |> wisp.set_header("content-type", "text/css; charset=utf-8")
+        |> wisp.set_body(wisp.Text(
+          tailwind_new.get_style(cfg.tailwind) |> string_tree.from_string,
+        ))
 
       ["favicon.ico"] ->
         wisp.ok() |> wisp.set_body(wisp.File(priv <> "/favicon.ico"))

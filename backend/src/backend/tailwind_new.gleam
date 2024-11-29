@@ -35,7 +35,7 @@ type State {
     next_waiting: List(Subject(String)),
     validity: Validity,
     timer: Option(Timer),
-    compilation: Option(Task(Result(String, TailwindError))),
+    compilation: Option(Task(Nil)),
   )
 }
 
@@ -51,14 +51,10 @@ fn init() -> State {
   )
 }
 
-fn compile(
-  self: Subject(Msg),
-  html: List(String),
-) -> Task(Result(String, TailwindError)) {
+fn compile(self: Subject(Msg), html: List(String)) -> Task(Nil) {
   task.async(fn() {
     let result = tailwind.generate_css_for()(html)
     process.send(self, CompilationDone(self, result))
-    result
   })
 }
 
