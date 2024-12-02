@@ -1,10 +1,9 @@
 import backend/tailwind.{type TailwindError}
-import gleam/erlang/process.{type Subject, type Timer}
+import gleam/erlang/process.{type Pid, type Subject, type Timer}
 import gleam/io
 import gleam/list
 import gleam/option.{type Option, None, Some}
-import gleam/otp/actor.{type Next, Stop, continue}
-import gleam/otp/task.{type Task}
+import gleam/otp/actor.{type Next, type StartError, Stop, continue}
 import gleam/result
 
 pub opaque type Tailwind {
@@ -35,7 +34,7 @@ type State {
     next_waiting: List(Subject(String)),
     validity: Validity,
     timer: Option(Timer),
-    compilation: Option(Task(Nil)),
+    compilation: Option(Pid),
   )
 }
 
@@ -51,11 +50,17 @@ fn init() -> State {
   )
 }
 
-fn compile(self: Subject(Msg), html: List(String)) -> Task(Nil) {
-  task.async(fn() {
-    let result = tailwind.generate_css_for()(html)
-    process.send(self, CompilationDone(self, result))
-  })
+fn compile(self: Subject(Msg), html: List(String)) -> Result(Pid, StartError) {
+  use task <- result.try(
+    actor.start(Nil, fn(_, _) {
+      let result = tailwind.generate_css_for()(html)
+      process.send(self, CompilationDone(self, result))
+      Stop(process.Normal)
+    }),
+  )
+  process.send(task, Nil)
+
+  Ok(process.subject_owner(task))
 }
 
 fn update(msg: Msg, state: State) -> Next(Msg, State) {
@@ -89,24 +94,43 @@ fn update(msg: Msg, state: State) -> Next(Msg, State) {
       )
 
     Compile(self) -> {
-      let compilation = compile(self, state.html)
-
-      continue(
-        State(
-          ..state,
-          validity: Compiling,
-          timer: case state.timer {
-            Some(timer) -> {
-              process.cancel_timer(timer)
-              None
-            }
-            None -> None
-          },
-          compilation: Some(compilation),
-          waiting: list.flatten([state.waiting, state.next_waiting]),
-          next_waiting: [],
-        ),
-      )
+      case compile(self, state.html) {
+        Ok(compilation) ->
+          continue(
+            State(
+              ..state,
+              validity: Compiling,
+              timer: case state.timer {
+                Some(timer) -> {
+                  process.cancel_timer(timer)
+                  None
+                }
+                None -> None
+              },
+              compilation: Some(compilation),
+              waiting: list.flatten([state.waiting, state.next_waiting]),
+              next_waiting: [],
+            ),
+          )
+        Error(error) -> {
+          io.println_error("Could not start compilation:")
+          io.debug(error)
+          update(
+            CompileAfter(self, 250),
+            State(
+              ..state,
+              validity: Invalid,
+              timer: case state.timer {
+                Some(timer) -> {
+                  process.cancel_timer(timer)
+                  None
+                }
+                None -> None
+              },
+            ),
+          )
+        }
+      }
     }
 
     CompilationDone(self, result) ->
@@ -167,7 +191,7 @@ fn update(msg: Msg, state: State) -> Next(Msg, State) {
         None -> Nil
       }
       case state.compilation {
-        Some(compilation) -> process.kill(task.pid(compilation))
+        Some(compilation) -> process.kill(compilation)
         None -> Nil
       }
       Stop(process.Normal)
