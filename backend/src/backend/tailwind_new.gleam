@@ -10,6 +10,11 @@ pub opaque type Tailwind {
   Tailwind(actor: Subject(Msg))
 }
 
+type Either(a, b) {
+  Left(a)
+  Right(b)
+}
+
 type Msg {
   AddHtml(self: Subject(Msg), html: String)
   GetStyle(self: Subject(Msg), reply_to: Subject(String))
@@ -50,13 +55,21 @@ fn init() -> State {
   )
 }
 
-fn compile(self: Subject(Msg), html: List(String)) -> Result(Pid, StartError) {
+fn compile(
+  self: Subject(Msg),
+  html: List(String),
+) -> Result(Pid, Either(TailwindError, StartError)) {
+  use generator <- result.try(
+    tailwind.generate_css_for() |> result.map_error(Left),
+  )
+
   use task <- result.try(
     actor.start(Nil, fn(_, _) {
-      let result = tailwind.generate_css_for()(html)
+      let result = generator(html)
       process.send(self, CompilationDone(self, result))
       Stop(process.Normal)
-    }),
+    })
+    |> result.map_error(Right),
   )
   process.send(task, Nil)
 

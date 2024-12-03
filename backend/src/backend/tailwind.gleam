@@ -1,3 +1,4 @@
+import exception
 import gleam/int
 import gleam/io
 import gleam/json
@@ -10,7 +11,8 @@ import simplifile
 
 @external(erlang, "backend_ffi", "generate_css")
 fn generate_css(
-  tailwind_css_cli_path: List(String),
+  working_directory: String,
+  tailwind_css_cli_path: String,
   config_path: String,
   output_css_path: String,
   timeout_ms: Int,
@@ -22,13 +24,8 @@ fn unique_int() -> Int
 const temporary_files_directory = "./tmp/tailwind"
 
 pub type TailwindError {
-  TemporaryDirectoryPermissionError(simplifile.FileError)
-  TemporaryDirectoryNotFoundError(simplifile.FileError)
-  CouldNotCreateTemporaryDirectory(simplifile.FileError)
   CouldNotGetTempraryAbsolutePath(simplifile.FileError)
-  CanNotFindTailwindCssCli
   ErrorFindingTailwindCssCli(simplifile.FileError)
-  CanNotFindNodeModules
   ErrorFindingNodeModules(simplifile.FileError)
   CouldNotCreateUniqueTemporaryDirectory(simplifile.FileError)
   CouldNotDeleteUniqueTemporaryDirectory(simplifile.FileError)
@@ -36,18 +33,29 @@ pub type TailwindError {
   CouldNotWriteTailwindConfigFile(simplifile.FileError)
   CouldNotGenerateCss(String)
   CouldNotReadCssOutputFile(simplifile.FileError)
+
+  //
+  CanNotGetCurrentWorkingDirectory(simplifile.FileError)
+  CheckPathPermissionError(simplifile.FileError)
+  CanNotFindTailwindCssCli(Option(TailwindError))
+  CanNotFindNodeModules(Option(TailwindError))
+
+  TemporaryDirectoryPermissionError(simplifile.FileError)
+  TemporaryDirectoryNotFoundError(simplifile.FileError)
+  CouldNotCreateTemporaryDirectory(simplifile.FileError)
 }
 
 pub fn delete_temporary_files() -> Result(Nil, TailwindError) {
-  use _ <- result.then(case simplifile.is_directory(temporary_files_directory) {
-    Ok(exists) ->
-      case exists {
-        True ->
-          simplifile.delete(temporary_files_directory)
-          |> result.map_error(TemporaryDirectoryNotFoundError)
-        False -> Ok(Nil)
-      }
-    Error(error) -> Error(TemporaryDirectoryPermissionError(error))
+  use exists <- result.try(
+    simplifile.is_directory(temporary_files_directory)
+    |> result.map_error(TemporaryDirectoryPermissionError),
+  )
+
+  use _ <- result.try(case exists {
+    True ->
+      simplifile.delete(temporary_files_directory)
+      |> result.map_error(TemporaryDirectoryNotFoundError)
+    False -> Ok(Nil)
   })
 
   simplifile.create_directory_all(temporary_files_directory)
@@ -58,19 +66,22 @@ fn find(
   prefixes: List(String),
   elements: List(String),
   is_file: Bool,
-) -> Result(Option(String), simplifile.FileError) {
-  list.fold_until(elements, Ok(None), fn(_, element) {
-    case
-      list.fold_until(prefixes, Ok(None), fn(_, prefix) {
-        let func = case is_file {
-          True -> simplifile.is_file
-          False -> simplifile.is_directory
-        }
+) -> Result(Option(String), TailwindError) {
+  let check_path = fn(path) {
+    case is_file {
+      True -> simplifile.is_file
+      False -> simplifile.is_directory
+    }(path)
+    |> result.map_error(CheckPathPermissionError)
+  }
 
+  list.fold_until(elements, Ok(None), fn(_, element) {
+    let inner =
+      list.fold_until(prefixes, Ok(None), fn(_, prefix) {
         let path = prefix <> element
-        case abolute_path(path) {
+        case absolute_path(path) {
           Ok(path) ->
-            case func(path) {
+            case check_path(path) {
               Ok(True) -> Stop(Ok(Some(path)))
               Ok(False) -> Continue(Ok(None))
               Error(error) -> Stop(Error(error))
@@ -78,10 +89,10 @@ fn find(
           Error(error) -> Stop(Error(error))
         }
       })
-    {
-      Ok(Some(path)) -> Stop(Ok(Some(path)))
-      Ok(None) -> Continue(Ok(None))
-      Error(error) -> Stop(Error(error))
+
+    case inner {
+      Ok(Some(_)) | Error(_) -> Stop(inner)
+      Ok(None) -> Continue(inner)
     }
   })
 }
@@ -247,34 +258,33 @@ fn tailwind_css_config(
   |> string_tree.to_string
 }
 
-pub fn generate_css_for() -> fn(List(String)) -> Result(String, TailwindError) {
-  let requirements =
-    abolute_path(temporary_files_directory)
-    |> result.map_error(CouldNotGetTempraryAbsolutePath)
-    |> result.then(fn(temporary_path) {
-      find(["./", "../"], ["tailwind-css-cli", "tailwind-css-cli.exe"], True)
-      |> result.map_error(ErrorFindingTailwindCssCli)
-      |> result.then(fn(tailwind_css_cli_path) {
-        case tailwind_css_cli_path {
-          None -> Error(CanNotFindTailwindCssCli)
-          Some(tailwind_css_cli_path) ->
-            find(["./", "../"], ["node_modules"], False)
-            |> result.map_error(ErrorFindingNodeModules)
-            |> result.then(fn(node_modules_path) {
-              case node_modules_path {
-                None -> Error(CanNotFindNodeModules)
-                Some(node_modules_path) ->
-                  Ok(#(temporary_path, tailwind_css_cli_path, node_modules_path))
-              }
-            })
-        }
-      })
-    })
+pub fn generate_css_for() -> Result(
+  fn(List(String)) -> Result(String, TailwindError),
+  TailwindError,
+) {
+  use temporary_path <- result.try(absolute_path(temporary_files_directory))
+
+  use tailwind_css_cli_path <- result.try(
+    find(["./", "../"], ["tailwind-css-cli", "tailwind-css-cli.exe"], True)
+    |> result.map_error(fn(error) { CanNotFindTailwindCssCli(Some(error)) }),
+  )
+
+  use tailwind_css_cli_path <- result.try(case tailwind_css_cli_path {
+    None -> Error(CanNotFindTailwindCssCli(None))
+    Some(tailwind_css_cli_path) -> Ok(tailwind_css_cli_path)
+  })
+
+  use node_modules_path <- result.try(
+    find(["./", "../"], ["node_modules"], False)
+    |> result.map_error(fn(error) { CanNotFindNodeModules(Some(error)) }),
+  )
+
+  use node_modules_path <- result.try(case node_modules_path {
+    None -> Error(CanNotFindNodeModules(None))
+    Some(node_modules_path) -> Ok(node_modules_path)
+  })
 
   fn(html: List(String)) {
-    use #(temporary_path, tailwind_css_cli_path, node_modules_path) <- result.then(
-      requirements,
-    )
     let temporary_path = temporary_path <> "/" <> int.to_string(unique_int())
     let tailwind_css_config_path = temporary_path <> "/tailwind.config.js"
     let css_output_path = temporary_path <> "/output.css"
@@ -286,6 +296,26 @@ pub fn generate_css_for() -> fn(List(String)) -> Result(String, TailwindError) {
 
     let result =
       fn() {
+        use <- exception.defer(fn() {
+          case simplifile.is_directory(temporary_path) {
+            Ok(True) -> {
+              let _ =
+                simplifile.delete(temporary_path)
+                |> result.map_error(fn(error) {
+                  io.println_error("Error deleting temporary directory:")
+                  io.debug(error)
+                })
+              Nil
+            }
+            Ok(False) -> Nil
+            Error(error) -> {
+              io.println_error("Error checking temporary directory:")
+              io.debug(error)
+              Nil
+            }
+          }
+        })
+
         use _ <- result.then(
           list.fold_until(html, Ok(0), fn(index, html) {
             case index {
@@ -315,7 +345,8 @@ pub fn generate_css_for() -> fn(List(String)) -> Result(String, TailwindError) {
 
         use log <- result.then(
           generate_css(
-            [tailwind_css_cli_path],
+            temporary_path,
+            tailwind_css_cli_path,
             tailwind_css_config_path,
             css_output_path,
             30_000,
@@ -329,22 +360,21 @@ pub fn generate_css_for() -> fn(List(String)) -> Result(String, TailwindError) {
         |> result.map_error(CouldNotReadCssOutputFile)
       }()
 
-    let delete_result =
-      simplifile.delete(temporary_path)
-      |> result.map_error(CouldNotDeleteUniqueTemporaryDirectory)
-
-    result.then(result, fn(result) {
-      delete_result |> result.map(fn(_) { result })
-    })
+    result
   }
+  |> Ok
 }
 
-fn abolute_path(path: String) -> Result(String, simplifile.FileError) {
-  use cwd <- result.then(simplifile.current_directory())
-  let path = case string.slice(path, 0, 1) {
-    "/" -> path
+fn absolute_path(path: String) -> Result(String, TailwindError) {
+  use cwd <- result.then(
+    simplifile.current_directory()
+    |> result.map_error(CanNotGetCurrentWorkingDirectory),
+  )
+  let path = case path {
+    "/" <> _ -> path
     _ -> cwd <> "/" <> path
   }
+
   let result =
     path
     |> string.replace("\\", "/")
@@ -361,8 +391,8 @@ fn abolute_path(path: String) -> Result(String, simplifile.FileError) {
     })
     |> string.join("/")
 
-  Ok(case string.slice(path, 0, 1) {
-    "/" -> "/" <> result
-    _ -> result
+  Ok(case result {
+    "/" <> _ -> result
+    _ -> "/" <> result
   })
 }

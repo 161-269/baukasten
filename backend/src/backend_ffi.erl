@@ -1,68 +1,34 @@
 -module(backend_ffi).
 -include_lib("kernel/include/file.hrl").
--export([generate_css/4, unique_int/0]).
+-export([generate_css/5, unique_int/0]).
 
+-spec unique_int() -> non_neg_integer().
 unique_int() ->
     erlang:unique_integer([monotonic, positive]).
 
-generate_css(TailwindCliPaths, ConfigPath, OutputCssPath, Timeout) ->
-    case find_executable(TailwindCliPaths) of
-        {ok, TailwindCliPath} ->
-            Args = ["-c", ConfigPath, "-o", OutputCssPath, "--minify"],
+-spec generate_css(binary(), binary(), binary(), binary(), non_neg_integer()) ->
+    {ok, binary()} | {error, binary()}.
+generate_css(WorkingDirectory, TailwindCliPath, ConfigPath, OutputCssPath, Timeout) ->
+    Args = ["--config", ConfigPath, "--output", OutputCssPath, "--minify"],
 
-            PortSettings = [
-                exit_status,
-                use_stdio,
-                stderr_to_stdout,
-                binary,
-                {args, Args}
-            ],
+    PortSettings = [
+        {cd, WorkingDirectory},
+        exit_status,
+        use_stdio,
+        stderr_to_stdout,
+        binary,
+        {args, Args}
+    ],
 
-            Port = open_port({spawn_executable, TailwindCliPath}, PortSettings),
+    Port = erlang:open_port({spawn_executable, TailwindCliPath}, PortSettings),
 
-            case erlang:port_info(Port, os_pid) of
-                {os_pid, OSPid} ->
-                    StartTime = erlang:monotonic_time(millisecond),
-                    receive_output(Port, Timeout, OSPid, StartTime, []);
-                _ ->
-                    port_close(Port),
-                    {error, <<"Error: Could not get OS process ID.">>}
-            end;
-        {error, Reason} ->
-            {error, Reason}
-    end.
-
-find_executable([Path | Rest]) ->
-    case check_executable(Path) of
-        true ->
-            {ok, Path};
-        false ->
-            find_executable(Rest)
-    end;
-find_executable([]) ->
-    {error, <<"Error: No executable Tailwind CSS CLI found in the provided paths.">>}.
-
-check_executable(Path) ->
-    case file:read_file_info(Path) of
-        {ok, FileInfo} ->
-            FileType = FileInfo#file_info.type,
-            Mode = FileInfo#file_info.mode,
-            Executable = is_executable(Mode),
-            (FileType == regular) andalso Executable;
+    case erlang:port_info(Port, os_pid) of
+        {os_pid, OSPid} ->
+            StartTime = erlang:monotonic_time(millisecond),
+            receive_output(Port, Timeout, OSPid, StartTime, []);
         _ ->
-            false
-    end.
-
-is_executable(Mode) ->
-    case os:type() of
-        {win32, _} ->
-            true;
-        {unix, _} ->
-            (Mode band 16) /= 0 orelse
-                (Mode band 8) /= 0 orelse
-                (Mode band 1) /= 0;
-        _ ->
-            false
+            port_close(Port),
+            {error, <<"Error: Could not get OS process ID.">>}
     end.
 
 receive_output(Port, Timeout, OSPid, StartTime, AccumulatedOutput) ->

@@ -291,7 +291,8 @@ fn form_page() -> #(fn(String, Int, Form) -> Response, String) {
   }
 
   let assert Ok(tailwind_css) =
-    tailwind.generate_css_for()([page_html("", 0, new_form())])
+    tailwind.generate_css_for()
+    |> result.then(fn(next) { next([page_html("", 0, new_form())]) })
 
   #(
     fn(error_message: String, redirect: Int, form: Form) {
