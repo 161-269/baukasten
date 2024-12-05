@@ -21,6 +21,8 @@ CREATE TABLE "user" (
 	"id"	INTEGER NOT NULL UNIQUE,
 	"username"	TEXT NOT NULL UNIQUE COLLATE NOCASE,
 	"email"	TEXT NOT NULL UNIQUE COLLATE NOCASE,
+	-- TODO: full_name
+	-- TODO: display_name
 	"password"	BLOB NOT NULL,
 	"read_changelog_version" TEXT,
 	CHECK("username" LIKE '__%' AND "username" NOT LIKE '%@%' AND "email" LIKE '%_@_%'),
