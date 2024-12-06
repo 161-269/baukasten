@@ -9,15 +9,6 @@ import gleam/string
 import gleam/string_tree
 import simplifile
 
-@external(erlang, "backend_ffi", "generate_css")
-fn generate_css(
-  working_directory: String,
-  tailwind_css_cli_path: String,
-  config_path: String,
-  output_css_path: String,
-  timeout_ms: Int,
-) -> Result(String, String)
-
 @external(erlang, "backend_ffi", "unique_int")
 fn unique_int() -> Int
 
@@ -27,13 +18,13 @@ pub type TailwindError {
   CouldNotGetTempraryAbsolutePath(simplifile.FileError)
   ErrorFindingTailwindCssCli(simplifile.FileError)
   ErrorFindingNodeModules(simplifile.FileError)
-  CouldNotCreateUniqueTemporaryDirectory(simplifile.FileError)
   CouldNotDeleteUniqueTemporaryDirectory(simplifile.FileError)
   CouldNotWriteHtmlFile(simplifile.FileError)
-  CouldNotWriteTailwindConfigFile(simplifile.FileError)
   CouldNotGenerateCss(String)
   CouldNotReadCssOutputFile(simplifile.FileError)
 
+  CouldNotWriteTailwindConfigFile(simplifile.FileError)
+  CouldNotCreateUniqueTemporaryDirectory(simplifile.FileError)
   //
   CanNotGetCurrentWorkingDirectory(simplifile.FileError)
   CheckPathPermissionError(simplifile.FileError)
@@ -258,8 +249,16 @@ fn tailwind_css_config(
   |> string_tree.to_string
 }
 
-pub fn generate_css_for() -> Result(
-  fn(List(String)) -> Result(String, TailwindError),
+type Environment {
+  Environment(
+    temporary_path: String,
+    tailwind_css_cli_path: String,
+    css_output_path: String,
+  )
+}
+
+fn setup_environment() -> Result(
+  fn(fn(Environment) -> Result(a, TailwindError)) -> Result(a, TailwindError),
   TailwindError,
 ) {
   use temporary_path <- result.try(absolute_path(temporary_files_directory))
@@ -284,7 +283,10 @@ pub fn generate_css_for() -> Result(
     Some(node_modules_path) -> Ok(node_modules_path)
   })
 
-  fn(html: List(String)) {
+  fn(next: fn(Environment) -> Result(a, TailwindError)) -> Result(
+    a,
+    TailwindError,
+  ) {
     let temporary_path = temporary_path <> "/" <> int.to_string(unique_int())
     let tailwind_css_config_path = temporary_path <> "/tailwind.config.js"
     let css_output_path = temporary_path <> "/output.css"
@@ -294,75 +296,118 @@ pub fn generate_css_for() -> Result(
       |> result.map_error(CouldNotCreateUniqueTemporaryDirectory),
     )
 
-    let result =
-      fn() {
-        use <- exception.defer(fn() {
-          case simplifile.is_directory(temporary_path) {
-            Ok(True) -> {
-              let _ =
-                simplifile.delete(temporary_path)
-                |> result.map_error(fn(error) {
-                  io.println_error("Error deleting temporary directory:")
-                  io.debug(error)
-                })
-              Nil
-            }
-            Ok(False) -> Nil
-            Error(error) -> {
-              io.println_error("Error checking temporary directory:")
+    use <- exception.defer(fn() {
+      case simplifile.is_directory(temporary_path) {
+        Ok(True) -> {
+          let _ =
+            simplifile.delete(temporary_path)
+            |> result.map_error(fn(error) {
+              io.println_error("Error deleting temporary directory:")
               io.debug(error)
-              Nil
-            }
-          }
-        })
+            })
+          Nil
+        }
+        Ok(False) -> Nil
+        Error(error) -> {
+          io.println_error("Error checking temporary directory:")
+          io.debug(error)
+          Nil
+        }
+      }
+    })
 
-        use _ <- result.then(
-          list.fold_until(html, Ok(0), fn(index, html) {
-            case index {
-              Ok(index) -> {
-                case
-                  simplifile.write(
-                    temporary_path <> "/" <> int.to_string(index) <> ".html",
-                    html,
-                  )
-                {
-                  Ok(_) -> Continue(Ok(index + 1))
-                  Error(error) -> Stop(Error(CouldNotWriteHtmlFile(error)))
-                }
-              }
-              Error(error) -> Stop(Error(error))
-            }
-          }),
-        )
+    use _ <- result.then(
+      simplifile.write(
+        tailwind_css_config_path,
+        tailwind_css_config(temporary_path, node_modules_path),
+      )
+      |> result.map_error(CouldNotWriteTailwindConfigFile),
+    )
 
-        use _ <- result.then(
-          simplifile.write(
-            tailwind_css_config_path,
-            tailwind_css_config(temporary_path, node_modules_path),
-          )
-          |> result.map_error(CouldNotWriteTailwindConfigFile),
-        )
-
-        use log <- result.then(
-          generate_css(
-            temporary_path,
-            tailwind_css_cli_path,
-            tailwind_css_config_path,
-            css_output_path,
-            30_000,
-          )
-          |> result.map_error(CouldNotGenerateCss),
-        )
-
-        io.println(log)
-
-        simplifile.read(css_output_path)
-        |> result.map_error(CouldNotReadCssOutputFile)
-      }()
-
-    result
+    next(Environment(temporary_path:, tailwind_css_cli_path:, css_output_path:))
   }
   |> Ok
+}
+
+fn generate_css_for_() {
+  use environment <- result.try(setup_environment())
+
+  fn(html: List(String)) {
+    use environment <- environment()
+
+    let #(html, _) =
+      list.fold(html, #([], 0), fn(acc, html) {
+        let #(acc, index) = acc
+        #([#(index, html), ..acc], index + 1)
+      })
+
+    use _ <- result.try(
+      list.try_each(html, fn(html) {
+        let #(index, html) = html
+        simplifile.write(
+          environment.temporary_path <> "/" <> int.to_string(index) <> ".html",
+          html,
+        )
+      })
+      |> result.map_error(CouldNotWriteHtmlFile),
+    )
+
+    todo
+  }
+  |> Ok
+}
+
+pub fn generate_css_for() -> Result(
+  fn(List(String)) -> Result(String, TailwindError),
+  TailwindError,
+) {
+  //  use environment <- setup_environment()
+
+  //  fn(html: List(String)) {
+  //    use environment <- environment()
+
+  todo
+  //    let result =
+  //      fn() {
+  //        use _ <- result.then(
+  //          list.fold_until(html, Ok(0), fn(index, html) {
+  //            case index {
+  //              Ok(index) -> {
+  //                case
+  //                  simplifile.write(
+  //                    temporary_path <> "/" <> int.to_string(index) <> ".html",
+  //                    html,
+  //                  )
+  //                {
+  //                  Ok(_) -> Continue(Ok(index + 1))
+  //                  Error(error) -> Stop(Error(CouldNotWriteHtmlFile(error)))
+  //                }
+  //              }
+  //              Error(error) -> Stop(Error(error))
+  //            }
+  //          }),
+  //        )
+
+  //        use log <- result.then(
+  //          generate_css(
+  //            temporary_path,
+  //            tailwind_css_cli_path,
+  //            tailwind_css_config_path,
+  //            css_output_path,
+  //            30_000,
+  //          )
+  //          |> result.map_error(CouldNotGenerateCss),
+  //        )
+  //
+  //        io.println(log)
+
+  //       simplifile.read(css_output_path)
+  //       |> result.map_error(CouldNotReadCssOutputFile)
+  //     }()
+  //
+  //   result
+  //  }
+  //  |> Ok
 }
 
 fn absolute_path(path: String) -> Result(String, TailwindError) {
