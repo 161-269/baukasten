@@ -1,5 +1,5 @@
 import backend/content
-import backend/tailwind_new.{type Tailwind}
+import backend/tailwind.{type Tailwind}
 import gleam/json
 import lustre/attribute
 import lustre/element

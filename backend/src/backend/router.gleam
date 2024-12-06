@@ -3,7 +3,7 @@ import backend/middleware
 import backend/page/default
 import backend/page/initial_user
 import backend/router/internal
-import backend/tailwind_new.{type Tailwind}
+import backend/tailwind.{type Tailwind}
 import birl
 import gleam/bit_array
 import gleam/crypto
@@ -56,7 +56,7 @@ pub fn handler(cfg: Configuration) -> Result(fn(Request) -> Response, Nil) {
         wisp.response(200)
         |> wisp.set_header("content-type", "text/css; charset=utf-8")
         |> wisp.set_body(wisp.Text(
-          tailwind_new.get_style(cfg.tailwind) |> string_tree.from_string,
+          tailwind.get_style(cfg.tailwind) |> string_tree.from_string,
         ))
 
       ["favicon.ico"] ->
@@ -106,7 +106,7 @@ fn setup_check(
   })
 
   let initial_user_page =
-    initial_user.page(cfg.db, initial_password.value, cfg.restart)
+    initial_user.page(cfg.tailwind, cfg.db, initial_password.value, cfg.restart)
 
   fn(req: Request) -> Response { initial_user_page(req) } |> Ok
 }

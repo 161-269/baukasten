@@ -1,5 +1,5 @@
 import backend/database.{type Db}
-import backend/tailwind
+import backend/tailwind.{type Tailwind}
 import gleam/erlang/process.{type Timer}
 import gleam/int
 import gleam/io
@@ -13,6 +13,7 @@ import lustre/element/html
 import wisp.{type Request, type Response}
 
 pub fn page(
+  tailwind: Tailwind,
   db: Db,
   initial_password: String,
   restart: fn(Int) -> Timer,
@@ -38,14 +39,16 @@ pub fn page(
 
   let assert Ok(priv) = wisp.priv_directory("backend")
 
-  let #(form, css) = form_page()
+  let form = form_page(tailwind)
 
   fn(req: Request) -> Response {
     case wisp.path_segments(req) {
       ["style.css"] -> {
         wisp.response(200)
         |> wisp.set_header("content-type", "text/css; charset=utf-8")
-        |> wisp.set_body(wisp.Text(string_tree.from_string(css)))
+        |> wisp.set_body(
+          wisp.Text(string_tree.from_string(tailwind.get_style(tailwind))),
+        )
       }
       ["static", ..] -> {
         use <- wisp.serve_static(req, under: "/static", from: priv)
@@ -182,7 +185,7 @@ fn new_form() -> Form {
   )
 }
 
-fn form_page() -> #(fn(String, Int, Form) -> Response, String) {
+fn form_page(tailwind: Tailwind) -> fn(String, Int, Form) -> Response {
   let page_html = fn(error_message: String, redirect: Int, form: Form) -> String {
     html.html([attribute.attribute("lang", "en")], [
       html.head([], [
@@ -290,17 +293,12 @@ fn form_page() -> #(fn(String, Int, Form) -> Response, String) {
     |> element.to_document_string
   }
 
-  let assert Ok(tailwind_css) =
-    tailwind.generate_css_for()
-    |> result.then(fn(next) { next([page_html("", 0, new_form())]) })
+  tailwind.add_html(tailwind, page_html("", 0, new_form()))
 
-  #(
-    fn(error_message: String, redirect: Int, form: Form) {
-      wisp.html_response(
-        string_tree.from_string(page_html(error_message, redirect, form)),
-        200,
-      )
-    },
-    tailwind_css,
-  )
+  fn(error_message: String, redirect: Int, form: Form) {
+    wisp.html_response(
+      string_tree.from_string(page_html(error_message, redirect, form)),
+      200,
+    )
+  }
 }

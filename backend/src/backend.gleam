@@ -1,7 +1,6 @@
 import backend/database.{type Db}
 import backend/router
-import backend/tailwind
-import backend/tailwind_new.{type Tailwind}
+import backend/tailwind.{type Tailwind}
 import birl
 import gleam/erlang/process.{type Pid, type Subject}
 import gleam/io
@@ -163,7 +162,7 @@ fn start_server(self: Subject(Msg)) -> Result(Server, Nil) {
   )
 
   use tailwind <- result.try(
-    tailwind_new.new()
+    tailwind.new()
     |> result.map_error(fn(error) {
       io.println_error("Error creating tailwind:")
       io.debug(error)
@@ -173,7 +172,7 @@ fn start_server(self: Subject(Msg)) -> Result(Server, Nil) {
   )
 
   let stop = fn() {
-    tailwind_new.close(tailwind)
+    tailwind.close(tailwind)
     stop()
   }
 

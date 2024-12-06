@@ -1,4 +1,4 @@
-import backend/tailwind_new.{type Tailwind}
+import backend/tailwind.{type Tailwind}
 import lustre/element
 import lustre/element/html
 import widgets/component.{type Component}
@@ -302,7 +302,7 @@ und kann direkt in das Baukasten CMS integriert werden.
     ),
   ]
 
-  tailwind_new.add_html(
+  tailwind.add_html(
     tailwind,
     html.html([], [
       html.head([], []),

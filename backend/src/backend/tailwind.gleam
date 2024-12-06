@@ -1,9 +1,11 @@
-import exception
+import backend/executable
+import gleam/erlang/process.{type Pid, type Subject, type Timer}
 import gleam/int
 import gleam/io
 import gleam/json
-import gleam/list.{Continue, Stop}
+import gleam/list
 import gleam/option.{type Option, None, Some}
+import gleam/otp/actor.{type Next, type StartError, Stop, continue}
 import gleam/result
 import gleam/string
 import gleam/string_tree
@@ -15,25 +17,58 @@ fn unique_int() -> Int
 const temporary_files_directory = "./tmp/tailwind"
 
 pub type TailwindError {
-  CouldNotGetTempraryAbsolutePath(simplifile.FileError)
-  ErrorFindingTailwindCssCli(simplifile.FileError)
-  ErrorFindingNodeModules(simplifile.FileError)
-  CouldNotDeleteUniqueTemporaryDirectory(simplifile.FileError)
-  CouldNotWriteHtmlFile(simplifile.FileError)
-  CouldNotGenerateCss(String)
-  CouldNotReadCssOutputFile(simplifile.FileError)
-
-  CouldNotWriteTailwindConfigFile(simplifile.FileError)
-  CouldNotCreateUniqueTemporaryDirectory(simplifile.FileError)
-  //
-  CanNotGetCurrentWorkingDirectory(simplifile.FileError)
-  CheckPathPermissionError(simplifile.FileError)
-  CanNotFindTailwindCssCli(Option(TailwindError))
-  CanNotFindNodeModules(Option(TailwindError))
-
   TemporaryDirectoryPermissionError(simplifile.FileError)
   TemporaryDirectoryNotFoundError(simplifile.FileError)
-  CouldNotCreateTemporaryDirectory(simplifile.FileError)
+  CanNotCreateTemporaryDirectory(simplifile.FileError)
+  CheckPathPermissionError(simplifile.FileError)
+  CanNotGetCurrentWorkingDirectory(simplifile.FileError)
+  CanNotFindTailwindCssCli(Option(TailwindError))
+  CanNotFindNodeModules(Option(TailwindError))
+  CanNotWriteTailwindConfigFile(simplifile.FileError)
+  CanNotDeleteTemporaryDirectory(simplifile.FileError)
+  CanNotWriteHtmlFile(simplifile.FileError)
+  CanNotReadCssOutputFile(simplifile.FileError)
+  CanNotStartTailwindCssCli(String)
+  TailwindCssCliErrorCode(Int)
+  TailwindCssCliErrorMessage(String)
+}
+
+pub opaque type Tailwind {
+  Tailwind(actor: Subject(Msg))
+}
+
+pub type Either(a, b) {
+  Left(a)
+  Right(b)
+}
+
+type Msg {
+  AddHtml(self: Subject(Msg), html: String)
+  GetStyle(self: Subject(Msg), reply_to: Subject(String))
+  CompileAfter(self: Subject(Msg), timeout: Int)
+  Compile(self: Subject(Msg))
+  CompilationDone(self: Subject(Msg), result: Result(String, TailwindError))
+  Close
+}
+
+type Validity {
+  Valid(css: String)
+  Invalid
+  Compiling
+  CompilingInvalid
+}
+
+type State {
+  State(
+    environment_constructor: EnvironmentConstructor,
+    css: Option(String),
+    html: List(String),
+    waiting: List(Subject(String)),
+    next_waiting: List(Subject(String)),
+    validity: Validity,
+    timer: Option(Timer),
+    compilation: Option(Pid),
+  )
 }
 
 pub fn delete_temporary_files() -> Result(Nil, TailwindError) {
@@ -50,7 +85,39 @@ pub fn delete_temporary_files() -> Result(Nil, TailwindError) {
   })
 
   simplifile.create_directory_all(temporary_files_directory)
-  |> result.map_error(CouldNotCreateTemporaryDirectory)
+  |> result.map_error(CanNotCreateTemporaryDirectory)
+}
+
+fn absolute_path(path: String) -> Result(String, TailwindError) {
+  use cwd <- result.then(
+    simplifile.current_directory()
+    |> result.map_error(CanNotGetCurrentWorkingDirectory),
+  )
+  let path = case path {
+    "/" <> _ -> path
+    _ -> cwd <> "/" <> path
+  }
+
+  let result =
+    path
+    |> string.replace("\\", "/")
+    |> string.split("/")
+    |> list.fold([], fn(acc, part) {
+      case part {
+        "" | "." -> acc
+        ".." -> {
+          let #(acc, _) = list.split(acc, list.length(acc) - 1)
+          acc
+        }
+        _ -> list.append(acc, [part])
+      }
+    })
+    |> string.join("/")
+
+  Ok(case result {
+    "/" <> _ -> result
+    _ -> "/" <> result
+  })
 }
 
 fn find(
@@ -73,17 +140,17 @@ fn find(
         case absolute_path(path) {
           Ok(path) ->
             case check_path(path) {
-              Ok(True) -> Stop(Ok(Some(path)))
-              Ok(False) -> Continue(Ok(None))
-              Error(error) -> Stop(Error(error))
+              Ok(True) -> list.Stop(Ok(Some(path)))
+              Ok(False) -> list.Continue(Ok(None))
+              Error(error) -> list.Stop(Error(error))
             }
-          Error(error) -> Stop(Error(error))
+          Error(error) -> list.Stop(Error(error))
         }
       })
 
     case inner {
-      Ok(Some(_)) | Error(_) -> Stop(inner)
-      Ok(None) -> Continue(inner)
+      Ok(Some(_)) | Error(_) -> list.Stop(inner)
+      Ok(None) -> list.Continue(inner)
     }
   })
 }
@@ -253,14 +320,15 @@ type Environment {
   Environment(
     temporary_path: String,
     tailwind_css_cli_path: String,
+    tailwind_css_config_path: String,
     css_output_path: String,
   )
 }
 
-fn setup_environment() -> Result(
-  fn(fn(Environment) -> Result(a, TailwindError)) -> Result(a, TailwindError),
-  TailwindError,
-) {
+type EnvironmentConstructor =
+  fn() -> Result(Environment, TailwindError)
+
+fn setup_environment() -> Result(EnvironmentConstructor, TailwindError) {
   use temporary_path <- result.try(absolute_path(temporary_files_directory))
 
   use tailwind_css_cli_path <- result.try(
@@ -283,161 +351,356 @@ fn setup_environment() -> Result(
     Some(node_modules_path) -> Ok(node_modules_path)
   })
 
-  fn(next: fn(Environment) -> Result(a, TailwindError)) -> Result(
-    a,
-    TailwindError,
-  ) {
+  fn() -> Result(Environment, TailwindError) {
     let temporary_path = temporary_path <> "/" <> int.to_string(unique_int())
     let tailwind_css_config_path = temporary_path <> "/tailwind.config.js"
     let css_output_path = temporary_path <> "/output.css"
 
     use _ <- result.then(
       simplifile.create_directory_all(temporary_path)
-      |> result.map_error(CouldNotCreateUniqueTemporaryDirectory),
+      |> result.map_error(CanNotCreateTemporaryDirectory),
     )
-
-    use <- exception.defer(fn() {
-      case simplifile.is_directory(temporary_path) {
-        Ok(True) -> {
-          let _ =
-            simplifile.delete(temporary_path)
-            |> result.map_error(fn(error) {
-              io.println_error("Error deleting temporary directory:")
-              io.debug(error)
-            })
-          Nil
-        }
-        Ok(False) -> Nil
-        Error(error) -> {
-          io.println_error("Error checking temporary directory:")
-          io.debug(error)
-          Nil
-        }
-      }
-    })
 
     use _ <- result.then(
       simplifile.write(
         tailwind_css_config_path,
         tailwind_css_config(temporary_path, node_modules_path),
       )
-      |> result.map_error(CouldNotWriteTailwindConfigFile),
+      |> result.map_error(CanNotWriteTailwindConfigFile),
     )
 
-    next(Environment(temporary_path:, tailwind_css_cli_path:, css_output_path:))
+    Ok(Environment(
+      temporary_path:,
+      tailwind_css_cli_path:,
+      tailwind_css_config_path:,
+      css_output_path:,
+    ))
   }
   |> Ok
 }
 
-fn generate_css_for_() {
-  use environment <- result.try(setup_environment())
-
-  fn(html: List(String)) {
-    use environment <- environment()
-
-    let #(html, _) =
-      list.fold(html, #([], 0), fn(acc, html) {
-        let #(acc, index) = acc
-        #([#(index, html), ..acc], index + 1)
-      })
-
-    use _ <- result.try(
-      list.try_each(html, fn(html) {
-        let #(index, html) = html
-        simplifile.write(
-          environment.temporary_path <> "/" <> int.to_string(index) <> ".html",
-          html,
-        )
-      })
-      |> result.map_error(CouldNotWriteHtmlFile),
-    )
-
-    todo
+fn destruct_environment(environment: Environment) -> Result(Nil, TailwindError) {
+  case simplifile.is_directory(environment.temporary_path) {
+    Ok(True) -> {
+      let _ =
+        simplifile.delete(environment.temporary_path)
+        |> result.map_error(CanNotDeleteTemporaryDirectory)
+    }
+    Ok(False) -> Ok(Nil)
+    Error(error) -> Error(CanNotDeleteTemporaryDirectory(error))
   }
-  |> Ok
 }
 
-pub fn generate_css_for() -> Result(
-  fn(List(String)) -> Result(String, TailwindError),
-  TailwindError,
-) {
-  //  use environment <- setup_environment()
-
-  //  fn(html: List(String)) {
-  //    use environment <- environment()
-
-  todo
-  //    let result =
-  //      fn() {
-  //        use _ <- result.then(
-  //          list.fold_until(html, Ok(0), fn(index, html) {
-  //            case index {
-  //              Ok(index) -> {
-  //                case
-  //                  simplifile.write(
-  //                    temporary_path <> "/" <> int.to_string(index) <> ".html",
-  //                    html,
-  //                  )
-  //                {
-  //                  Ok(_) -> Continue(Ok(index + 1))
-  //                  Error(error) -> Stop(Error(CouldNotWriteHtmlFile(error)))
-  //                }
-  //              }
-  //              Error(error) -> Stop(Error(error))
-  //            }
-  //          }),
-  //        )
-
-  //        use log <- result.then(
-  //          generate_css(
-  //            temporary_path,
-  //            tailwind_css_cli_path,
-  //            tailwind_css_config_path,
-  //            css_output_path,
-  //            30_000,
-  //          )
-  //          |> result.map_error(CouldNotGenerateCss),
-  //        )
-  //
-  //        io.println(log)
-
-  //       simplifile.read(css_output_path)
-  //       |> result.map_error(CouldNotReadCssOutputFile)
-  //     }()
-  //
-  //   result
-  //  }
-  //  |> Ok
-}
-
-fn absolute_path(path: String) -> Result(String, TailwindError) {
-  use cwd <- result.then(
-    simplifile.current_directory()
-    |> result.map_error(CanNotGetCurrentWorkingDirectory),
+fn init(environment_constructor: EnvironmentConstructor) -> State {
+  State(
+    environment_constructor: environment_constructor,
+    css: None,
+    html: [],
+    waiting: [],
+    next_waiting: [],
+    validity: Invalid,
+    timer: None,
+    compilation: None,
   )
-  let path = case path {
-    "/" <> _ -> path
-    _ -> cwd <> "/" <> path
-  }
+}
 
-  let result =
-    path
-    |> string.replace("\\", "/")
-    |> string.split("/")
-    |> list.fold([], fn(acc, part) {
-      case part {
-        "" | "." -> acc
-        ".." -> {
-          let #(acc, _) = list.split(acc, list.length(acc) - 1)
-          acc
+type GeneratorMsg {
+  SetupEnvironment(self: Subject(GeneratorMsg))
+  DestructEnvironment(
+    environment: Environment,
+    result: Result(String, TailwindError),
+  )
+}
+
+type GeneratorState {
+  GeneratorState(
+    parent: Subject(Msg),
+    html: List(String),
+    environment_constructor: EnvironmentConstructor,
+  )
+}
+
+fn update_generator(
+  msg: GeneratorMsg,
+  state: GeneratorState,
+) -> Next(GeneratorMsg, GeneratorState) {
+  case msg {
+    SetupEnvironment(self) -> {
+      case state.environment_constructor() {
+        Ok(environment) -> {
+          let result = {
+            let #(html, _) =
+              list.fold(state.html, #([], 0), fn(acc, html) {
+                let #(acc, index) = acc
+                #([#(index, html), ..acc], index + 1)
+              })
+
+            use _ <- result.try(
+              list.try_each(html, fn(html) {
+                let #(index, html) = html
+                simplifile.write(
+                  environment.temporary_path
+                    <> "/"
+                    <> int.to_string(index)
+                    <> ".html",
+                  html,
+                )
+              })
+              |> result.map_error(CanNotWriteHtmlFile),
+            )
+            let args = [
+              "--config",
+              environment.tailwind_css_config_path,
+              "--output",
+              environment.css_output_path,
+              "--minify",
+            ]
+
+            executable.spawn(
+              environment.temporary_path,
+              environment.tailwind_css_cli_path,
+              args,
+              io.print,
+              fn(exit_message) {
+                let result = case exit_message {
+                  Ok(exit_code) -> {
+                    io.println(
+                      "\nTailwindCSS exited with code: "
+                      <> int.to_string(exit_code),
+                    )
+
+                    {
+                      use _ <- result.try(case exit_code {
+                        0 -> Ok(Nil)
+                        _ -> Error(TailwindCssCliErrorCode(exit_code))
+                      })
+
+                      use css <- result.try(
+                        simplifile.read(environment.css_output_path)
+                        |> result.map_error(CanNotReadCssOutputFile),
+                      )
+
+                      Ok(css)
+                    }
+                  }
+                  Error(error) -> {
+                    io.println("\nTailwindCSS exited with error: " <> error)
+
+                    Error(TailwindCssCliErrorMessage(error))
+                  }
+                }
+
+                process.send(self, DestructEnvironment(environment, result))
+              },
+            )
+
+            Ok(Nil)
+          }
+
+          case result {
+            Ok(Nil) -> continue(state)
+            Error(error) ->
+              update_generator(
+                DestructEnvironment(environment, Error(error)),
+                state,
+              )
+          }
         }
-        _ -> list.append(acc, [part])
+        Error(error) -> {
+          process.send(
+            state.parent,
+            CompilationDone(state.parent, Error(error)),
+          )
+          Stop(process.Normal)
+        }
       }
-    })
-    |> string.join("/")
+    }
+    DestructEnvironment(environment, result) -> {
+      let result = case result, destruct_environment(environment) {
+        Ok(css), Ok(Nil) -> Ok(css)
+        Ok(_), Error(error) -> Error(error)
+        Error(error), _ -> Error(error)
+      }
 
-  Ok(case result {
-    "/" <> _ -> result
-    _ -> "/" <> result
+      process.send(state.parent, CompilationDone(state.parent, result))
+      Stop(process.Normal)
+    }
+  }
+}
+
+fn compile(
+  self: Subject(Msg),
+  html: List(String),
+  environment_constructor: EnvironmentConstructor,
+) -> Result(Pid, StartError) {
+  use task <- result.try(actor.start(
+    GeneratorState(parent: self, html:, environment_constructor:),
+    update_generator,
+  ))
+
+  process.send(task, SetupEnvironment(task))
+  Ok(process.subject_owner(task))
+}
+
+fn update(msg: Msg, state: State) -> Next(Msg, State) {
+  case msg {
+    AddHtml(self, html) ->
+      update(
+        CompileAfter(self, 250),
+        State(
+          ..state,
+          html: [html, ..state.html],
+          validity: case state.validity {
+            Compiling -> CompilingInvalid
+            CompilingInvalid -> CompilingInvalid
+            Invalid -> Invalid
+            Valid(_) -> Invalid
+          },
+        ),
+      )
+
+    CompileAfter(self, timeout) ->
+      continue(
+        State(
+          ..state,
+          timer: case state.timer, state.validity {
+            Some(timer), _ -> Some(timer)
+            None, Valid(_) | None, Invalid ->
+              Some(process.send_after(self, timeout, Compile(self)))
+            None, Compiling | None, CompilingInvalid -> None
+          },
+        ),
+      )
+
+    Compile(self) -> {
+      case compile(self, state.html, state.environment_constructor) {
+        Ok(compilation) ->
+          continue(
+            State(
+              ..state,
+              validity: Compiling,
+              timer: case state.timer {
+                Some(timer) -> {
+                  process.cancel_timer(timer)
+                  None
+                }
+                None -> None
+              },
+              compilation: Some(compilation),
+              waiting: list.flatten([state.waiting, state.next_waiting]),
+              next_waiting: [],
+            ),
+          )
+        Error(error) -> {
+          io.println_error("Could not start compilation:")
+          io.debug(error)
+          update(
+            CompileAfter(self, 250),
+            State(
+              ..state,
+              validity: Invalid,
+              timer: case state.timer {
+                Some(timer) -> {
+                  process.cancel_timer(timer)
+                  None
+                }
+                None -> None
+              },
+            ),
+          )
+        }
+      }
+    }
+
+    CompilationDone(self, result) ->
+      case result {
+        Ok(css) -> {
+          list.map(state.waiting, fn(waiting) { process.send(waiting, css) })
+          let state =
+            State(
+              ..state,
+              compilation: None,
+              css: Some(css),
+              waiting: state.next_waiting,
+              next_waiting: [],
+              validity: case state.next_waiting {
+                [] -> state.validity
+                _ -> CompilingInvalid
+              },
+            )
+
+          case state.validity {
+            Valid(_) | Invalid | Compiling ->
+              continue(State(..state, validity: Valid(css)))
+            CompilingInvalid -> update(Compile(self), state)
+          }
+        }
+        Error(error) -> {
+          io.println_error("Could not compile TailwindCSS:")
+          io.debug(error)
+          update(CompileAfter(self, 250), State(..state, validity: Invalid))
+        }
+      }
+
+    GetStyle(self, reply_to) ->
+      case state.validity {
+        Valid(css) -> {
+          process.send(reply_to, css)
+          continue(state)
+        }
+        Invalid ->
+          update(
+            Compile(self),
+            State(..state, waiting: [reply_to, ..state.waiting]),
+          )
+        Compiling ->
+          continue(State(..state, waiting: [reply_to, ..state.waiting]))
+        CompilingInvalid ->
+          continue(
+            State(..state, next_waiting: [reply_to, ..state.next_waiting]),
+          )
+      }
+
+    Close -> {
+      case state.timer {
+        Some(timer) -> {
+          process.cancel_timer(timer)
+          Nil
+        }
+        None -> Nil
+      }
+      case state.compilation {
+        Some(compilation) -> process.kill(compilation)
+        None -> Nil
+      }
+      Stop(process.Normal)
+    }
+  }
+}
+
+pub fn new() -> Result(Tailwind, Either(TailwindError, StartError)) {
+  use environment_constructor <- result.try(
+    setup_environment() |> result.map_error(Left),
+  )
+  use actor <- result.try(
+    actor.start(init(environment_constructor), update)
+    |> result.map_error(Right),
+  )
+
+  Tailwind(actor:)
+  |> Ok
+}
+
+pub fn close(tailwind: Tailwind) {
+  process.send(tailwind.actor, Close)
+}
+
+pub fn add_html(tailwind: Tailwind, html: String) {
+  process.send(tailwind.actor, AddHtml(self: tailwind.actor, html:))
+}
+
+pub fn get_style(tailwind: Tailwind) -> String {
+  process.call_forever(tailwind.actor, fn(reply_to) {
+    GetStyle(self: tailwind.actor, reply_to:)
   })
 }

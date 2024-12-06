@@ -1,5 +1,5 @@
 import backend/page/layout
-import backend/tailwind_new.{type Tailwind}
+import backend/tailwind.{type Tailwind}
 import lustre/attribute
 import lustre/element.{type Element}
 import lustre/element/html
@@ -17,7 +17,7 @@ pub fn page(
   let default_body = body("/login", "")
   let html = layout(title, [], default_body) |> element.to_document_string()
 
-  tailwind_new.add_html(tailwind, html)
+  tailwind.add_html(tailwind, html)
 
   fn(path: String, error: String) -> Response {
     body(path, error)
