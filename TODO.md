@@ -7,6 +7,7 @@
 - [ ] Split database for storing generated data and rest
 - [ ] Split database for storing statistics and rest
 - [ ] Think about complexity in general. What has to be done, does it need to be there and how could complexity be reduced?
+- [ ] Take inclusion of people with disabilities into account (API for screen readers?)
 
 ## Widgets
 
