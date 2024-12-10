@@ -492,6 +492,7 @@ fn update_generator(
 
                 process.send(self, DestructEnvironment(environment, result))
               },
+              Some(60_000),
             )
 
             Ok(Nil)
