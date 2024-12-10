@@ -3,7 +3,7 @@ import backend/middleware
 import backend/page/default
 import backend/page/initial_user
 import backend/router/internal
-import backend/tailwind.{type Tailwind}
+import backend/tailwind/tailwind.{type Tailwind}
 import birl
 import gleam/bit_array
 import gleam/crypto

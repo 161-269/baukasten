@@ -1,4 +1,4 @@
-import backend/tailwind.{type Tailwind}
+import backend/tailwind/tailwind.{type Tailwind}
 import lustre/element
 import lustre/element/html
 import widgets/component.{type Component}

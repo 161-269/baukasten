@@ -1,6 +1,6 @@
 import backend/database.{type Db}
 import backend/database/user.{type User}
-import backend/tailwind.{type Tailwind}
+import backend/tailwind/tailwind.{type Tailwind}
 import exception
 import gleam/erlang/process.{type Subject}
 import gleam/http/response.{Response as HttpResponse}

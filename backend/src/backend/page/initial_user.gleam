@@ -1,5 +1,5 @@
 import backend/database.{type Db}
-import backend/tailwind.{type Tailwind}
+import backend/tailwind/tailwind.{type Tailwind}
 import gleam/erlang/process.{type Timer}
 import gleam/int
 import gleam/io

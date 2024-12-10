@@ -1,6 +1,6 @@
 import backend/database.{type Db}
 import backend/router
-import backend/tailwind.{type Tailwind}
+import backend/tailwind/tailwind.{type Tailwind}
 import birl
 import gleam/erlang/process.{type Pid, type Subject}
 import gleam/io

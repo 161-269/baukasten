@@ -2,7 +2,7 @@ import backend/database.{type Db}
 import backend/middleware
 import backend/middleware/session.{type Session}
 import backend/page/internal/login
-import backend/tailwind.{type Tailwind}
+import backend/tailwind/tailwind.{type Tailwind}
 import birl
 import gleam/http.{Get, Post}
 import gleam/io

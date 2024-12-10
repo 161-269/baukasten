@@ -1,5 +1,5 @@
 import backend/page/layout
-import backend/tailwind.{type Tailwind}
+import backend/tailwind/tailwind.{type Tailwind}
 import lustre/attribute
 import lustre/element.{type Element}
 import lustre/element/html

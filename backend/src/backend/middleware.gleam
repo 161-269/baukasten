@@ -2,7 +2,7 @@ import backend/database.{type Db}
 import backend/middleware/page_request
 import backend/middleware/session.{type Session} as middleware_session
 import backend/page/error
-import backend/tailwind.{type Tailwind}
+import backend/tailwind/tailwind.{type Tailwind}
 import birl
 import exception
 import gleam/bit_array
