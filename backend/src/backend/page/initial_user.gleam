@@ -1,5 +1,5 @@
 import backend/database.{type Db}
-import backend/tailwind/tailwind.{type Tailwind}
+import backend/tailwind/build.{type Tailwind}
 import gleam/erlang/process.{type Timer}
 import gleam/int
 import gleam/io
@@ -47,7 +47,7 @@ pub fn page(
         wisp.response(200)
         |> wisp.set_header("content-type", "text/css; charset=utf-8")
         |> wisp.set_body(
-          wisp.Text(string_tree.from_string(tailwind.get_style(tailwind))),
+          wisp.Text(string_tree.from_string(build.get_style(tailwind))),
         )
       }
       ["static", ..] -> {
@@ -293,7 +293,7 @@ fn form_page(tailwind: Tailwind) -> fn(String, Int, Form) -> Response {
     |> element.to_document_string
   }
 
-  tailwind.add_html(tailwind, page_html("", 0, new_form()))
+  build.add_html(tailwind, page_html("", 0, new_form()))
 
   fn(error_message: String, redirect: Int, form: Form) {
     wisp.html_response(

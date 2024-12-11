@@ -99,11 +99,11 @@ monitor_port(Port, OsPid, DataCallback, ExitCallback, Timeout) ->
             monitor_port(Port, OsPid, DataCallback, ExitCallback, NewTimeout());
         {kill_executable} ->
             do_kill_executable(Port, OsPid, ExitCallback, <<"Killed by the user.">>);
-        {set_timeout, NextTimeout} ->
+        {set_timeout, NextTimeoutOption} ->
             NextTimeout =
-                case NextTimeout of
-                    {some, NextTimeout} ->
-                        NextTimeout;
+                case NextTimeoutOption of
+                    {some, Value} ->
+                        Value;
                     none ->
                         infinity
                 end,
