@@ -1,7 +1,7 @@
 import backend/executable.{type Executable}
 import backend/tailwind/tailwind.{
   type Either, type Environment, type TailwindError, Left, Right,
-  setup_environment,
+  destruct_environment, setup_environment,
 }
 import gleam/dict.{type Dict}
 import gleam/erlang/process.{type Subject, type Timer}
@@ -79,6 +79,14 @@ fn update(msg: Msg, state: State) -> Next(Msg, State) {
         Some(executable) -> executable.kill(executable)
         None -> Nil
       }
+      case destruct_environment(state.environment) {
+        Ok(Nil) -> Nil
+        Error(error) -> {
+          io.println_error("Error destructing environment:")
+          io.debug(error)
+          Nil
+        }
+      }
       Stop(process.Normal)
     }
 
@@ -99,6 +107,14 @@ fn update(msg: Msg, state: State) -> Next(Msg, State) {
         Error(error) -> {
           io.println_error("Error running Tailwind CSS CLI:")
           io.println_error(error)
+        }
+      }
+      case destruct_environment(state.environment) {
+        Ok(Nil) -> Nil
+        Error(error) -> {
+          io.println_error("Error destructing environment:")
+          io.debug(error)
+          Nil
         }
       }
       Stop(process.Normal)
