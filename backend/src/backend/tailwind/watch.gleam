@@ -26,7 +26,9 @@ type Msg {
   MessageReceived(self: Subject(Msg), message: String)
   ExitReceived(Result(Int, String))
   SetHtml(key: String, html: String)
+  SetHtmlAndGetStyle(key: String, html: String, reply_to: Subject(String))
   RemoveHtml(key: String)
+  RemoveHtmlAndGetStyle(key: String, reply_to: Subject(String))
   GetStyle(reply_to: Subject(String))
   OnStyleChange(callback: fn(String) -> Nil)
   Close
@@ -190,7 +192,10 @@ fn update(msg: Msg, state: State) -> Next(Msg, State) {
         Ok(id) -> {
           case
             simplifile.delete(
-              state.environment.temporary_path <> "/" <> int.to_string(id),
+              state.environment.temporary_path
+              <> "/"
+              <> int.to_string(id)
+              <> ".html",
             )
           {
             Ok(_) -> Nil
@@ -252,6 +257,16 @@ fn update(msg: Msg, state: State) -> Next(Msg, State) {
       let timer = process.send_after(self, read_css_interval, ReadCss(self))
       continue(State(..state, read_css_timer: Some(timer)))
     }
+    RemoveHtmlAndGetStyle(key, reply_to) ->
+      update(
+        RemoveHtml(key),
+        State(..state, reply_to: [reply_to, ..state.reply_to]),
+      )
+    SetHtmlAndGetStyle(key, content, reply_to) ->
+      update(
+        SetHtml(key, content),
+        State(..state, reply_to: [reply_to, ..state.reply_to]),
+      )
   }
 }
 
@@ -316,6 +331,22 @@ pub fn set_html(tailwind: Tailwind, key: String, html: String) -> Bool {
   }
 }
 
+pub fn set_html_and_get_style(
+  tailwind: Tailwind,
+  key: String,
+  html: String,
+) -> Result(String, Nil) {
+  case running(tailwind) {
+    True -> {
+      process.call_forever(tailwind.actor, fn(reply_to) {
+        SetHtmlAndGetStyle(key, html, reply_to)
+      })
+      |> Ok
+    }
+    False -> Error(Nil)
+  }
+}
+
 pub fn remove_html(tailwind: Tailwind, key: String) -> Bool {
   case running(tailwind) {
     True -> {
@@ -323,6 +354,21 @@ pub fn remove_html(tailwind: Tailwind, key: String) -> Bool {
       True
     }
     False -> False
+  }
+}
+
+pub fn remove_html_and_get_style(
+  tailwind: Tailwind,
+  key: String,
+) -> Result(String, Nil) {
+  case running(tailwind) {
+    True -> {
+      process.call_forever(tailwind.actor, fn(reply_to) {
+        RemoveHtmlAndGetStyle(key, reply_to)
+      })
+      |> Ok
+    }
+    False -> Error(Nil)
   }
 }
 
