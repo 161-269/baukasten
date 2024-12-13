@@ -24,3 +24,4 @@
 - Searchable dictionary with sources and citations for sharing knowledge
 - Citations in blog posts or articles
 - A simple crawler to backup sources
+- Make the whole widget system text based like Markdown, Typst, Djot, Pug (aka. Jade), Jinja, etc.
