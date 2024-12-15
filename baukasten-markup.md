@@ -13,7 +13,9 @@ Innerhalb von Logik oder Metaprogrammierung muss der Code so explizit und klar w
 Kommentare müssen möglich sein, um Dinge erklren zu können oder Inhalte "auszublenden", wobei für letzteres eventuell auch eine Alternative gesucht werden könnte.
 Es existiert keine "Runtime", da das Programm keine "Laufzeit" hat, sondern nur von dem Compiler in HTML übersetzt wird, somit werden Funktionen von diesem aufgerufen, ähnlich wie bei SASS.
 
-**Wichtig: Alles kann sich ändern, egal ob Keywords, Syntax oder Konzepte. Hier beschriebene Dinge mit Keywords oder Syntax dienen vielmehr als Beispiele und können geändert werden. Davor muss sichergestellt werden, dass das Konzept in sich funktioniert und eine angenehme Benutzererfahrung bietet. BKM besteht dabei auch aus zwei "Sektionen", einmal Markup und einmal Code. Der Standard ist dabei Code und durch das erstellen von Funktionen können in den Funktionskörpern Code eingefügt werden. Es exisitert also auch eine sehr einfache Programmiersprache, die nur in Funktionskörpern verwendet werden kann. Dabei werden die Begriffe Code oder BKM oder ähnliches teilweise austauschbar verwendet und es wird in diesem Dokument noch nicht zu 100% differenziert.**
+## Wichtig
+
+Alles kann sich ändern, egal ob Keywords, Syntax oder Konzepte. Hier beschriebene Dinge mit Keywords oder Syntax dienen vielmehr als Beispiele und können geändert werden. Davor muss sichergestellt werden, dass das Konzept in sich funktioniert und eine angenehme Benutzererfahrung bietet. BKM besteht dabei auch aus zwei "Sektionen", einmal Markup und einmal Code. Der Standard ist dabei Code und durch das erstellen von Funktionen können in den Funktionskörpern Code eingefügt werden. Es exisitert also auch eine sehr einfache Programmiersprache, die nur in Funktionskörpern verwendet werden kann. Dabei werden die Begriffe Code oder BKM oder ähnliches teilweise austauschbar verwendet und es wird in diesem Dokument noch nicht zu 100% differenziert. Dieses Dokument kann sich dabei auch selber widersprechen, das ist in so fern unwichtig, da verschiedene Gedanken und Ideen festgehalten werden.
 
 
 ## Basics
@@ -38,6 +40,32 @@ Es existiert keine "Runtime", da das Programm keine "Laufzeit" hat, sondern nur 
 - "Globale" Variablen bzw. Mechanismen, um beispielsweise für mehrere Sprachen oder Umgebungen (, wie Browser, PDF) unterschiedliche Ausgaben zu erzeugen.
 - Bearbeiten von der Seite über einen GUI Drag and Drop Editor oder vergleichbaren Mechanismen, um die Seite einfacher bearbeiten zu können.
 - Wie können Seiten und Unterseiten erstellt werden, wie könnte man die Ordnerstruktur organisieren, so dass Bibliotheken und die eigentlichn Seiten getrennt sind.
+
+## Datentypen
+
+Da das Ganze in Gleam geschrieben wird und somit auf Erlang und JavaScript laufen soll, werden Limitationen von JavaScript mitgenommen.
+Ebenso ist es kein Ziel so effizient und "Bare-Matal" wie möglich zu sein, da das Ganze nur ein Generator für HTML ist und keine Komplexen berechnungen durchführen soll.
+Demensprechend ist JSON vermutlich vollkommen ausreichend, eventuell kann dies aber noch mit etwas "Erlang-Magie", wie beispielsweise Atoms erweitert werden.
+Grundsätzlich wird sich hierbei an den [Erlang-Datentypen](https://www.erlang.org/doc/system/data_types.html) orientiert. Da das Ganze in Gleam umgesetzt wird, gibt diese Sprache auch (sinvolle) Limitationen vor, wie beispielsweise, dass es keine Arrays gibt, sondern nur Linked-Lists. Im zweifel, ist dabei Erlang der Wegweiser, demensprechend ist Dokumentation für die Erlang-Datentypen sehr entscheidend und sollte bekannt sein. [Look at it here! ;)](https://www.erlang.org/doc/system/data_types.html)
+
+
+- Zahlen: Es wird alles als 64-bit Float behandelt, damit bleiben 52-bit präzision für Integer übrig.  
+  Mit Objekten oder Array können so auch Big-Integers implementiert werden, was eventuell schon in der Standardbibliothek gemacht wird.
+  Dabei werden Infinity und NaN (, ähnlich wie in Erlang), nicht unterstützt und resultieren in einem Fehler.
+- Strings: In Erlang sind Strings UTF-8 und in JavaScript UTF-16, sie sind also laufzeitabhängig, dies wirkt sich aber nicht auf das Verhalten aus.  
+  Diese werden mit einfachen Anführungszeichen (`"`) oder mit drei oder mehr Anführungszeichen (`"""`) geschrieben. Zwei Anführungszeichen (`""`) stehen dabei für einen leeren String.
+  Ähnlich wie in Erlang können diese auch über mehrere Zeilen gehen, und verhalten sich dabei so, wie in Erlang, was whitespace angeht.
+  Folgen mehrere Strings direkt aufenander, werden diese miteinander verbunden.
+- Booleans: Sind wie in Erlang nur die Atome `true` und `false`.
+- Atoms: Exisitieren wie in Erlang und sind dabei die "Keys" von Objekten. Diese literale werden in einfachen Anführungszeichen (`'`) geschrieben, benötigen sie aber nicht, wenn sie mit einem Kleinbuchstaben beginnen und nur Buchstaben, Ziffern, Unterstriche (`_`) und At-Zeichen (`@`) enthalten.
+- Funktionen: Können ebenfalls übergeben werden und sind damit "first-class citizens".
+- Tupel: Sind "Mixed-Types-Arrays" mit eienr festen Anzahl an Elementen. Dabei können diese auch ein Atom als alias für den Index haben und funktionieren damit wie Objekte.
+- Maps: Sind Dictionaries mit einem Schlüssel und einem Wert.
+- Enums: Diese sind dabei ähnlich wie Records in Gleam bzw. Enums in Rust. Sie bestehen aus einem Atom als Identifikator und einem Tupel (kann auch leer sein) für Werte.
+
+## Syntax
+
+Eine Mischung aus Gleam, Erlang, Elm und Haskell. Dabei ist noch nicht klar, ob BKM typisiert wird oder nicht. Typisierung wäre grundsätzlich sinnvoll, ist aber nicht trivial zu implementieren. BKM soll dabei sehr zugänglich für "Anfänger" sein, damit könnten kmplexe Typisierungen den Zugang erschweren. Es ist dabei nicht geplant, komplexe Funktionen in BKM zu erschaffen, da es am Ende nur eine Markup-Sprache zum generieren von HTML ist.
 
 ## Ideensammlung
 
