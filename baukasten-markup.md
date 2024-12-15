@@ -1,3 +1,13 @@
+# TL-DR
+
+BKM ist eine geplante, statisch typisierte Markup-Sprache, deren Hauptziel es ist, aus einem eigenen CMS heraus statisches HTML zu generieren. Im Gegensatz zu herkömmlichen Markup-Sprachen wie Markdown ist BKM darauf ausgelegt, komplexe Webseiten (darunter Seiten, Blogs und Wikis) mit Tailwind CSS und DaisyUI als Styling-Grundlage ohne dynamischen oder nutzerspezifischen Inhalt zu erstellen. Der Fokus liegt darauf, dass Administratoren den Content über das CMS pflegen, während BKM als Transformations- und Layout-Engine fungiert, um ein konsistentes, wartbares und robustes End-HTML zu erzeugen.
+
+Das Konzept setzt auf eine strenge Trennung von Markup und Code. Während Text weitestgehend einfach und minimalistisch gestaltet werden soll (ähnlich wie bei Markdown), werden für Struktur, Layout und Logik nur definierte Funktionen, Widgets und Komponenten genutzt. Dadurch soll vermieden werden, dass rohes HTML direkt eingebunden wird. Die wenigen verbleibenden dynamischen Aspekte (etwa Metaprogrammierung oder rekursive Funktionsaufrufe anstelle von Loops) erfolgen über eine klar definierte, minimalistische "Programmiersprache", die ausschließlich innerhalb von Funktionskörpern erlaubt ist.
+
+Ein wichtiger Grundgedanke von BKM ist, dass jede erweiterte Funktionalität, jedes Formatierungssymbol (wie `*` für Kursivschrift) oder jede logische Operation durch deklarierte Funktionen oder Operatoren in der Standardbibliothek realisiert wird. So bleibt die Kernsprache klein und flexibel. Gleichzeitig ist geplant, mehrsprachige Inhalte, Labeling, AST-Transformationen und eventuell sogar die Integration von Counter-Mechanismen bereitzustellen, um komplexere Szenarien komfortabel abzudecken.
+
+Insgesamt soll BKM ein erweiterbares Grundgerüst bilden, das durch eine saubere Typisierung und minimale Syntax eine verständliche, vorhersehbare und einheitliche Codebasis ermöglicht. Das finale Ziel ist eine Entwickler- und Administratorenfreundliche, rein statische HTML-Generierungsumgebung, die auf einem soliden, formal definierten Fundament steht, leicht erweiterbar ist und durch den Compiler-First-Ansatz frühzeitig Fehler erkennt und vermeidet.
+
 # Projekt Baukasten-Markup (BKM)
 
 Das Ziel von BKM ist, statisches HTML zu generieren. Dabei kommt es im CMS "Baukasten" zum Einsatz und stellt das Grundgerüst für die Webseite dar.
