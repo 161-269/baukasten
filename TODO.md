@@ -25,3 +25,5 @@
 - Citations in blog posts or articles
 - A simple crawler to backup sources
 - Make the whole widget system text based like Markdown, Typst, Djot, Pug (aka. Jade), Jinja, etc.
+- Get inspired by: https://github.com/pocketbase/pocketbase
+- Integrate: https://github.com/benbjohnson/litestream
